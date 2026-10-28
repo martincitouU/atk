@@ -12,5 +12,8 @@ backend.hcl
 # Ansible
 *.retry
 
+# Datos de la prueba local de deploy/ (en la VM son el volumen EBS)
+deploy/data/
+
 # Sistema
 .DS_Store
