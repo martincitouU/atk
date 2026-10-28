@@ -1,0 +1,10 @@
+# Copia este archivo a backend.hcl y pon el nombre real del bucket.
+# backend.hcl está en .gitignore: no se sube al repo.
+# Uso: terraform init -backend-config=backend.hcl
+#
+# El bucket debe existir antes del init (Terraform no lo crea) y
+# conviene que tenga versionado activado, para recuperar estados anteriores.
+
+bucket = "nombre-del-bucket-de-estado"
+key    = "atk/dev/terraform.tfstate"
+region = "sa-east-1"

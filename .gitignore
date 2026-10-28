@@ -1,0 +1,16 @@
+# Terraform: plugins descargados, estado y planes (el estado vive en S3)
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+
+# Secretos y datos de cada entorno: solo se suben los .example
+terraform.tfvars
+backend.hcl
+
+# Ansible
+*.retry
+
+# Sistema
+.DS_Store
