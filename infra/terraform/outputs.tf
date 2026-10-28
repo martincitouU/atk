@@ -17,3 +17,8 @@ output "data_volume_id" {
   description = "ID del volumen EBS de datos; Ansible lo usa para encontrar el disco"
   value       = aws_ebs_volume.data.id
 }
+
+output "ssm_bucket_name" {
+  description = "Bucket que usa Ansible para pasar archivos a la VM por SSM"
+  value       = aws_s3_bucket.ssm_transfer.id
+}
