@@ -1,0 +1,10 @@
+# Punto de entrada: deja la VM lista y la app corriendo.
+# Ver infra/README.md para el comando completo (necesita dos -e).
+- name: Configurar la VM de ATK
+  hosts: all
+  # Por SSM se entra como ssm-user; become usa sudo para instalar y montar
+  become: true
+  roles:
+    - docker
+    - data_volume
+    - app

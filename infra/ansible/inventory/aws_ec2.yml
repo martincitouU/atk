@@ -1,0 +1,17 @@
+# Inventario dinámico: en cada ejecución le pregunta a AWS qué VMs existen.
+# No hay IPs escritas aquí; si la VM se recrea, se encuentra sola.
+# El nombre del archivo debe terminar en aws_ec2.yml para que el plugin lo acepte.
+plugin: amazon.aws.aws_ec2
+
+regions:
+  - sa-east-1
+
+# Tags que Terraform pone con default_tags (providers.tf)
+filters:
+  tag:Project: atk
+  tag:Environment: dev
+  instance-state-name: running
+
+# SSM se conecta por ID de instancia, no por IP
+hostnames:
+  - instance-id

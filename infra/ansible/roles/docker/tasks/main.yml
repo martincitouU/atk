@@ -1,0 +1,45 @@
+# Docker desde el repositorio oficial: versión actual y "docker compose" v2.
+# El paquete docker.io de Ubuntu queda atrasado y no trae el plugin de Compose.
+
+- name: Instalar requisitos para agregar el repositorio de Docker
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - curl
+      - python3-debian # lo necesita el módulo deb822_repository
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Agregar el repositorio oficial de Docker
+  ansible.builtin.deb822_repository:
+    name: docker
+    types: deb
+    uris: https://download.docker.com/linux/ubuntu
+    suites: "{{ ansible_facts['distribution_release'] }}"
+    components: stable
+    architectures: amd64 # coincide con la AMI amd64 de compute.tf
+    signed_by: https://download.docker.com/linux/ubuntu/gpg
+  register: docker_repo
+
+# Solo si el repositorio es nuevo o cambió; si no, apt ya lo conoce
+- name: Actualizar el índice de apt con el repositorio nuevo
+  ansible.builtin.apt:
+    update_cache: true
+  when: docker_repo is changed
+
+- name: Instalar Docker Engine y el plugin de Compose
+  ansible.builtin.apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
+
+- name: Dejar Docker habilitado al arrancar y corriendo
+  ansible.builtin.systemd_service:
+    name: docker
+    enabled: true
+    state: started

@@ -1,0 +1,13 @@
+# Instalar con: ansible-galaxy collection install -r requirements.yml
+# Rangos de versión mayor fijos: una versión mayor nueva puede romper módulos.
+collections:
+  - name: amazon.aws # inventario dinámico aws_ec2
+    version: ">=11.0.0,<12.0.0"
+  - name: community.aws # conexión aws_ssm
+    version: ">=11.0.0,<12.0.0"
+  - name: community.general # módulo filesystem
+    version: ">=13.0.0,<14.0.0"
+  - name: ansible.posix # módulo mount
+    version: ">=2.0.0,<3.0.0"
+  - name: community.docker # módulo docker_compose_v2
+    version: ">=5.0.0,<6.0.0"

@@ -1,0 +1,31 @@
+# Despliega deploy/ y levanta los contenedores.
+
+# copy y no synchronize: synchronize usa rsync sobre SSH y no funciona por SSM.
+# La barra final en src copia el contenido de deploy/, no la carpeta.
+- name: Copiar los archivos de despliegue a la VM
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../../deploy/"
+    dest: "{{ atk_root }}/"
+    owner: root
+    group: root
+    mode: u=rwX,g=rX,o=rX
+
+# Equivale a "docker compose up -d --build", pero solo reinicia contenedores
+# si algo cambió. remove_orphans quita servicios borrados de compose.yaml.
+- name: Construir y levantar los contenedores
+  community.docker.docker_compose_v2:
+    project_src: "{{ atk_root }}"
+    build: always
+    remove_orphans: true
+    state: present
+
+# Prueba de humo: pasa por Nginx y por la app, y /health escribe en el disco
+# de datos. Si falla, el playbook falla y el despliegue roto se nota ahora.
+- name: Comprobar que la app responde a través de Nginx
+  ansible.builtin.uri:
+    url: http://localhost/health
+    status_code: 200
+  register: atk_health
+  until: atk_health.status == 200
+  retries: 10
+  delay: 3

@@ -1,0 +1,64 @@
+# Prepara el volumen EBS de datos. Es el rol más delicado: un error aquí
+# puede borrar la base de datos, así que nada se formatea si ya tiene datos.
+
+- name: Verificar que se pasó el ID del volumen de datos
+  ansible.builtin.assert:
+    that:
+      - data_volume_id is defined
+      - data_volume_id is match('^vol-[0-9a-f]+$')
+    fail_msg: >-
+      Falta o es inválido data_volume_id. Pásalo con
+      -e data_volume_id=$(terraform -chdir=../terraform output -raw data_volume_id)
+    quiet: true
+
+# AWS pone el ID del volumen (sin guion) como número de serie del disco NVMe,
+# y Linux crea este enlace a partir de él. A diferencia de /dev/nvme1n1,
+# este nombre no cambia entre reinicios.
+- name: Calcular la ruta estable del disco
+  ansible.builtin.set_fact:
+    data_device: "/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_{{ data_volume_id | replace('-', '') }}"
+
+# Justo después del apply, el attachment puede tardar unos segundos
+- name: Esperar a que el disco aparezca en la VM
+  ansible.builtin.wait_for:
+    path: "{{ data_device }}"
+    timeout: 120
+
+# Sin force (por defecto false), el módulo no toca un disco que ya tiene un
+# sistema de archivos: solo formatea un volumen nuevo y vacío.
+# NUNCA agregar force: true aquí.
+- name: Crear el sistema de archivos solo si el disco está vacío
+  community.general.filesystem:
+    dev: "{{ data_device }}"
+    fstype: ext4
+
+# La carpeta queda de root mientras el disco no esté montado. Si un día el
+# disco no se monta, el contenedor (usuario 1000) no puede escribir ahí y la
+# app falla de forma visible, en vez de crear una base vacía en el disco del
+# sistema sin que nadie lo note.
+- name: Crear el punto de montaje, de root mientras esté vacío
+  ansible.builtin.file:
+    path: "{{ atk_data_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: atk_data_dir not in (ansible_facts['mounts'] | map(attribute='mount'))
+
+# nofail: si el disco falta, Ubuntu arranca igual. Sin esto quedaría en modo
+# de emergencia y, sin SSH, solo se podría arreglar por la consola serial.
+- name: Montar el disco y registrarlo en /etc/fstab
+  ansible.posix.mount:
+    path: "{{ atk_data_dir }}"
+    src: "{{ data_device }}"
+    fstype: ext4
+    opts: defaults,nofail
+    state: mounted
+
+- name: Dar la carpeta de datos (ya montada) al usuario del contenedor
+  ansible.builtin.file:
+    path: "{{ atk_data_dir }}"
+    state: directory
+    owner: "{{ atk_app_uid }}"
+    group: "{{ atk_app_gid }}"
+    mode: "0750"
