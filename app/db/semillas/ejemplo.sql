@@ -1,5 +1,6 @@
 -- =====================================================================
 --  Datos semilla de EJEMPLO (los mismos del diseño original).
+--  Solo para desarrollo y tests: NUNCA se cargan en producción.
 --  Todas las cifras (márgenes, tasas, umbrales) son de ejemplo y deben
 --  reemplazarse por las validadas con el mandante (OE1).
 --

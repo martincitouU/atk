@@ -52,7 +52,7 @@ operacion() {
 VENTA="$(operacion 1 3 VENTA USD 10000)"
 
 echo "Carga"
-if out=$( { echo "PRAGMA foreign_keys = ON;"; cat "$DIR/0001_esquema.sql" "$DIR/0002_semilla_ejemplo.sql"; } \
+if out=$( { echo "PRAGMA foreign_keys = ON;"; cat "$DIR/migraciones/0001_esquema.sql" "$DIR/semillas/ejemplo.sql"; } \
           | sqlite3 -bail "$DB" 2>&1 ); then
     bien "esquema y semilla se cargan"
 else

@@ -55,8 +55,9 @@ La app debe:
 
 - **TypeScript** en todo, **Node 24 LTS**. Monorepo con npm workspaces:
   `apps/api`, `apps/web`, `packages/shared`.
-- **API**: Fastify. **BD**: SQLite con better-sqlite3 + Drizzle ORM; las
-  migraciones las genera drizzle-kit y se suben a git.
+- **API**: Fastify. **BD**: SQLite con better-sqlite3 + Drizzle ORM.
+  Hoy existe solo `apps/api`; `apps/web` y `packages/shared` se crean
+  cuando se necesiten.
 - **Login**: Better Auth (sesiones en cookie httpOnly, roles). No escribir
   autenticación a mano.
 - **Front**: React + Vite + React Router, TanStack Query, react-hook-form.
@@ -72,9 +73,28 @@ La app debe:
 - Un solo proceso de Node (sin cluster): las escrituras van en fila.
 - Backups con `VACUUM INTO`, la API de backup o Litestream. Nunca copiar el
   archivo mientras la app escribe.
+- Toda conexión se abre con `abrirBase()` (`apps/api/src/db/conexion.ts`).
+
+### Migraciones y esquema
+- **La fuente de verdad es el SQL escrito a mano** en
+  `app/db/migraciones/NNNN_nombre.sql`. drizzle-kit no se usa: no sabe
+  expresar `STRICT`, triggers ni columnas generadas.
+- Las migraciones aplicadas **no se editan**: se escribe una nueva.
+  `migrar()` se detiene si el hash de una aplicada cambió.
+- `apps/api/src/db/esquema.ts` es el espejo en Drizzle para consultar con
+  tipos. Al cambiar una migración se actualiza; `test/esquema.test.ts` lo
+  compara con una base real.
+- `app/db/semillas/` es solo para desarrollo y tests: **nunca en producción**.
+- `app/db/probar.sh` prueba las restricciones y triggers directamente en SQL.
 
 ### Dinero en JavaScript (además de la regla 4)
 - Montos como `bigint` (opción `safeIntegers` de better-sqlite3), nunca `number`.
+- **Nunca usar `integer()` de Drizzle**: con `safeIntegers` declara `number`
+  pero entrega `bigint`. Cada columna INTEGER usa un tipo de
+  `apps/api/src/db/tipos.ts`: `dinero` (bigint), `entero` (number exacto),
+  `fecha` (Date), `booleano`.
+- Drizzle inserta NULL en columnas sin valor ni default declarado: toda
+  columna con `DEFAULT` en el SQL repite su default en `esquema.ts`.
 - En JSON los montos viajan como string (`JSON.stringify` falla con `bigint`).
 - Todo cálculo monto × tasa vive en **una sola función**, con `BigInt` y
   redondeo explícito, y tiene tests exhaustivos.
@@ -87,6 +107,10 @@ La app debe:
 - `infra/ansible/`: inventario dinámico por tags; roles `docker`,
   `data_volume` y `app`. Se ejecuta desde `infra/ansible/`.
 - `deploy/`: lo que se copia a `/srv/atk` en la VM (compose, nginx, app).
+- `app/`: la aplicación (npm workspaces). `app/db/` tiene migraciones,
+  semillas y `probar.sh`; `app/apps/api/` el backend.
+- `docs/casa_cambio_schema_postgres.sql`: diseño original del modelo, solo
+  referencia.
 - `infra/README.md`: guía paso a paso para desplegar.
 
 ## Comandos
@@ -97,6 +121,9 @@ cd infra/terraform && terraform fmt -check && terraform init -backend=false && t
 
 # Ansible (sin tocar AWS); se habilita host_list porque ansible.cfg solo habilita aws_ec2
 cd infra/ansible && ANSIBLE_INVENTORY_ENABLED=host_list ansible-playbook -i localhost, playbooks/site.yml --syntax-check
+
+# App: tests, tipos y pruebas SQL del esquema
+cd app && npm test && npm run typecheck && npm run db:probar
 
 # Prueba local del stack
 cd deploy && HTTP_PORT=8080 docker compose up -d --build --wait

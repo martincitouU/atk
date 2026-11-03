@@ -15,5 +15,12 @@ backend.hcl
 # Datos de la prueba local de deploy/ (en la VM son el volumen EBS)
 deploy/data/
 
+# App: dependencias y bases de datos. Una base puede tener datos reales:
+# nunca se sube al repo.
+node_modules/
+*.db
+*.db-wal
+*.db-shm
+
 # Sistema
 .DS_Store
