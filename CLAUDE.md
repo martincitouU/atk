@@ -48,8 +48,34 @@ La app debe:
 - Responder `GET /health` con 200 (lo usan el HEALTHCHECK y Ansible).
 - Leer la IP del cliente de `X-Real-IP` / `X-Forwarded-For` (detrás de Nginx).
 
-Stack de la app: **por definir**. Hoy `deploy/app/` es un contenedor de
-prueba en Node sin dependencias que solo verifica este contrato.
+## Stack de la app (decidido el 2026-11-02)
+
+- **TypeScript** en todo, **Node 24 LTS**. Monorepo con npm workspaces:
+  `apps/api`, `apps/web`, `packages/shared`.
+- **API**: Fastify. **BD**: SQLite con better-sqlite3 + Drizzle ORM; las
+  migraciones las genera drizzle-kit y se suben a git.
+- **Login**: Better Auth (sesiones en cookie httpOnly, roles). No escribir
+  autenticación a mano.
+- **Front**: React + Vite + React Router, TanStack Query, react-hook-form.
+- **Validación**: esquemas zod compartidos en `packages/shared`.
+- **Excel del histórico**: exceljs (no el paquete `xlsx` de npm).
+- **Tests**: Vitest.
+- Un solo contenedor sirve la API (`/api/*`) y el front compilado: mismo
+  origen, sin CORS. Hoy `deploy/app/` es todavía el contenedor de prueba.
+
+### SQLite: configuración obligatoria
+- Tablas `STRICT`, `PRAGMA foreign_keys = ON` en cada conexión,
+  `journal_mode = WAL`, `busy_timeout`, transacciones de escritura `IMMEDIATE`.
+- Un solo proceso de Node (sin cluster): las escrituras van en fila.
+- Backups con `VACUUM INTO`, la API de backup o Litestream. Nunca copiar el
+  archivo mientras la app escribe.
+
+### Dinero en JavaScript (además de la regla 4)
+- Montos como `bigint` (opción `safeIntegers` de better-sqlite3), nunca `number`.
+- En JSON los montos viajan como string (`JSON.stringify` falla con `bigint`).
+- Todo cálculo monto × tasa vive en **una sola función**, con `BigInt` y
+  redondeo explícito, y tiene tests exhaustivos.
+- La tabla de auditoría tiene triggers que abortan `UPDATE` y `DELETE`.
 
 ## Estructura
 
@@ -93,3 +119,13 @@ docker compose down && rm -rf data
 - Nginx usa `resolver 127.0.0.11` + `proxy_pass` a una variable para no
   responder 502 cuando la app se recrea con otra IP.
 - No usar `ansible.posix.synchronize`: usa rsync sobre SSH y no funciona por SSM.
+
+## Decisiones pendientes
+
+- Representación de la tasa (entero escalado o fracción) y regla de redondeo.
+- Unidad mínima de cada divisa (CLP sin decimales, USD con 2, etc.).
+- Dominio y HTTPS: requisito antes de usar datos reales.
+- Backups del EBS (DLM) y de SQLite (Litestream o VACUUM INTO a S3).
+- Obligaciones del cliente ante la UAF y la Ley 21.719: confirmar con el
+  cliente antes de diseñar las tablas.
+- Formato del histórico (Excel, CSV, papel).
