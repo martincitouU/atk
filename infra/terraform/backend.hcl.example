@@ -5,6 +5,6 @@
 # El bucket debe existir antes del init (Terraform no lo crea) y
 # conviene que tenga versionado activado, para recuperar estados anteriores.
 
-bucket = "nombre-del-bucket-de-estado"
+bucket = "atk-tfstate-udp"
 key    = "atk/dev/terraform.tfstate"
-region = "sa-east-1"
+region = "us-east-2"

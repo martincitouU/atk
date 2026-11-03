@@ -3,6 +3,6 @@
 # Las variables que no pongas aquí usan su valor por defecto (variables.tf).
 
 environment       = "dev"
-availability_zone = "sa-east-1a"
+availability_zone = "us-east-2a"
 instance_type     = "t3.micro"
 data_volume_size  = 10

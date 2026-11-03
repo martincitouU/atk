@@ -1,10 +1,10 @@
 # Conexión por SSM, sin SSH. El nombre del bucket no va aquí: se pasa con
 # -e ansible_aws_ssm_bucket_name=... desde el output de Terraform.
 ansible_connection: community.aws.aws_ssm
-ansible_aws_ssm_region: sa-east-1
+ansible_aws_ssm_region: us-east-2
 # Endpoint regional explícito: con el global, las URLs firmadas de buckets
 # fuera de us-east-1 pueden fallar con redirecciones.
-ansible_aws_ssm_bucket_endpoint_url: https://s3.sa-east-1.amazonaws.com
+ansible_aws_ssm_bucket_endpoint_url: https://s3.us-east-2.amazonaws.com
 
 # Rutas en la VM
 atk_root: /srv/atk

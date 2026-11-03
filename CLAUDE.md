@@ -32,7 +32,10 @@ Navegador → EIP → IGW → SG (solo :80) → EC2 Ubuntu 24.04
   → /data = bind mount de /srv/atk/data = volumen EBS persistente
 ```
 
-- AWS `sa-east-1`, una sola VM, creada con Terraform (`infra/terraform`).
+- AWS `us-east-2` (Ohio), una sola VM, creada con Terraform (`infra/terraform`).
+  La cuenta solo permite esa región. La región aparece en `variables.tf`,
+  `backend.hcl`, el inventario y `group_vars` de Ansible: si cambia, cambiarla
+  en todos.
 - Acceso a la VM **solo por SSM**: no hay SSH ni puerto 22. Ansible también
   entra por SSM (`community.aws.aws_ssm`), usando un bucket S3 de paso.
 - Sin dominio todavía: HTTP por IP. **Sin HTTPS**, así que no se deben usar
@@ -127,5 +130,6 @@ docker compose down && rm -rf data
 - Dominio y HTTPS: requisito antes de usar datos reales.
 - Backups del EBS (DLM) y de SQLite (Litestream o VACUUM INTO a S3).
 - Obligaciones del cliente ante la UAF y la Ley 21.719: confirmar con el
-  cliente antes de diseñar las tablas.
+  cliente antes de diseñar las tablas. Con datos reales en `us-east-2`
+  (EE.UU.) hay transferencia internacional de datos personales.
 - Formato del histórico (Excel, CSV, papel).

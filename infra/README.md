@@ -17,7 +17,7 @@ Cómo crear la VM en AWS y desplegar la app. Son tres etapas, en este orden:
 | AWS CLI v2 | Credenciales y SSM | `brew install awscli` |
 | session-manager-plugin | Conectarse a la VM por SSM | `brew install --cask session-manager-plugin` |
 | Ansible | Configurar la VM | `brew install ansible` |
-| boto3 | Lo usan el inventario y la conexión SSM | `$(brew --prefix ansible)/libexec/bin/pip install boto3` |
+| boto3 + CRT | Lo usan el inventario y la conexión SSM. El extra `crt` hace falta si inicias sesión con `aws login` | `"$(brew --prefix ansible)/libexec/bin/python" -m pip install boto3 "botocore[crt]"` |
 
 Credenciales de AWS: cada integrante usa su propio perfil (`aws configure
 --profile atk` o SSO). Antes de trabajar:
@@ -37,8 +37,8 @@ persona y comparte el nombre con el resto.
 
 ```bash
 BUCKET=atk-tfstate-<algo-único>   # los nombres de bucket son únicos en todo AWS
-aws s3api create-bucket --bucket $BUCKET --region sa-east-1 \
-  --create-bucket-configuration LocationConstraint=sa-east-1
+aws s3api create-bucket --bucket $BUCKET --region us-east-2 \
+  --create-bucket-configuration LocationConstraint=us-east-2
 aws s3api put-bucket-versioning --bucket $BUCKET \
   --versioning-configuration Status=Enabled
 aws s3api put-public-access-block --bucket $BUCKET \
@@ -46,6 +46,11 @@ aws s3api put-public-access-block --bucket $BUCKET \
 ```
 
 El versionado permite recuperar un estado anterior si uno se corrompe.
+
+También se puede crear desde la consola web (S3 → *Create bucket*): región
+`us-east-2`, tipo *General purpose*, ACLs deshabilitadas, bloqueo de acceso
+público total, **Bucket Versioning: Enable** (viene desactivado), cifrado
+SSE-S3 y Object Lock desactivado.
 
 ## 2. Terraform: crear la infraestructura
 
@@ -159,5 +164,5 @@ df -h /srv/atk/data   # debe mostrar el volumen EBS, no el disco del sistema
 ## Costos aproximados
 
 Con la VM encendida todo el mes: EC2 t3.micro, 30 GB gp3 y una IPv4 pública
-suman cerca de USD 12–15 al mes en `sa-east-1`. Detener la VM ahorra el
+suman cerca de USD 9–11 al mes en `us-east-2`. Detener la VM ahorra el
 cómputo, pero el disco y la IP siguen cobrando.

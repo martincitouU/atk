@@ -13,13 +13,13 @@ variable "environment" {
 variable "region" {
   description = "Región de AWS"
   type        = string
-  default     = "sa-east-1"
+  default     = "us-east-2"
 }
 
 variable "availability_zone" {
   description = "AZ de la subred. La VM y el volumen EBS deben quedar en la misma"
   type        = string
-  default     = "sa-east-1a"
+  default     = "us-east-2a"
 }
 
 variable "vpc_cidr" {
