@@ -58,7 +58,7 @@ describe("mocks: la semilla del comp, según el contrato", () => {
     expect(pizarra[0]).toMatchObject({ compraE6: "935000000", ventaE6: "952000000", ventaAnteriorE6: "949000000", vencida: false });
     // La regla de spread vigente, como en pizarra() del API: de ella parte «Actualizar pizarra»
     expect(pizarra[0]).toMatchObject({ referenciaE6: "943500000", tipoMargen: "MONTO_FIJO", margenCompraE6: "8500000", margenVentaE6: "8500000" });
-    expect(pizarra[1]).toMatchObject({ decimales: 0, decimalesTasa: 4, compraE6: "620000", ventaE6: "710000" });
+    expect(pizarra[1]).toMatchObject({ decimales: 2, decimalesTasa: 4, compraE6: "620000", ventaE6: "710000" });
     expect(pizarra[2]).toMatchObject({ compraE6: "1018000000", ventaE6: "1046000000" });
 
     const { desde, hasta } = rangoDelDia("2026-11-08");
@@ -181,7 +181,7 @@ describe("mocks: las reglas de los servicios", () => {
 
     const cierre = z
       .object({ turno: Turno, arqueo: z.array(FilaArqueo) })
-      .parse(await post(RUTAS.cerrarTurno(1), { conteo: { CLP: "3482150", USD: "290000", ARS: "500000", EUR: "144000" } }));
+      .parse(await post(RUTAS.cerrarTurno(1), { conteo: { CLP: "3482150", USD: "290000", ARS: "50000000", EUR: "144000" } }));
     expect(cierre.turno.estado).toBe("CERRADO");
     expect(cierre.arqueo.find((a) => a.monedaCodigo === "EUR")).toMatchObject({ saldoSistema: "145000", diferencia: "-1000" });
     expect(z.array(FilaArqueo).parse(await get(RUTAS.arqueo(1)))).toHaveLength(4);

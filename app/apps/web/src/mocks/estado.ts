@@ -1065,7 +1065,7 @@ export function crearEstado(ahora: () => Date = () => new Date()): Estado {
     monedaBase: { codigo: "CLP", nombre: "Peso chileno", simbolo: "$", decimales: 0 },
     divisas: [
       { codigo: "USD", nombre: "Dólar", simbolo: "US$", decimales: 2, decimalesTasa: 2, montoMinimo: 100n },
-      { codigo: "ARS", nombre: "Peso argentino", simbolo: "AR$", decimales: 0, decimalesTasa: 4, montoMinimo: 1000n },
+      { codigo: "ARS", nombre: "Peso argentino", simbolo: "AR$", decimales: 2, decimalesTasa: 4, montoMinimo: 100000n },
       { codigo: "EUR", nombre: "Euro", simbolo: "€", decimales: 2, decimalesTasa: 2, montoMinimo: 500n },
     ],
     cajas: [{ id: 1, nombre: "Caja 1" }],
@@ -1114,7 +1114,7 @@ function sembrar(e: Estado): void {
     hace(102, () => {
       abrirTurno(e, 1);
       // El fondo inicial, para que la caja en pesos termine en $3.482.150 como en el comp
-      for (const [monedaCodigo, monto] of [["CLP", "4378240"], ["USD", "200000"], ["ARS", "350000"], ["EUR", "150000"]] as const) {
+      for (const [monedaCodigo, monto] of [["CLP", "4378240"], ["USD", "200000"], ["ARS", "35000000"], ["EUR", "150000"]] as const) {
         moverDinero(e, { tipo: "INGRESO", monedaCodigo, monto, motivo: "Fondo inicial" });
       }
     });
@@ -1134,7 +1134,7 @@ function sembrar(e: Estado): void {
     });
     hace(43, () => reversar(e, reversada.id, "Monto mal digitado"));
     hace(29, () => operar({ tipo: "COMPRA", monedaCodigo: "USD", montoDivisa: "120000", tipoDte: 41, folioDte: 18231 }));
-    hace(13, () => operar({ tipo: "COMPRA", monedaCodigo: "ARS", montoDivisa: "150000", tipoDte: 41, folioDte: 18232 }));
+    hace(13, () => operar({ tipo: "COMPRA", monedaCodigo: "ARS", montoDivisa: "15000000", tipoDte: 41, folioDte: 18232 }));
     hace(2, () => {
       publicar("USD", 943_500_000n, 8_500_000n); // 935,00 / 952,00: cambió hace 2 min, antes 949,00
       operar({ tipo: "VENTA", monedaCodigo: "USD", montoDivisa: "30000", tipoDte: 41, folioDte: 18233 });
