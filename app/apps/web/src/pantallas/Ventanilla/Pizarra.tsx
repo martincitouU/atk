@@ -4,6 +4,7 @@ import { XIcon } from "@phosphor-icons/react";
 import { Fragment, useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { ErrorNegocio } from "../../api/cliente.ts";
 import { usePizarra, usePublicarCotizacion, useSesion } from "../../api/consultas.ts";
+import { puede } from "../../api/permisos.ts";
 import { Aviso } from "../../componentes/Aviso.tsx";
 import { Sep } from "../../componentes/Sep.tsx";
 import { DATOS_DE_EJEMPLO, hora, tasa, useAhora } from "./comun.ts";
@@ -92,7 +93,7 @@ export function Pizarra() {
               </>
             )}
           </p>
-          {sesion?.usuario.rol === "ADMIN" && filas.length > 0 && (
+          {puede(sesion?.usuario.rol, "publicarPizarra") && filas.length > 0 && (
             <button type="button" className="btn-letrero" onClick={() => setActualizando(true)}>
               Actualizar pizarra
             </button>

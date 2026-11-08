@@ -2,7 +2,7 @@ import { Suspense, useEffect } from "react";
 import { Outlet, useNavigate } from "react-router";
 import { useSesion } from "../api/consultas.ts";
 import { EsqueletoPantalla } from "./Esqueleto.tsx";
-import { Riel, SECCIONES } from "./Riel.tsx";
+import { Riel, seccionesDe } from "./Riel.tsx";
 
 /** El riel y el área de trabajo. F1–F4 cambian de sección desde cualquier parte. */
 export function Marco() {
@@ -12,14 +12,14 @@ export function Marco() {
   useEffect(() => {
     function alPulsar(e: KeyboardEvent) {
       if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
-      const seccion = SECCIONES.find((s) => s.tecla === e.key);
+      const seccion = seccionesDe(sesion).find((s) => s.tecla === e.key);
       if (!seccion) return;
       e.preventDefault();
       void navegar(seccion.ruta);
     }
     window.addEventListener("keydown", alPulsar);
     return () => window.removeEventListener("keydown", alPulsar);
-  }, [navegar]);
+  }, [navegar, sesion]);
 
   return (
     <div className="marco">

@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { lazy, Suspense, useState } from "react";
 import { createBrowserRouter, Navigate, RouterProvider, type RouteObject } from "react-router";
 import { ErrorNegocio } from "./api/cliente.ts";
+import { ConPermiso } from "./componentes/ConPermiso.tsx";
 import { ConSesion } from "./componentes/ConSesion.tsx";
 import { EsqueletoEntrar } from "./componentes/Esqueleto.tsx";
 import { Marco } from "./componentes/Marco.tsx";
@@ -39,7 +40,14 @@ export const rutas: RouteObject[] = [
       { index: true, element: <Navigate to="/ventanilla" replace /> },
       { path: "ventanilla", element: <Ventanilla /> },
       { path: "cierre", element: <Cierre /> },
-      { path: "jornada", element: <Jornada /> },
+      {
+        path: "jornada",
+        element: (
+          <ConPermiso accion="verJornada">
+            <Jornada />
+          </ConPermiso>
+        ),
+      },
       { path: "clientes", element: <Clientes /> },
       { path: "configuracion", element: <Configuracion /> },
       { path: "*", element: <Navigate to="/ventanilla" replace /> },

@@ -1,4 +1,5 @@
 import type { Sesion } from "../api/esquemas.ts";
+import { puede, type Accion } from "../api/permisos.ts";
 import { SignOutIcon } from "@phosphor-icons/react";
 import { NavLink, useNavigate } from "react-router";
 import { useSalir } from "../api/consultas.ts";
@@ -13,12 +14,14 @@ export type Seccion = {
   /** El color de función de la sección (un token). */
   color: string;
   tecla?: string;
+  /** Si la sección es solo de algunos roles (la API respondería 403). */
+  permiso?: Accion;
 };
 
 export const SECCIONES: readonly Seccion[] = [
   { ruta: "/ventanilla", nombre: "Ventanilla", corto: "Ventanilla", color: "var(--vial)", tecla: "F1" },
   { ruta: "/cierre", nombre: "Cierre del día", corto: "Cierre", color: "var(--amarillo)", tecla: "F2" },
-  { ruta: "/jornada", nombre: "Jornada", corto: "Jornada", color: "var(--turismo)", tecla: "F3" },
+  { ruta: "/jornada", nombre: "Jornada", corto: "Jornada", color: "var(--turismo)", tecla: "F3", permiso: "verJornada" },
   { ruta: "/clientes", nombre: "Clientes", corto: "Clientes", color: "var(--servicios)", tecla: "F4" },
   { ruta: "/configuracion", nombre: "Configuración", corto: "Config.", color: "var(--neutro)" },
 ];
@@ -81,6 +84,14 @@ function Salir() {
   );
 }
 
+/**
+ * Las secciones que ve quien entró. Mientras la sesión no llega se muestran
+ * todas (el riel no salta para el admin); después, las de su rol.
+ */
+export function seccionesDe(sesion: Sesion | undefined): readonly Seccion[] {
+  return SECCIONES.filter((s) => !s.permiso || !sesion || puede(sesion.usuario.rol, s.permiso));
+}
+
 export function Riel({ sesion }: { sesion?: Sesion | undefined }) {
   return (
     <header className="riel">
@@ -94,7 +105,7 @@ export function Riel({ sesion }: { sesion?: Sesion | undefined }) {
       </div>
       <nav aria-label="Secciones">
         <ul>
-          {SECCIONES.map((s) => (
+          {seccionesDe(sesion).map((s) => (
             <li key={s.ruta}>
               <NavLink to={s.ruta}>
                 <span className="riel-cuadro" aria-hidden="true" style={{ background: s.color }} />

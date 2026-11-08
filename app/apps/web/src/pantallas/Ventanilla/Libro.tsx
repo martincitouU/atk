@@ -2,7 +2,8 @@ import { aBigint, type FilaPizarra, type Operacion } from "../../api/esquemas.ts
 import { formatearMonto } from "@atk/shared/dinero";
 import { Fragment, useEffect, useId, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent as TeclaReact } from "react";
 import { ErrorNegocio } from "../../api/cliente.ts";
-import { useCatalogo, useLibroDelDia, useParametros, usePizarra, useResumen, useReversar } from "../../api/consultas.ts";
+import { useCatalogo, useLibroDelDia, useParametros, usePizarra, useReversar, useSaldos, useSesion } from "../../api/consultas.ts";
+import { usePuede } from "../../api/permisos.ts";
 import { Aviso } from "../../componentes/Aviso.tsx";
 import { Divisa } from "../../componentes/Divisa.tsx";
 import { Kbd } from "../../componentes/Kbd.tsx";
@@ -34,7 +35,10 @@ function totales(ops: Operacion[]) {
 export function Libro({ onRetomar }: { onRetomar: (op: Operacion) => void }) {
   const libro = useLibroDelDia();
   const pizarra = usePizarra();
-  const resumen = useResumen();
+  const { data: sesion } = useSesion();
+  const puedeReversar = usePuede()("reversar");
+  // La caja en pesos es la de la caja del turno (todos los roles), no la suma de la casa
+  const saldos = useSaldos(sesion?.turno?.cajaId);
   const { data: catalogo } = useCatalogo();
   const { data: parametros } = useParametros();
   const zona = parametros?.zonaHoraria;
@@ -53,7 +57,7 @@ export function Libro({ onRetomar }: { onRetomar: (op: Operacion) => void }) {
   const enReverso = ops.find((o) => o.id === reverso && o.estado === "CONFIRMADA") ?? null;
   const borradores = ops.filter((o) => o.estado === "BORRADOR").length;
   const { compras, ventas, margen } = totales(ops);
-  const cajaPesos = resumen.data?.saldos.find((s) => s.monedaCodigo === base.codigo);
+  const cajaPesos = saldos.data?.find((s) => s.monedaCodigo === base.codigo);
 
   function elegir(id: number) {
     setSeleccion(id);
@@ -63,6 +67,10 @@ export function Libro({ onRetomar }: { onRetomar: (op: Operacion) => void }) {
 
   /** R: abre el reverso de la fila elegida, si es una confirmada. */
   function pedirReverso() {
+    if (!puedeReversar) {
+      setNota("Reversar una operación es del supervisor o del administrador.");
+      return;
+    }
     if (!elegida) {
       setNota("Elija una operación del libro (clic o ↑/↓) y pulse R.");
       return;
@@ -134,10 +142,14 @@ export function Libro({ onRetomar }: { onRetomar: (op: Operacion) => void }) {
                   {plural(borradores, "borrador", "borradores")}
                 </>
               )}
-              <Sep />
+              {puedeReversar && <Sep />}
             </>
           )}
-          <Kbd>R</Kbd> reversar la seleccionada
+          {puedeReversar && (
+            <>
+              <Kbd>R</Kbd> reversar la seleccionada
+            </>
+          )}
         </span>
       </header>
 

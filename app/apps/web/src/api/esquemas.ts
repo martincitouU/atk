@@ -120,6 +120,8 @@ export const Vista = z.object({
 
 export const Turno = z.object({ id, cajaId: id, estado: z.enum(["ABIERTO", "CERRADO"]), abiertoEn: fecha, cerradoEn: nulo(fecha) });
 export const SaldoMoneda = z.object({ monedaCodigo: z.string(), decimales: z.number().int(), saldo: dinero });
+/** GET /api/saldos?cajaId=: el saldo de cada moneda con movimientos en esa caja. */
+export const SaldoCaja = SaldoMoneda.extend({ cajaId: id });
 export const FilaArqueo = z.object({
   monedaCodigo: z.string(),
   decimales: z.number().int(),
@@ -296,6 +298,7 @@ export const RUTAS = {
   turnos: "/api/turnos",
   cerrarTurno: (id: number) => `/api/turnos/${id}/cerrar`,
   arqueo: (id: number) => `/api/turnos/${id}/arqueo`,
+  saldos: "/api/saldos",
   movimientos: "/api/caja/movimientos",
   gastos: "/api/gastos",
   reversarGasto: (id: number) => `/api/gastos/${id}/reversar`,
@@ -315,6 +318,7 @@ export type Operacion = z.infer<typeof Operacion>;
 export type Vista = z.infer<typeof Vista>;
 export type Turno = z.infer<typeof Turno>;
 export type SaldoMoneda = z.infer<typeof SaldoMoneda>;
+export type SaldoCaja = z.infer<typeof SaldoCaja>;
 export type FilaArqueo = z.infer<typeof FilaArqueo>;
 export type Cierre = z.infer<typeof Cierre>;
 export type Movimiento = z.infer<typeof Movimiento>;

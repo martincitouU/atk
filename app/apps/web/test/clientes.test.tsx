@@ -90,7 +90,8 @@ describe("Clientes", () => {
     // La ficha creada queda abierta y en la URL
     const ana = estadoPrueba.clientes.find((c) => c.nombre === "Ana Ruiz Toledo");
     expect(router.state.location.search).toBe(`?id=${ana?.id}`);
-    expect(screen.getByRole("region", { name: "Ana Ruiz Toledo" })).toBeInTheDocument();
+    expect(await screen.findByRole("region", { name: "Ana Ruiz Toledo" })).toBeInTheDocument();
+    expect(await within(tabla()).findByText("Completa")).toBeInTheDocument();
     expect(within(filaDe("Ana Ruiz Toledo")).getByText("Completa")).toBeInTheDocument();
     expect(estadoPrueba.clientes.find((c) => c.nombre === "Ana Ruiz Toledo")).toMatchObject({
       numeroDocumento: "12345678-5",

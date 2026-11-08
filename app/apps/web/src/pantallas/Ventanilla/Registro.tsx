@@ -1,7 +1,7 @@
 import { aBigint, Operacion, type Cliente, type EntradaOperacion, type Vista } from "../../api/esquemas.ts";
 import { formatearMonto, potencia10 } from "@atk/shared/dinero";
 import { CheckCircleIcon, WarningIcon } from "@phosphor-icons/react";
-import { useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type FormEvent, type Ref } from "react";
+import { useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type Ref } from "react";
 import { Link } from "react-router";
 import { z } from "zod";
 import { ErrorNegocio } from "../../api/cliente.ts";
@@ -20,6 +20,9 @@ import { Aviso } from "../../componentes/Aviso.tsx";
 import { Kbd } from "../../componentes/Kbd.tsx";
 import { Sep, separar } from "../../componentes/Sep.tsx";
 import { borradorVacio, limpiarMonto, montoMinimo, teclear, verMonto, type Borrador, type MedioPago } from "../../teclado/registro.ts";
+
+/** El largo de una cifra de la placa: el CSS la achica para que quepa en una línea (ventanilla.css, .placa b). */
+const cifras = (texto: string) => ({ "--cifras": texto.length }) as CSSProperties;
 import { esActivable, esCampoDeTexto, hora, montoDivisa, montoEn, pesos, tasa, TIPO } from "./comun.ts";
 
 /** Lo que la Ventanilla le pide al registro desde el libro. */
@@ -536,15 +539,15 @@ export function Registro({ ref }: { ref?: Ref<RegistroApi> }) {
         <div className={`placa${desfasada ? " desfasada" : ""}`} role="group" aria-label="Vista previa" aria-live="polite" aria-busy={desfasada}>
           <div>
             <span>Tasa</span>
-            <b className="num">{tasaPlaca}</b>
+            <b className="num" style={cifras(tasaPlaca)}>{tasaPlaca}</b>
           </div>
           <div className="total">
             <span>{borrador.tipo === "VENTA" ? "Cliente paga" : "Cliente recibe"}</span>
-            <b className={`num${totalPlaca.length > 10 ? " largo" : ""}`}>{totalPlaca}</b>
+            <b className="num" style={cifras(totalPlaca)}>{totalPlaca}</b>
           </div>
           <div>
             <span>Margen</span>
-            <b className={`num${margenPlaca.length > 9 ? " largo" : ""}`}>{margenPlaca}</b>
+            <b className="num" style={cifras(margenPlaca)}>{margenPlaca}</b>
           </div>
         </div>
 

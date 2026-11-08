@@ -18,6 +18,7 @@ import {
   Operacion,
   Resumen,
   RUTAS,
+  SaldoCaja,
   Turno,
   Vista,
   Yo,
@@ -138,6 +139,16 @@ export const useCliente = (id: number | null | undefined) =>
     queryFn: id == null ? skipToken : ({ signal }) => pedir(RUTAS.cliente(id), Cliente, { signal }),
   });
 
+/**
+ * El saldo de cada moneda en una caja (GET /api/saldos, todos los roles): lo
+ * teórico del Cierre y la «Caja en pesos». Sin caja (sin turno), no consulta.
+ */
+export const useSaldos = (cajaId: number | null | undefined) =>
+  useQuery({
+    queryKey: ["saldos", cajaId],
+    queryFn: cajaId == null ? skipToken : ({ signal }) => pedir(conConsulta(RUTAS.saldos, { cajaId: String(cajaId) }), z.array(SaldoCaja), { signal }),
+  });
+
 /** El arqueo de un turno cerrado (vacío mientras está abierto). Sin turno, no consulta. */
 export const useArqueo = (turnoId: number | null | undefined) =>
   useQuery({
@@ -186,7 +197,7 @@ export function useCrearOperacion() {
   const invalidar = useInvalidar();
   return useMutation({
     mutationFn: (entrada: EntradaOperacion) => enviar(RUTAS.operaciones, Operacion, entrada),
-    onSuccess: () => invalidar(["libro"], ["resumen"]),
+    onSuccess: () => invalidar(["libro"], ["resumen"], ["saldos"]),
   });
 }
 
@@ -194,7 +205,7 @@ export function useConfirmar() {
   const invalidar = useInvalidar();
   return useMutation({
     mutationFn: (id: number) => enviar(RUTAS.confirmar(id), Operacion),
-    onSuccess: () => invalidar(["libro"], ["resumen"]),
+    onSuccess: () => invalidar(["libro"], ["resumen"], ["saldos"]),
   });
 }
 
@@ -202,7 +213,7 @@ export function useReversar() {
   const invalidar = useInvalidar();
   return useMutation({
     mutationFn: ({ id, motivo }: { id: number; motivo: string }) => enviar(RUTAS.reversar(id), Operacion, { motivo }),
-    onSuccess: () => invalidar(["libro"], ["resumen"]),
+    onSuccess: () => invalidar(["libro"], ["resumen"], ["saldos"]),
   });
 }
 
@@ -211,7 +222,7 @@ export function useEditarBorrador() {
   const invalidar = useInvalidar();
   return useMutation({
     mutationFn: ({ id, cambios }: { id: number; cambios: CambiosOperacion }) => enviar(RUTAS.operacion(id), Operacion, cambios, "PATCH"),
-    onSuccess: () => invalidar(["libro"], ["resumen"]),
+    onSuccess: () => invalidar(["libro"], ["resumen"], ["saldos"]),
   });
 }
 
@@ -219,7 +230,7 @@ export function useEliminarBorrador() {
   const invalidar = useInvalidar();
   return useMutation({
     mutationFn: (id: number) => enviar(RUTAS.operacion(id), z.null(), {}, "DELETE"),
-    onSuccess: () => invalidar(["libro"], ["resumen"]),
+    onSuccess: () => invalidar(["libro"], ["resumen"], ["saldos"]),
   });
 }
 
@@ -236,7 +247,7 @@ export function useAbrirTurno() {
   const invalidar = useInvalidar();
   return useMutation({
     mutationFn: (cajaId: number) => enviar(RUTAS.turnos, Turno, { cajaId }),
-    onSuccess: () => invalidar(["sesion"], ["resumen"]),
+    onSuccess: () => invalidar(["sesion"], ["resumen"], ["saldos"]),
   });
 }
 
@@ -246,7 +257,7 @@ export function useCerrarTurno() {
   return useMutation({
     mutationFn: ({ turnoId, conteo }: { turnoId: number; conteo: Record<string, string> }) =>
       enviar(RUTAS.cerrarTurno(turnoId), Cierre, { conteo }),
-    onSuccess: () => invalidar(["sesion"], ["resumen"], ["libro"], ["arqueo"]),
+    onSuccess: () => invalidar(["sesion"], ["resumen"], ["saldos"], ["libro"], ["arqueo"]),
   });
 }
 
@@ -255,7 +266,7 @@ export function useMovimientoCaja() {
   const invalidar = useInvalidar();
   return useMutation({
     mutationFn: (entrada: EntradaMovimiento) => enviar(RUTAS.movimientos, Movimiento, entrada),
-    onSuccess: () => invalidar(["resumen"]),
+    onSuccess: () => invalidar(["resumen"], ["saldos"]),
   });
 }
 
@@ -263,7 +274,7 @@ export function useRegistrarGasto() {
   const invalidar = useInvalidar();
   return useMutation({
     mutationFn: (entrada: EntradaGasto) => enviar(RUTAS.gastos, Gasto, entrada),
-    onSuccess: () => invalidar(["gastos"], ["resumen"]),
+    onSuccess: () => invalidar(["gastos"], ["resumen"], ["saldos"]),
   });
 }
 
@@ -272,7 +283,7 @@ export function useReversarGasto() {
   const invalidar = useInvalidar();
   return useMutation({
     mutationFn: ({ id, motivo }: { id: number; motivo: string }) => enviar(RUTAS.reversarGasto(id), Gasto, { motivo }),
-    onSuccess: () => invalidar(["gastos"], ["resumen"]),
+    onSuccess: () => invalidar(["gastos"], ["resumen"], ["saldos"]),
   });
 }
 

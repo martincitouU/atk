@@ -114,6 +114,10 @@ export function handlers(e: m.Estado): HttpHandler[] {
     http.post(en(RUTAS.turnos), manejar(async ({ request }) => m.abrirTurno(e, (await cuerpo(request, entradaAbrirTurno)).cajaId), 201)),
     http.post(conId(RUTAS.cerrarTurno), manejar(async ({ request, params }) => m.cerrarTurno(e, id(params), (await cuerpo(request, entradaCerrarTurno)).conteo))),
     http.get(conId(RUTAS.arqueo), manejar(({ params }) => m.arqueoDeTurno(e, id(params)))),
+    http.get(en(RUTAS.saldos), manejar(({ url }) => {
+      const caja = consulta(url, "cajaId");
+      return m.saldos(e, caja === undefined ? undefined : Number(caja));
+    })),
     http.post(en(RUTAS.movimientos), manejar(async ({ request }) => m.moverDinero(e, await cuerpo(request, entradaIngresoRetiro)), 201)),
 
     // Gastos

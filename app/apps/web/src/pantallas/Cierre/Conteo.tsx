@@ -5,7 +5,7 @@ import { useEffect, useId, useState, type KeyboardEvent as TeclaReact } from "re
 import { Link } from "react-router";
 import { z } from "zod";
 import { ErrorNegocio } from "../../api/cliente.ts";
-import { useCatalogo, useCerrarTurno, useEliminarBorrador, useLibroDelDia, useResumen } from "../../api/consultas.ts";
+import { useCatalogo, useCerrarTurno, useEliminarBorrador, useLibroDelDia, useSaldos } from "../../api/consultas.ts";
 import type { Cierre as RespuestaCierre } from "../../api/esquemas.ts";
 import { Aviso } from "../../componentes/Aviso.tsx";
 import { Divisa } from "../../componentes/Divisa.tsx";
@@ -67,7 +67,7 @@ function useConteos(turnoId: number) {
  */
 export function ConteoTurno({ turno, zona, onCerrado }: { turno: Turno; zona: string; onCerrado: (cierre: RespuestaCierre) => void }) {
   const { data: catalogo } = useCatalogo();
-  const resumen = useResumen();
+  const saldos = useSaldos(turno.cajaId);
   const libro = useLibroDelDia();
   const cerrar = useCerrarTurno();
   const [conteos, setConteos] = useConteos(turno.id);
@@ -90,7 +90,7 @@ export function ConteoTurno({ turno, zona, onCerrado }: { turno: Turno; zona: st
 
   const monedas: MonedaCatalogo[] = [...catalogo.divisas, catalogo.monedaBase];
   const denominaciones = (codigo: string) => (catalogo.denominaciones[codigo] ?? []).map(aBigint);
-  const teoricos = new Map((resumen.data?.saldos ?? []).map((s) => [s.monedaCodigo, aBigint(s.saldo)]));
+  const teoricos = new Map((saldos.data ?? []).map((s) => [s.monedaCodigo, aBigint(s.saldo)]));
   const lecturas = monedas.map((m) => ({
     moneda: m,
     lectura: leerConteo(conteos[m.codigo] ?? conteoVacio(), denominaciones(m.codigo), m.decimales),
@@ -100,7 +100,7 @@ export function ConteoTurno({ turno, zona, onCerrado }: { turno: Turno; zona: st
   const borradores = (libro.data ?? []).filter((o) => o.estado === "BORRADOR");
   const listo = sinContar.length === 0 && invalidas.length === 0 && borradores.length === 0;
 
-  const descuadres = resumen.data
+  const descuadres = saldos.data
     ? lecturas.filter((l) => l.lectura.estado === "contado" && l.lectura.monto !== (teoricos.get(l.moneda.codigo) ?? 0n)).length
     : null;
 
@@ -161,10 +161,10 @@ export function ConteoTurno({ turno, zona, onCerrado }: { turno: Turno; zona: st
             </span>
           </span>
         </div>
-        {resumen.isError && (
+        {saldos.isError && (
           <Aviso tono="advertencia" rol="status">
             <p>
-              Sin el saldo del sistema: {resumen.error instanceof ErrorNegocio ? resumen.error.message : "no se pudo leer."} La diferencia
+              Sin el saldo del sistema: {saldos.error instanceof ErrorNegocio ? saldos.error.message : "no se pudo leer."} La diferencia
               se calcula al cerrar.
             </p>
           </Aviso>
@@ -177,7 +177,7 @@ export function ConteoTurno({ turno, zona, onCerrado }: { turno: Turno; zona: st
               denominaciones={denominaciones(moneda.codigo)}
               conteo={conteos[moneda.codigo] ?? conteoVacio()}
               lectura={lectura}
-              teorico={resumen.isSuccess ? (teoricos.get(moneda.codigo) ?? 0n) : null}
+              teorico={saldos.isSuccess ? (teoricos.get(moneda.codigo) ?? 0n) : null}
               onCambiar={(c) => cambiar(moneda.codigo, c)}
             />
           ))}
@@ -222,7 +222,7 @@ function BloqueConteo({
   denominaciones: bigint[];
   conteo: Conteo;
   lectura: Lectura;
-  /** El saldo del sistema (resumen.saldos); null mientras no se sabe. */
+  /** El saldo del sistema en la caja del turno (/api/saldos); null mientras no se sabe. */
   teorico: bigint | null;
   onCambiar: (c: Conteo) => void;
 }) {

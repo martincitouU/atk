@@ -3,6 +3,7 @@ import { CheckCircleIcon } from "@phosphor-icons/react";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { ErrorNegocio } from "../../api/cliente.ts";
 import { useCatalogo, useCategoriasGasto, useGastos, useMovimientoCaja, useRegistrarGasto, useReversarGasto } from "../../api/consultas.ts";
+import { usePuede } from "../../api/permisos.ts";
 import { Aviso } from "../../componentes/Aviso.tsx";
 import { Kbd } from "../../componentes/Kbd.tsx";
 import { Sep, separar } from "../../componentes/Sep.tsx";
@@ -43,6 +44,8 @@ function Formulario() {
   const { data: catalogo } = useCatalogo();
   const categorias = useCategoriasGasto();
   const registrar = useRegistrarGasto();
+  // Un gasto por transferencia o tarjeta lo registra solo el admin (gastos.ts)
+  const medios = usePuede()("gastoSinEfectivo") ? MEDIOS : MEDIOS.filter(([valor]) => valor === "EFECTIVO");
   const mover = useMovimientoCaja();
   const [tipo, setTipo] = useState<Tipo>("GASTO");
   const [categoriaId, setCategoriaId] = useState("");
@@ -144,7 +147,7 @@ function Formulario() {
               <label>
                 Medio de pago
                 <select value={medio} onChange={(e) => setMedio(e.target.value as Medio)}>
-                  {MEDIOS.map(([valor, texto]) => (
+                  {medios.map(([valor, texto]) => (
                     <option key={valor} value={valor}>
                       {texto}
                     </option>
@@ -237,6 +240,7 @@ function Formulario() {
 
 /** Los gastos del día, con «Reversar gasto» (con motivo) en los vigentes. */
 function GastosDelDia({ hoy }: { hoy: string }) {
+  const puedeReversar = usePuede()("reversar");
   const gastos = useGastos(hoy);
   const categorias = useCategoriasGasto();
   const [reverso, setReverso] = useState<number | null>(null);
@@ -311,18 +315,20 @@ function GastosDelDia({ hoy }: { hoy: string }) {
                     {g.motivoReverso && <span className="motivo">{g.motivoReverso}</span>}
                   </>
                 ) : (
-                  <button
-                    type="button"
-                    className="enlace"
-                    aria-label={`Reversar el gasto «${g.descripcion}»`}
-                    onClick={(e) => {
-                      volverA.current = e.currentTarget;
-                      setNota("");
-                      setReverso(g.id);
-                    }}
-                  >
-                    Reversar gasto
-                  </button>
+                  puedeReversar && (
+                    <button
+                      type="button"
+                      className="enlace"
+                      aria-label={`Reversar el gasto «${g.descripcion}»`}
+                      onClick={(e) => {
+                        volverA.current = e.currentTarget;
+                        setNota("");
+                        setReverso(g.id);
+                      }}
+                    >
+                      Reversar gasto
+                    </button>
+                  )
                 )}
               </span>
             </li>

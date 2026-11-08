@@ -215,6 +215,13 @@
   overflow-y: auto;
 }
 
+/* Con la ficha UAF el formulario no cabe y se desplaza: nada se encoge. Sin
+   esto, Compra/Venta (overflow: hidden) quedaba en 4 px justo en las
+   operaciones grandes. */
+.registro form > * {
+  flex-shrink: 0;
+}
+
 fieldset.campo-divisa {
   min-width: 0;
   padding: 0;
@@ -324,6 +331,14 @@ input.monto[aria-invalid="true"] {
   color: var(--placa-tinta);
 }
 
+/* Cada cifra mide su columna: el monto se achica para caber en una línea y
+   nunca se parte («$5.712.000», no «$5.712.00 / 0»). --cifras lo pone el
+   componente; Overpass Mono avanza 0,616 em por carácter (se usa 0,64). */
+.placa > div {
+  min-width: 0;
+  container-type: inline-size;
+}
+
 .placa span {
   color: var(--placa-suave);
   font-size: 10px;
@@ -334,21 +349,14 @@ input.monto[aria-invalid="true"] {
 
 .placa b {
   display: block;
-  overflow-wrap: anywhere;
-  font: 700 19px var(--familia-num);
+  overflow: hidden;
+  white-space: nowrap;
+  font: 700 min(19px, calc(100cqi / (var(--cifras, 6) * 0.64))) var(--familia-num);
   font-variant-numeric: tabular-nums;
 }
 
 .placa .total b {
-  font-size: 24px;
-}
-
-.placa b.largo {
-  font-size: 17px;
-}
-
-.placa .total b.largo {
-  font-size: 20px;
+  font-size: min(24px, calc(100cqi / (var(--cifras, 6) * 0.64)));
 }
 
 .placa b {
@@ -504,6 +512,41 @@ input.monto[aria-invalid="true"] {
 
 .libro .solo-movil {
   display: none;
+}
+
+/* El libro angosto (a 1280 o 1366 px de ventana el panel no alcanza a las
+   ocho columnas): la hora y el tipo bajan bajo la divisa, como en el
+   teléfono, y el Estado queda siempre a la vista. */
+.libro {
+  container: libro / inline-size;
+}
+
+@container libro (max-width: 729.98px) {
+  .libro .col-hora,
+  .libro .col-tipo {
+    display: none;
+  }
+
+  .libro .solo-movil {
+    display: block;
+    margin-top: 2px;
+    color: var(--suave);
+    font-size: 11px;
+    font-weight: 600;
+  }
+}
+
+/* Más angosto todavía (1280 px de ventana): la tasa se deja, como en el
+   teléfono; está en la pizarra y en la placa. */
+@container libro (max-width: 619.98px) {
+  .libro .col-tasa {
+    display: none;
+  }
+
+  .libro th,
+  .libro td {
+    padding-inline: 9px;
+  }
 }
 
 /* La línea del motivo bajo una fila reversada: solo en el teléfono */

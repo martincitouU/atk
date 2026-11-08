@@ -980,6 +980,20 @@ export function resumen(e: Estado, fecha?: string): ResumenApi {
   };
 }
 
+/** GET /api/saldos?cajaId=: el mock tiene una sola caja, así que es el saldo de la casa. */
+export function saldos(e: Estado, cajaId?: number) {
+  usuarioActual(e);
+  const caja = e.cajas[0];
+  if (!caja || (cajaId !== undefined && cajaId !== caja.id)) return [];
+  return [...e.saldos.keys()].sort().map((codigo) => ({
+    cajaId: caja.id,
+    cajaNombre: caja.nombre,
+    monedaCodigo: codigo,
+    decimales: infoMoneda(e, codigo).decimales,
+    saldo: texto(e.saldos.get(codigo) ?? 0n),
+  }));
+}
+
 // ---------------------------------------------------------------------------
 // Catálogo, parámetros y sesión
 
