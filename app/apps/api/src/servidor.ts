@@ -5,18 +5,26 @@
 // reglas de negocio viven en servicios/, nunca aquí.
 
 import Fastify from "fastify";
+import type { Auth } from "./auth/auth.ts";
 import type { Conexion } from "./db/conexion.ts";
 import { casa } from "./db/esquema.ts";
 import { exigirActor, type ObtenerActor } from "./http/actor.ts";
 import { registrarErrores } from "./http/errores.ts";
 import { aJson } from "./http/json.ts";
+import { exigirMismoOrigen } from "./http/origen.ts";
+import { rutasAuth } from "./rutas/auth.ts";
 import { rutasCotizaciones } from "./rutas/cotizaciones.ts";
 import { rutasOperaciones } from "./rutas/operaciones.ts";
+import { rutasYo } from "./rutas/yo.ts";
 import { crearContexto } from "./servicios/contexto.ts";
 
 export type OpcionesServidor = {
   /** Quién hace cada petición; null → 401. Ver http/actor.ts. */
   obtenerActor: ObtenerActor;
+  /** Dirección pública de la app: solo se aceptan escrituras con ese Origin. null → ninguna. */
+  urlPublica: string | null;
+  /** Login. Sin él, /api/auth responde 503 y nadie obtiene sesión. */
+  auth?: Auth | null;
   /** Reloj inyectable para los tests */
   ahora?: () => Date;
 };
@@ -41,9 +49,25 @@ export function construirServidor({ sqlite, db }: Conexion, opciones: OpcionesSe
   const ctx = crearContexto(db, opciones.ahora);
   app.register(
     async (api) => {
-      exigirActor(api, opciones.obtenerActor);
-      rutasCotizaciones(api, ctx);
-      rutasOperaciones(api, ctx);
+      exigirMismoOrigen(api, opciones.urlPublica);
+
+      // Login: lo único de /api que no exige sesión
+      const { auth, urlPublica } = opciones;
+      if (auth && urlPublica) {
+        rutasAuth(api, auth, urlPublica);
+      } else {
+        api.all("/auth/*", (_request, reply) =>
+          reply.code(503).send({ error: { codigo: "LOGIN_NO_CONFIGURADO", mensaje: "El inicio de sesión no está disponible" } }),
+        );
+      }
+
+      // Todo lo demás exige un usuario del personal con sesión
+      api.register(async (privada) => {
+        exigirActor(privada, opciones.obtenerActor);
+        rutasYo(privada, ctx);
+        rutasCotizaciones(privada, ctx);
+        rutasOperaciones(privada, ctx);
+      });
     },
     { prefix: "/api" },
   );

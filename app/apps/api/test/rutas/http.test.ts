@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { apiDePrueba } from "./api.ts";
+import { apiDePrueba, ORIGEN } from "./api.ts";
 
 describe("Contrato HTTP de la API", () => {
   it("sin sesión, toda ruta de /api responde 401", async () => {
@@ -40,7 +40,7 @@ describe("Contrato HTTP de la API", () => {
     const respuesta = await app.inject({
       method: "POST",
       url: "/api/operaciones",
-      headers: { "x-actor-prueba": "CAJERO", "content-type": "application/json" },
+      headers: { "x-actor-prueba": "CAJERO", "content-type": "application/json", origin: ORIGEN },
       payload: "{ esto no es json",
     });
 

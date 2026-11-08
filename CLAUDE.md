@@ -219,6 +219,15 @@ infra/ansible/run.sh ansible-playbook playbooks/site.yml
   `Actor` desde la sesión y llama al servicio. `ErrorNegocio` se traduce:
   `SIN_PERMISO` → 403, `*_NO_EXISTE` → 404, el resto → 409.
 - El portal de clientes no se abre al público sin HTTPS.
+- Login (`src/auth/`): Better Auth con su propia conexión (`abrirBaseAuth`,
+  sin bigint). La sesión vence tras `sesion_inactividad_minutos` sin uso.
+  `src/rutas/auth.ts` deja pasar solo sign-in, sign-out, get-session y
+  change-password; el registro público de Better Auth está apagado.
+  Sus errores vienen como `{ message, code }`, no con nuestro formato.
+- La app lee `BETTER_AUTH_SECRET` y `BETTER_AUTH_URL` (dirección pública,
+  para validar `Origin`). Si faltan, arranca **cerrada**: sin login, toda
+  `/api` responde 401 y no se acepta ninguna escritura.
+- Las cuentas se crean con `crearCuenta()` (`src/auth/auth.ts`), nunca a mano.
 
 ## Supuestos de la iteración 1 (por confirmar con el cliente)
 

@@ -11,12 +11,14 @@ import { ADMIN, CAJERA_2, CAJERO, escenario, SUPERVISOR } from "../servicios/esc
 process.env.LOG_LEVEL ??= "silent";
 
 const ACTORES = { ADMIN, SUPERVISOR, CAJERO, CAJERA_2 };
+export const ORIGEN = "http://atk.test";
 type NombreActor = keyof typeof ACTORES;
 
 export function apiDePrueba() {
   const esc = escenario();
   const app = construirServidor(esc, {
     ahora: esc.reloj.ahora,
+    urlPublica: ORIGEN,
     obtenerActor: (request) => ACTORES[request.headers["x-actor-prueba"] as NombreActor] ?? null,
   });
 
@@ -25,7 +27,8 @@ export function apiDePrueba() {
     return app.inject({
       method,
       url,
-      headers: actor ? { "x-actor-prueba": actor } : {},
+      // El navegador manda Origin solo; aquí se simula una petición desde la app
+      headers: { origin: ORIGEN, ...(actor ? { "x-actor-prueba": actor } : {}) },
       ...(cuerpo === undefined ? {} : { payload: cuerpo as InjectOptions["payload"] }),
     });
   }
