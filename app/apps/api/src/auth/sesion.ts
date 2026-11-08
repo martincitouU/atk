@@ -1,20 +1,20 @@
-// De la cookie de sesión al Actor que reciben los servicios.
+// De la cookie de sesión a quién es: personal (con su Actor) o cliente.
 //
 //   cookie → Better Auth (¿sesión vigente? ¿de qué cuenta?)
-//          → usuario con ese auth_user_id y activo → { id, rol }
+//          → usuario activo con ese auth_user_id   → personal { id, rol }
+//          → si no, cuenta_cliente con ese id       → cliente (cualquier estado)
 //
-// Una cuenta sin usuario del personal activo no obtiene actor: no puede
-// llamar a ningún servicio (es el caso de un cliente o de alguien
-// desactivado). Cada consulta renueva la sesión: así vence por inactividad.
+// Un usuario del personal desactivado no obtiene nada. Cada consulta
+// renueva la sesión: así vence por inactividad.
 
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { fromNodeHeaders } from "better-auth/node";
 import type { Db } from "../db/conexion.ts";
-import { usuario } from "../db/esquema.ts";
-import type { ObtenerActor } from "../http/actor.ts";
+import { cuentaCliente, usuario } from "../db/esquema.ts";
+import type { ObtenerSesion } from "../http/acceso.ts";
 import type { Auth } from "./auth.ts";
 
-export function actorDesdeSesion(auth: Auth, db: Db): ObtenerActor {
+export function sesionDesdeCookie(auth: Auth, db: Db): ObtenerSesion {
   return async (request, reply) => {
     const { headers, response: sesion } = await auth.api.getSession({
       headers: fromNodeHeaders(request.headers),
@@ -26,10 +26,13 @@ export function actorDesdeSesion(auth: Auth, db: Db): ObtenerActor {
     if (!sesion) return null;
 
     const delPersonal = db
-      .select({ id: usuario.id, rol: usuario.rol })
+      .select({ id: usuario.id, rol: usuario.rol, activo: usuario.activo })
       .from(usuario)
-      .where(and(eq(usuario.authUserId, sesion.user.id), eq(usuario.activo, true)))
+      .where(eq(usuario.authUserId, sesion.user.id))
       .get();
-    return delPersonal ?? null;
+    if (delPersonal) return delPersonal.activo ? { tipo: "personal", actor: { id: delPersonal.id, rol: delPersonal.rol } } : null;
+
+    const cuenta = db.select().from(cuentaCliente).where(eq(cuentaCliente.authUserId, sesion.user.id)).get();
+    return cuenta ? { tipo: "cliente", cuenta } : null;
   };
 }

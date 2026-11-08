@@ -11,7 +11,7 @@ describe("migrar con las migraciones reales", () => {
   it("aplica el esquema completo en una base nueva", () => {
     const { sqlite } = baseTemporal();
 
-    expect(migrar(sqlite)).toEqual(["0001_esquema.sql"]);
+    expect(migrar(sqlite)).toEqual(["0001_esquema.sql", "0002_cuenta_cliente.sql"]);
     expect(existeTabla(sqlite, "operacion")).toBe(true);
     expect(sqlite.pragma("foreign_key_check")).toEqual([]);
   });

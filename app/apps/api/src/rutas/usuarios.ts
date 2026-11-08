@@ -1,0 +1,26 @@
+// Usuarios del personal: solo el administrador (lo exige el servicio).
+
+import { cambiosUsuario, entradaContrasena, entradaUsuario, idEnTexto } from "@atk/shared";
+import type { FastifyInstance, FastifyRequest } from "fastify";
+import { z } from "zod";
+import type { Auth } from "../auth/auth.ts";
+import type { Contexto } from "../servicios/contexto.ts";
+import { crearUsuario, editarUsuario, listarUsuarios, restablecerContrasena } from "../servicios/usuarios.ts";
+
+const conId = z.object({ id: idEnTexto });
+const idDe = (request: FastifyRequest) => conId.parse(request.params).id;
+
+export function rutasUsuarios(api: FastifyInstance, ctx: Contexto, auth: Auth) {
+  api.get("/usuarios", (request) => listarUsuarios(ctx, request.actor));
+
+  api.post("/usuarios", async (request, reply) =>
+    reply.code(201).send(await crearUsuario(ctx, request.actor, auth, entradaUsuario.parse(request.body))),
+  );
+
+  api.patch("/usuarios/:id", (request) => editarUsuario(ctx, request.actor, auth, idDe(request), cambiosUsuario.parse(request.body)));
+
+  api.post("/usuarios/:id/contrasena", async (request, reply) => {
+    await restablecerContrasena(ctx, request.actor, auth, idDe(request), entradaContrasena.parse(request.body).contrasena);
+    return reply.code(204).send();
+  });
+}

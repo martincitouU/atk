@@ -7,4 +7,6 @@
 export * from "./basicos.ts";
 export * from "./constantes.ts";
 export * from "./cotizaciones.ts";
+export * from "./cuentas.ts";
 export * from "./operaciones.ts";
+export * from "./rut.ts";

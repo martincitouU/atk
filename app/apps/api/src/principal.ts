@@ -3,7 +3,7 @@
 // PORT y guarda SQLite en DATABASE_PATH.
 
 import { crearAuth } from "./auth/auth.ts";
-import { actorDesdeSesion } from "./auth/sesion.ts";
+import { sesionDesdeCookie } from "./auth/sesion.ts";
 import { abrirBase } from "./db/conexion.ts";
 import { migrar } from "./db/migrar.ts";
 import { construirServidor } from "./servidor.ts";
@@ -37,7 +37,7 @@ const auth =
 const app = construirServidor(conexion, {
   auth,
   urlPublica,
-  obtenerActor: auth ? actorDesdeSesion(auth, conexion.db) : () => null,
+  obtenerSesion: auth ? sesionDesdeCookie(auth, conexion.db) : () => null,
 });
 app.log.info({ base: rutaBase, aplicadas }, aplicadas.length ? "migraciones aplicadas" : "base al día");
 if (!auth) app.log.warn("Faltan BETTER_AUTH_SECRET o BETTER_AUTH_URL: el login está desactivado");

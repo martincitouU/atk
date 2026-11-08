@@ -87,7 +87,8 @@ La app debe:
 - Las migraciones aplicadas **no se editan**: se escribe una nueva.
   `migrar()` se detiene si el hash de una aplicada cambió. `0001` se
   reescribió por última vez antes del primer despliegue de la app (no había
-  ninguna base real); desde ese despliegue, todo cambio es una migración nueva.
+  ninguna base real); desde ese despliegue (2026-11-08), `0001` está
+  congelada y todo cambio es una migración nueva (`0002_cuenta_cliente`, ...).
 - `0001` trae datos de referencia que valen en producción (monedas,
   parámetros, categorías de gasto). Los de ejemplo van en `semillas/`.
 - Las tablas de Better Auth (`user`, `session`, `account`, `verification`)
@@ -118,8 +119,11 @@ La app debe:
 
 ### Lógica de negocio (`apps/api/src/servicios/`)
 - Un archivo por tema: `cotizaciones`, `operaciones`, `caja`, `turnos`,
-  `gastos`, `clientes`, `auditoria`, `resumen`. Cada acción pública abre su
+  `gastos`, `clientes`, `auditoria`, `resumen`, `cuentas` (portal de
+  clientes), `usuarios` e `inicializacion`. Cada acción pública abre su
   propia transacción `IMMEDIATE` y audita dentro de ella.
+- Excepción: la cuenta de Better Auth vive en otra conexión. Se crea antes
+  de la transacción y, si esta falla, se borra (`borrarCuenta`).
 - Todo servicio recibe un `Contexto` (base + reloj) y un `Actor` (id + rol).
   El reloj es inyectable: los tests controlan la hora.
 - Los errores esperables son `ErrorNegocio` (código + mensaje en español
@@ -164,6 +168,9 @@ docker compose down && rm -rf data
 
 # Desplegar en la VM (requiere aws login y Terraform inicializado)
 infra/ansible/run.sh ansible-playbook playbooks/site.yml
+
+# Configuración inicial de producción (una sola vez, dentro de la VM por SSM)
+sudo docker compose -f /srv/atk/compose.yaml exec app node apps/api/src/cli/inicializar.ts
 ```
 
 ## Decisiones no obvias (no revertir sin entenderlas)

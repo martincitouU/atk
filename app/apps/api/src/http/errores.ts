@@ -10,9 +10,9 @@ import type { FastifyError, FastifyInstance } from "fastify";
 import { ZodError } from "zod";
 import { ErrorNegocio } from "../servicios/contexto.ts";
 
-/** SIN_PERMISO → 403, *_NO_EXISTE → 404, cualquier otra regla de negocio → 409. */
+/** Sin permiso → 403, *_NO_EXISTE → 404, cualquier otra regla de negocio → 409. */
 export function estadoDe(codigo: string): number {
-  if (codigo === "SIN_PERMISO") return 403;
+  if (codigo === "SIN_PERMISO" || codigo === "CUENTA_NO_VERIFICADA") return 403;
   if (codigo.endsWith("_NO_EXISTE")) return 404;
   return 409;
 }

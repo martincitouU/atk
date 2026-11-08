@@ -54,7 +54,7 @@ BORRADOR="$(operacion 1 3 VENTA USD 10000)"
 CONFIRMAR="estado = 'CONFIRMADA', confirmada_por = 3, confirmada_en = $AHORA"
 
 echo "Carga"
-if out=$( { echo "PRAGMA foreign_keys = ON;"; cat "$DIR/migraciones/0001_esquema.sql" "$DIR/semillas/ejemplo.sql"; } \
+if out=$( { echo "PRAGMA foreign_keys = ON;"; cat "$DIR"/migraciones/*.sql "$DIR/semillas/ejemplo.sql"; } \
           | sqlite3 -bail "$DB" 2>&1 ); then
     bien "esquema y semilla se cargan"
 else
@@ -332,6 +332,41 @@ debe_funcionar "cerrar turno" \
 debe_fallar "modificar un turno cerrado" "UPDATE turno SET observacion = 'x' WHERE id = 1;" "cerrado no se puede"
 debe_fallar "operar con el turno cerrado" "$BORRADOR" "turno abierto del mismo usuario"
 debe_fallar "borrar un turno" "DELETE FROM turno WHERE id = 1;" "no se eliminan"
+
+echo "Cuentas de clientes (0002)"
+CUENTA_BA="INSERT INTO \"user\" (id, name, email, emailVerified, createdAt, updatedAt) VALUES ('u-cli', 'Cli', 'cli@x.cl', 0, 0, 0);"
+debe_funcionar "registrar una cuenta pendiente" \
+    "$CUENTA_BA INSERT INTO cuenta_cliente (auth_user_id, rut, nombre) VALUES ('u-cli', '12345678-5', 'Cli');"
+debe_fallar "nacer verificada" \
+    "INSERT INTO \"user\" (id, name, email, emailVerified, createdAt, updatedAt) VALUES ('u-2', 'B', 'b@x.cl', 0, 0, 0);
+     INSERT INTO cuenta_cliente (auth_user_id, rut, nombre, estado, cliente_id, revisada_por, revisada_en)
+     VALUES ('u-2', '12345678-5', 'B', 'VERIFICADA', 2, 3, $AHORA);" "nacer PENDIENTE"
+debe_fallar "RUT con puntos" \
+    "INSERT INTO cuenta_cliente (auth_user_id, rut, nombre) VALUES ('u-cli', '12.345.678-5', 'Cli');" "CHECK constraint failed"
+debe_fallar "verificar sin indicar quién" \
+    "UPDATE cuenta_cliente SET estado = 'VERIFICADA', cliente_id = 2;" "CHECK constraint failed"
+debe_fallar "enlazar con la ficha de otra persona" \
+    "UPDATE cuenta_cliente SET estado = 'VERIFICADA', cliente_id = 1, revisada_por = 3, revisada_en = $AHORA;" "mismo RUT"
+debe_fallar "cambiar el RUT declarado" "UPDATE cuenta_cliente SET rut = '11111111-1';" "no se modifican"
+debe_fallar "eliminar una cuenta" "DELETE FROM cuenta_cliente;" "no se eliminan"
+debe_funcionar "verificar con la ficha del mismo RUT" \
+    "UPDATE cuenta_cliente SET estado = 'VERIFICADA', cliente_id = 2, revisada_por = 3, revisada_en = $AHORA;"
+debe_fallar "cambiar una cuenta ya verificada" "UPDATE cuenta_cliente SET nombre = 'Otro';" "ya revisada"
+debe_fallar "dos cuentas verificadas para la misma ficha" \
+    "INSERT INTO \"user\" (id, name, email, emailVerified, createdAt, updatedAt) VALUES ('u-3', 'C', 'c@x.cl', 0, 0, 0);
+     INSERT INTO cuenta_cliente (auth_user_id, rut, nombre) VALUES ('u-3', '12345678-5', 'C');
+     UPDATE cuenta_cliente SET estado = 'VERIFICADA', cliente_id = 2, revisada_por = 3, revisada_en = $AHORA
+      WHERE auth_user_id = 'u-3';" "UNIQUE constraint failed"
+debe_fallar "rechazar sin motivo" \
+    "INSERT INTO \"user\" (id, name, email, emailVerified, createdAt, updatedAt) VALUES ('u-4', 'D', 'd@x.cl', 0, 0, 0);
+     INSERT INTO cuenta_cliente (auth_user_id, rut, nombre) VALUES ('u-4', '12345678-5', 'D');
+     UPDATE cuenta_cliente SET estado = 'RECHAZADA', revisada_por = 3, revisada_en = $AHORA WHERE auth_user_id = 'u-4';" \
+    "CHECK constraint failed"
+debe_funcionar "borrar la cuenta de Better Auth borra su fila" \
+    "INSERT INTO \"user\" (id, name, email, emailVerified, createdAt, updatedAt) VALUES ('u-5', 'E', 'e@x.cl', 0, 0, 0);
+     INSERT INTO cuenta_cliente (auth_user_id, rut, nombre) VALUES ('u-5', '12345678-5', 'E');
+     DELETE FROM \"user\" WHERE id = 'u-5';"
+debe_dar "no quedó la fila" "SELECT COUNT(*) FROM cuenta_cliente WHERE auth_user_id = 'u-5';" "0"
 
 echo
 echo "Resultado: $OK correctas, $FALLAS fallidas"
