@@ -145,6 +145,8 @@ La app debe:
   `app/` se copia a `/srv/atk/codigo` y la imagen se construye en la VM.
 - `app/`: la aplicación (npm workspaces). `app/db/` tiene migraciones,
   semillas y `probar.sh`; `app/apps/api/` el backend.
+- `docs/api.md`: contrato de la API para el front. Si una ruta cambia, se
+  actualiza en el mismo PR.
 - `docs/casa_cambio_schema_postgres.sql`: diseño original del modelo, solo
   referencia.
 - `infra/README.md`: guía paso a paso para desplegar.
