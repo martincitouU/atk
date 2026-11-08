@@ -6,9 +6,9 @@ Cómo crear la VM en AWS y desplegar la app. Son tres etapas, en este orden:
 2. **Ansible** configura la VM por SSM (Docker, disco de datos, contenedores).
 3. **Verificar** desde el navegador y desde la VM.
 
-> Lo que se despliega es la imagen de `app/` (`app/Dockerfile`): por ahora
-> aplica las migraciones sobre el disco de datos y responde `/health`. La API
-> y las pantallas se agregan sobre la misma imagen.
+> Lo que se despliega es la imagen de `app/` (`app/Dockerfile`): aplica las
+> migraciones sobre el disco de datos y sirve `/health` y la API (`/api`).
+> El contrato de la API está en `docs/api.md`.
 
 ## 0. Requisitos (una vez, en tu computador)
 
@@ -104,11 +104,28 @@ infra/ansible/run.sh ansible all -m ping         # Ansible llega por SSM
 infra/ansible/run.sh ansible-playbook playbooks/site.yml
 ```
 
-El playbook agrega swap, instala Docker, monta el disco de datos, copia
-`deploy/` y el código de `app/` (sin `node_modules`), construye la imagen en
-la VM y levanta los contenedores. La primera vez tarda varios minutos.
-Termina mostrando el `/health` de la app; si esa tarea falla, el despliegue
-no quedó bien.
+El playbook agrega swap, instala Docker, monta el disco de datos, deja la
+configuración del login en `/etc/atk` (ver abajo), copia `deploy/` y el
+código de `app/` (sin `node_modules`), construye la imagen en la VM y
+levanta los contenedores. La primera vez tarda varios minutos. Termina
+mostrando el `/health` de la app y comprobando que el login esté activo;
+si alguna de esas tareas falla, el despliegue no quedó bien.
+
+### El secreto del login
+
+La app necesita `BETTER_AUTH_SECRET` (firma las cookies de sesión) y
+`BETTER_AUTH_URL` (la dirección pública, para validar el `Origin`).
+Ansible los deja en la VM, **nunca en el repo**:
+
+| Archivo | Contenido | Cuándo se escribe |
+|---|---|---|
+| `/etc/atk/secreto.env` | 64 caracteres aleatorios, generados dentro de la VM | Solo la primera vez |
+| `/etc/atk/url.env` | `http://<IP elástica>` (variable `atk_url_publica`) | En cada despliegue |
+
+Si el secreto se pierde o se borra, el siguiente despliegue genera otro:
+se cierran todas las sesiones, pero no se pierde ningún dato. Para cambiar
+la dirección (por ejemplo, al tener dominio), se cambia `atk_url_publica`
+en `inventory/group_vars/all.yml`.
 
 **Para volver a desplegar** (por ejemplo, después de cambiar algo en `app/`
 o en `deploy/`), se corre el mismo playbook. Es idempotente: lo que ya está
@@ -123,12 +140,30 @@ Docker); es esperado. Es útil desde la segunda ejecución en adelante.
 
 ```bash
 curl http://$(terraform -chdir=infra/terraform output -raw public_ip)/health
-# {"status":"ok","migraciones":["0001_esquema.sql"],"configurada":false}
+# {"status":"ok","migraciones":["0001_esquema.sql","0002_cuenta_cliente.sql"],"configurada":false}
 ```
 
 `migraciones` son las aplicadas a la base del disco de datos
 (`/srv/atk/data/atk.db`). `configurada` dice si ya se cargaron los datos de
 la casa de cambio; en una base nueva es `false`.
+
+## 5. Configuración inicial (una sola vez)
+
+La base de producción nace vacía: sin casa, sin cajas y sin usuarios. La
+semilla de ejemplo **nunca** se carga aquí. El comando `inicializar` pide
+los datos de la casa, sus divisas, la sucursal, las cajas y el primer
+administrador. La contraseña se escribe sin mostrarse.
+
+```bash
+aws ssm start-session --target $(terraform -chdir=infra/terraform output -raw instance_id)
+sudo docker compose -f /srv/atk/compose.yaml exec app node apps/api/src/cli/inicializar.ts
+```
+
+Al terminar, `/health` dice `"configurada": true`. Ese admin inicia sesión,
+publica los tipos de cambio y crea al resto del personal desde la app.
+
+> **Sin HTTPS** la contraseña viaja sin cifrar: usar una que no se use en
+> otro lado y solo datos de prueba hasta tener dominio y certificado.
 
 Para entrar a la VM (no hay SSH):
 
@@ -149,6 +184,8 @@ df -h /srv/atk/data   # debe mostrar el volumen EBS, no el disco del sistema
 | Falla "Esperar a que el disco aparezca" | `data_volume_id` incorrecto o el attachment no terminó: revisa `terraform output` |
 | La app se reinicia con `unable to open database file` | El disco de datos no está montado o no es del UID 1000: revisa `df -h /srv/atk/data` en la VM |
 | `502 Bad Gateway` | La app no está corriendo: `sudo docker compose -f /srv/atk/compose.yaml logs app` |
+| Falla "Comprobar que el login está activo" | La app no leyó `/etc/atk/*.env`: revisa que existan (`sudo ls -l /etc/atk`) y el log de la app |
+| `inicializar` dice que necesita una terminal | Se usó `exec -T` o no hay TTY: corre el comando dentro de `aws ssm start-session` |
 
 ## Lo que protege los datos
 

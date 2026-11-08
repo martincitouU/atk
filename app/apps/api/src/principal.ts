@@ -23,7 +23,8 @@ const aplicadas = migrar(conexion.sqlite);
 // faltan, la app arranca igual pero cerrada: nadie inicia sesión, toda
 // ruta de /api responde 401 y no se acepta ninguna escritura.
 const secreto = process.env.BETTER_AUTH_SECRET;
-const urlPublica = process.env.BETTER_AUTH_URL ?? null;
+// Una variable vacía cuenta como ausente
+const urlPublica = process.env.BETTER_AUTH_URL || null;
 const auth =
   secreto && urlPublica
     ? crearAuth({

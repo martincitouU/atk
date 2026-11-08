@@ -9,6 +9,14 @@ services:
     environment:
       PORT: "3000"
       DATABASE_PATH: /data/atk.db
+    # Login: BETTER_AUTH_SECRET y BETTER_AUTH_URL. En la VM los crea Ansible
+    # en /etc/atk (fuera del repo). En local no existen y la app arranca
+    # cerrada: sin login, /api responde 401 y no acepta escrituras.
+    env_file:
+      - path: /etc/atk/secreto.env
+        required: false
+      - path: /etc/atk/url.env
+        required: false
     volumes:
       # En la VM, ./data es /srv/atk/data: el volumen EBS montado por Ansible
       - ./data:/data
