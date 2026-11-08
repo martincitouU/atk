@@ -24,6 +24,12 @@ export function hora(iso: string, zona: string = ZONA_CASA): string {
   return formato.format(new Date(iso));
 }
 
+/** «12345678-5» → «12.345.678-5»; lo que no es un RUT queda igual. */
+export function rutConPuntos(rut: string): string {
+  const partes = /^(\d+)-([\dK])$/i.exec(rut);
+  return partes ? `${(partes[1] ?? "").replace(/\B(?=(\d{3})+(?!\d))/g, ".")}-${partes[2]}` : rut;
+}
+
 /** Pesos con su signo: 428400n → "$428.400"; un negativo, "−$1.000". */
 export function pesos(monto: bigint, decimales = 0): string {
   return monto < 0n ? `−$${formatearMonto(-monto, decimales)}` : `$${formatearMonto(monto, decimales)}`;

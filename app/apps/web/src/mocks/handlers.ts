@@ -13,6 +13,7 @@ import {
   entradaIngresoRetiro,
   entradaOperacion,
   entradaPublicacion,
+  entradaRechazoCuenta,
   entradaReverso,
 } from "@atk/shared";
 import { http, HttpResponse, type HttpHandler, type PathParams } from "msw";
@@ -133,6 +134,11 @@ export function handlers(e: m.Estado): HttpHandler[] {
     http.post(en(RUTAS.clientes), manejar(async ({ request }) => m.guardarCliente(e, await cuerpo(request, entradaCliente)), 201)),
     http.get(conId(RUTAS.cliente), manejar(({ params }) => m.clientePorId(e, id(params)))),
     http.patch(conId(RUTAS.cliente), manejar(async ({ request, params }) => m.guardarCliente(e, await cuerpo(request, entradaCliente), id(params)))),
+
+    // Cuentas del portal, que se verifican en el local
+    http.get(en(RUTAS.cuentas), manejar(({ url }) => m.listarCuentas(e, consulta(url, "estado")))),
+    http.post(conId(RUTAS.verificarCuenta), manejar(({ params }) => m.verificarCuenta(e, id(params)))),
+    http.post(conId(RUTAS.rechazarCuenta), manejar(async ({ request, params }) => m.rechazarCuenta(e, id(params), (await cuerpo(request, entradaRechazoCuenta)).motivo))),
 
     // Resumen y catálogo (los parámetros y las categorías de gasto vienen en el catálogo)
     http.get(en(RUTAS.resumen), manejar(({ url }) => m.resumen(e, consulta(url, "fecha")))),

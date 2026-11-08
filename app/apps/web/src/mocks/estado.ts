@@ -147,7 +147,19 @@ export type Estado = {
   movimientos: MovimientoMock[];
   gastos: GastoMock[];
   clientes: ClienteMock[];
+  /** Las cuentas del portal (cuentas.ts): se verifican en el local con el carnet. */
+  cuentas: CuentaMock[];
   siguiente: { cotizacion: number; operacion: number; turno: number; movimiento: number; gasto: number; cliente: number };
+};
+
+type CuentaMock = {
+  id: number;
+  nombre: string;
+  rut: string;
+  estado: "PENDIENTE" | "VERIFICADA" | "RECHAZADA";
+  clienteId: number | null;
+  motivoRechazo: string | null;
+  creadaEn: Date;
 };
 
 // ---------------------------------------------------------------------------
@@ -995,6 +1007,42 @@ export function saldos(e: Estado, cajaId?: number) {
 }
 
 // ---------------------------------------------------------------------------
+// Cuentas del portal (cuentas.ts): los códigos y mensajes, copiados del servicio
+
+const aCuenta = (c: CuentaMock) => ({ ...c, creadaEn: iso(c.creadaEn) });
+
+export function listarCuentas(e: Estado, estado?: string) {
+  usuarioActual(e);
+  return e.cuentas.filter((c) => !estado || c.estado === estado).map(aCuenta);
+}
+
+function cuentaPendiente(e: Estado, id: number): CuentaMock {
+  const cuenta = e.cuentas.find((c) => c.id === id);
+  exigir(cuenta, "CUENTA_NO_EXISTE", `La cuenta ${id} no existe`);
+  exigir(cuenta.estado === "PENDIENTE", "CUENTA_YA_REVISADA", `La cuenta ya fue ${cuenta.estado === "VERIFICADA" ? "verificada" : "rechazada"}`);
+  return cuenta;
+}
+
+export function verificarCuenta(e: Estado, id: number) {
+  usuarioActual(e);
+  const cuenta = cuentaPendiente(e, id);
+  const ficha = e.clientes.find((c) => c.tipoDocumento === "RUT" && c.numeroDocumento === cuenta.rut);
+  exigir(ficha, "SIN_FICHA", `No hay ficha de cliente con RUT ${cuenta.rut}: regístrela antes de verificar la cuenta`);
+  exigir(!e.cuentas.some((c) => c.clienteId === ficha.id), "FICHA_CON_CUENTA", `El cliente con RUT ${cuenta.rut} ya tiene una cuenta verificada`);
+  Object.assign(cuenta, { estado: "VERIFICADA", clienteId: ficha.id });
+  return aCuenta(cuenta);
+}
+
+export function rechazarCuenta(e: Estado, id: number, motivo: string) {
+  usuarioActual(e);
+  const elMotivo = limpiar(motivo);
+  exigir(elMotivo, "FALTA_MOTIVO", "Indique el motivo del rechazo");
+  const cuenta = cuentaPendiente(e, id);
+  Object.assign(cuenta, { estado: "RECHAZADA", motivoRechazo: elMotivo });
+  return aCuenta(cuenta);
+}
+
+// ---------------------------------------------------------------------------
 // Catálogo, parámetros y sesión
 
 /** GET /api/catalogo: la moneda base viene solo con código y decimales, y los parámetros adentro. */
@@ -1085,6 +1133,7 @@ export function crearEstado(ahora: () => Date = () => new Date()): Estado {
     movimientos: [],
     gastos: [],
     clientes: [],
+    cuentas: [],
     siguiente: { cotizacion: 1, operacion: 1, turno: 1, movimiento: 1, gasto: 1, cliente: 1 },
   };
   sembrar(e);
@@ -1150,6 +1199,14 @@ function sembrar(e: Estado): void {
     ] satisfies EntradaCliente[]) {
       guardarCliente(e, c);
     }
+
+    // Dos cuentas del portal por verificar: Mariela ya tiene ficha; Ana, no
+    hace(30, () => {
+      e.cuentas.push(
+        { id: 1, nombre: "Mariela Contreras Vidal", rut: "11111111-1", estado: "PENDIENTE", clienteId: null, motivoRechazo: null, creadaEn: e.ahora() },
+        { id: 2, nombre: "Ana Ruiz Toledo", rut: "12345678-5", estado: "PENDIENTE", clienteId: null, motivoRechazo: null, creadaEn: e.ahora() },
+      );
+    });
   } finally {
     e.ahora = reloj;
   }

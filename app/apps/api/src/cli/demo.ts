@@ -5,7 +5,8 @@
 //
 // Si la base no existe, la crea con la jornada de ejemplo del front (la del
 // comp de diseño): la casa, la pizarra, un turno abierto con su fondo,
-// operaciones, un gasto y cuatro clientes. Después arranca principal.ts.
+// operaciones, un gasto, cuatro clientes y dos cuentas del portal por
+// verificar. Después arranca principal.ts.
 // Login: rolando@atk.cl / ventanilla. Para empezar de cero, borre app/.dev/.
 //
 // Nunca corre en producción: ahí la casa se configura con cli/inicializar.ts.
@@ -17,6 +18,7 @@ import { abrirBase } from "../db/conexion.ts";
 import { migrar } from "../db/migrar.ts";
 import { registrarIngresoORetiro } from "../servicios/caja.ts";
 import { crearCliente, type EntradaCliente } from "../servicios/clientes.ts";
+import { registrarCliente } from "../servicios/cuentas.ts";
 import { crearContexto, type Actor } from "../servicios/contexto.ts";
 import { publicarCotizacion } from "../servicios/cotizaciones.ts";
 import { registrarGasto } from "../servicios/gastos.ts";
@@ -118,6 +120,14 @@ async function sembrar() {
     { ...vacia, tipoDocumento: "RUT", numeroDocumento: "9846217-1", nombre: "Pedro Soto Muñoz", nacionalidad: "CL" },
   ] satisfies EntradaCliente[]) {
     crearCliente(ctx, rolando, c);
+  }
+
+  // Dos cuentas del portal por verificar en el local: Mariela ya tiene ficha; Ana, no
+  for (const [nombre, rut, email] of [
+    ["Mariela Contreras Vidal", "15209384-5", "mariela.contreras@ejemplo.com"],
+    ["Ana Ruiz Toledo", "12345678-5", "ana.ruiz@ejemplo.com"],
+  ] as const) {
+    await registrarCliente(ctx, auth, { nombre, rut, email, contrasena: "portal-demo-2026" });
   }
   console.log("Base de demo creada. Login: rolando@atk.cl / ventanilla");
 }

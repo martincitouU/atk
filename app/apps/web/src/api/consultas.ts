@@ -11,6 +11,7 @@ import {
   Cierre,
   Cliente,
   Cotizacion,
+  CuentaCliente,
   FilaArqueo,
   FilaPizarra,
   Gasto,
@@ -294,6 +295,31 @@ export function useGuardarCliente() {
     mutationFn: ({ id, datos }: { id?: number | undefined; datos: EntradaCliente }) =>
       id === undefined ? enviar(RUTAS.clientes, Cliente, datos) : enviar(RUTAS.cliente(id), Cliente, datos, "PATCH"),
     onSuccess: () => invalidar(["clientes"], ["cliente"]),
+  });
+}
+
+/** Las cuentas del portal que esperan que alguien revise el carnet en el local. */
+export const useCuentasPendientes = () =>
+  useQuery({
+    queryKey: ["cuentas", "PENDIENTE"],
+    queryFn: ({ signal }) => pedir(conConsulta(RUTAS.cuentas, { estado: "PENDIENTE" }), z.array(CuentaCliente), { signal }),
+  });
+
+/** Verifica una cuenta: la enlaza con la ficha del mismo RUT (sin ficha, SIN_FICHA). */
+export function useVerificarCuenta() {
+  const invalidar = useInvalidar();
+  return useMutation({
+    mutationFn: (id: number) => enviar(RUTAS.verificarCuenta(id), CuentaCliente),
+    onSuccess: () => invalidar(["cuentas"]),
+  });
+}
+
+/** Rechaza una cuenta con su motivo (el cliente lo ve en el portal). */
+export function useRechazarCuenta() {
+  const invalidar = useInvalidar();
+  return useMutation({
+    mutationFn: ({ id, motivo }: { id: number; motivo: string }) => enviar(RUTAS.rechazarCuenta(id), CuentaCliente, { motivo }),
+    onSuccess: () => invalidar(["cuentas"]),
   });
 }
 

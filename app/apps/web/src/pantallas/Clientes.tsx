@@ -1,5 +1,5 @@
 import { entradaCliente } from "@atk/shared";
-import { aBigint, type Cliente, type EntradaCliente } from "../api/esquemas.ts";
+import { aBigint, type Cliente, type CuentaCliente, type EntradaCliente } from "../api/esquemas.ts";
 import { formatearMonto } from "@atk/shared/dinero";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircleIcon, MagnifyingGlassIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
@@ -14,8 +14,9 @@ import { Aviso } from "../componentes/Aviso.tsx";
 import { ErrorCampo } from "../componentes/ErrorCampo.tsx";
 import { Kbd } from "../componentes/Kbd.tsx";
 import { Sep } from "../componentes/Sep.tsx";
-import { DATOS_DE_EJEMPLO } from "../comun.ts";
+import { DATOS_DE_EJEMPLO, rutConPuntos } from "../comun.ts";
 import "../estilos/clientes.css";
+import { CuentasPendientes } from "./CuentasPendientes.tsx";
 
 // ---------------------------------------------------------------------------
 // Datos de la ficha
@@ -24,9 +25,7 @@ const TIPOS_DOCUMENTO = { RUT: "RUT", PASAPORTE: "Pasaporte", DNI: "DNI", OTRO: 
 
 /** El servicio guarda el RUT sin puntos ("11111111-1"); en pantalla va con ellos: "11.111.111-1". */
 function numeroDe(c: Pick<Cliente, "tipoDocumento" | "numeroDocumento">): string {
-  if (c.tipoDocumento !== "RUT") return c.numeroDocumento;
-  const partes = /^(\d+)-([\dK])$/i.exec(c.numeroDocumento);
-  return partes ? `${(partes[1] ?? "").replace(/\B(?=(\d{3})+(?!\d))/g, ".")}-${partes[2]}` : c.numeroDocumento;
+  return c.tipoDocumento === "RUT" ? rutConPuntos(c.numeroDocumento) : c.numeroDocumento;
 }
 
 /** «RUT 11.111.111-1», «Pasaporte AAB123456». */
@@ -165,6 +164,12 @@ export function Clientes() {
     setParams({ nuevo: "1" }, { replace: true });
   }
 
+  /** Una cuenta del portal sin ficha: la ficha nueva, con su RUT y su nombre. */
+  function crearDesdeCuenta(cuenta: CuentaCliente) {
+    setGuardado(null);
+    setParams({ nuevo: "1", rut: cuenta.rut, nombre: cuenta.nombre }, { replace: true });
+  }
+
   /** El cliente de la tabla ya está en mano: la ficha abre sin esperar la consulta. */
   function abrir(c: Cliente) {
     qc.setQueryData(["cliente", c.id], c);
@@ -198,7 +203,18 @@ export function Clientes() {
 
   let panel: ReactNode;
   if (nueva) {
-    panel = <FichaCliente key="nueva" cliente={null} onGuardado={alGuardar} onCerrar={cerrar} avisoGuardado={aviso} />;
+    // Desde una cuenta del portal sin ficha: el RUT y el nombre ya escritos
+    const inicial = { numeroDocumento: params.get("rut") ?? "", nombre: params.get("nombre") ?? "" };
+    panel = (
+      <FichaCliente
+        key={`nueva-${inicial.numeroDocumento}`}
+        cliente={null}
+        inicial={inicial}
+        onGuardado={alGuardar}
+        onCerrar={cerrar}
+        avisoGuardado={aviso}
+      />
+    );
   } else if (id !== null && ficha.data) {
     panel = <FichaCliente key={`cliente-${id}`} cliente={ficha.data} onGuardado={alGuardar} onCerrar={cerrar} avisoGuardado={aviso} />;
   } else if (id !== null) {
@@ -245,26 +261,29 @@ export function Clientes() {
       </header>
 
       <div className="clientes-trabajo">
-        <section className="panel clientes-lista" aria-labelledby="clientes-lista-titulo">
-          <header>
-            <h2 id="clientes-lista-titulo">Fichas</h2>
-            {!sinBuscar && clientes.isSuccess && (
-              <p className="hint">
-                {plural(lista.length, "cliente", "clientes")}
-                {incompletas > 0 && (
-                  <>
-                    <Sep />
-                    {incompletas} con la ficha incompleta
-                  </>
-                )}
-              </p>
+        <div className="clientes-col">
+          <CuentasPendientes onCrearFicha={crearDesdeCuenta} />
+          <section className="panel clientes-lista" aria-labelledby="clientes-lista-titulo">
+            <header>
+              <h2 id="clientes-lista-titulo">Fichas</h2>
+              {!sinBuscar && clientes.isSuccess && (
+                <p className="hint">
+                  {plural(lista.length, "cliente", "clientes")}
+                  {incompletas > 0 && (
+                    <>
+                      <Sep />
+                      {incompletas} con la ficha incompleta
+                    </>
+                  )}
+                </p>
+              )}
+            </header>
+            <TablaClientes consulta={consulta} buscado={buscado.trim()} elegido={id} onElegir={elegir} onNueva={abrirNueva} />
+            {!sinBuscar && lista.length >= 20 && (
+              <p className="clientes-nota">Se muestran los primeros 20: afine la búsqueda por nombre o documento.</p>
             )}
-          </header>
-          <TablaClientes consulta={consulta} buscado={buscado.trim()} elegido={id} onElegir={elegir} onNueva={abrirNueva} />
-          {!sinBuscar && lista.length >= 20 && (
-            <p className="clientes-nota">Se muestran los primeros 20: afine la búsqueda por nombre o documento.</p>
-          )}
-        </section>
+          </section>
+        </div>
 
         {panel}
       </div>
@@ -478,11 +497,14 @@ const describir = (...ids: (string | false | undefined)[]) => ids.filter(Boolean
 
 function FichaCliente({
   cliente,
+  inicial,
   onGuardado,
   onCerrar,
   avisoGuardado,
 }: {
   cliente: Cliente | null;
+  /** Lo que la ficha nueva trae escrito (el RUT y el nombre de una cuenta del portal). */
+  inicial?: Pick<Valores, "numeroDocumento" | "nombre">;
   onGuardado: (c: Cliente, eraNueva: boolean) => void;
   onCerrar: () => void;
   avisoGuardado: ReactNode;
@@ -499,7 +521,7 @@ function FichaCliente({
     formState: { errors, isSubmitting, isDirty },
   } = useForm<Valores, unknown, z.output<typeof Formulario>>({
     resolver: zodResolver(Formulario),
-    defaultValues: valoresDe(cliente),
+    defaultValues: { ...valoresDe(cliente), ...(cliente === null ? inicial : undefined) },
   });
 
   const valores = useWatch({ control });

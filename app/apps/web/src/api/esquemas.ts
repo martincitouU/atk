@@ -16,6 +16,7 @@ import {
   entradaIngresoRetiro,
   entradaOperacion,
   entradaPublicacion,
+  ESTADOS_CUENTA_CLIENTE,
   ESTADOS_GASTO,
   ESTADOS_OPERACION,
   MEDIOS_PAGO,
@@ -265,6 +266,16 @@ export const Resumen = z
     ultimas: r.operaciones.ultimas,
   }));
 
+/** GET /api/cuentas-cliente: una cuenta del portal, que se verifica en el local con el carnet. */
+export const CuentaCliente = z.object({
+  id,
+  nombre: z.string(),
+  rut: z.string(),
+  estado: z.enum(ESTADOS_CUENTA_CLIENTE),
+  motivoRechazo: nulo(z.string()),
+  creadaEn: fecha,
+});
+
 /** GET /api/yo: lo primero que se pide al cargar. */
 export const Yo = z.discriminatedUnion("tipo", [
   z.object({
@@ -305,6 +316,9 @@ export const RUTAS = {
   clientes: "/api/clientes",
   cliente: (id: number) => `/api/clientes/${id}`,
   resumen: "/api/resumen",
+  cuentas: "/api/cuentas-cliente",
+  verificarCuenta: (id: number) => `/api/cuentas-cliente/${id}/verificar`,
+  rechazarCuenta: (id: number) => `/api/cuentas-cliente/${id}/rechazar`,
   catalogo: "/api/catalogo",
 } as const;
 
@@ -331,6 +345,7 @@ export type Catalogo = z.output<typeof Catalogo>;
 export type CatalogoApi = z.input<typeof Catalogo>;
 export type Resumen = z.output<typeof Resumen>;
 export type ResumenApi = z.input<typeof Resumen>;
+export type CuentaCliente = z.infer<typeof CuentaCliente>;
 export type Yo = z.infer<typeof Yo>;
 export type Sesion = z.infer<typeof Sesion>;
 export type ErrorApi = z.infer<typeof ErrorApi>;
