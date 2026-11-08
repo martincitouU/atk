@@ -12,11 +12,11 @@
 
 import { sql } from "drizzle-orm";
 import { primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { ESTADOS_OPERACION, MEDIOS_PAGO, ROLES, TIPOS_OPERACION } from "@atk/shared";
+import { ESTADOS_CUENTA_CLIENTE, ESTADOS_OPERACION, MEDIOS_PAGO, ROLES, TIPOS_OPERACION } from "@atk/shared";
 import { AHORA_MS, booleano, dinero, entero, fecha, idAutomatico } from "./tipos.ts";
 
 // Los valores que también usa el front viven en @atk/shared
-export { ESTADOS_OPERACION, MEDIOS_PAGO, ROLES, TIPOS_OPERACION };
+export { ESTADOS_CUENTA_CLIENTE, ESTADOS_OPERACION, MEDIOS_PAGO, ROLES, TIPOS_OPERACION };
 export type { MedioPago, Rol, TipoOperacion } from "@atk/shared";
 export const TIPOS_MOVIMIENTO = ["OPERACION", "REVERSO", "INGRESO", "RETIRO", "GASTO", "AJUSTE"] as const;
 export const ACCIONES_AUDITORIA = [
@@ -278,6 +278,20 @@ export const reporteRoeOperacion = sqliteTable(
   (t) => [primaryKey({ columns: [t.reporteRoeId, t.operacionId] })],
 );
 
+/** Cuenta del portal de clientes (0002). Solo lectura de lo propio, tras verificar el carnet. */
+export const cuentaCliente = sqliteTable("cuenta_cliente", {
+  id: idAutomatico(),
+  authUserId: text("auth_user_id").notNull(),
+  rut: text("rut").notNull(),
+  nombre: text("nombre").notNull(),
+  estado: text("estado", { enum: ESTADOS_CUENTA_CLIENTE }).notNull().default("PENDIENTE"),
+  clienteId: entero("cliente_id").references(() => cliente.id),
+  revisadaPor: entero("revisada_por").references(() => usuario.id),
+  revisadaEn: fecha("revisada_en"),
+  motivoRechazo: text("motivo_rechazo"),
+  creadaEn: fecha("creada_en").notNull().default(AHORA_MS),
+});
+
 // ---------------------------------------------------------------------
 // 5. Gastos y libro de caja
 // ---------------------------------------------------------------------
@@ -339,6 +353,7 @@ export const auditoria = sqliteTable("auditoria", {
 
 export type Operacion = typeof operacion.$inferSelect;
 export type Cliente = typeof cliente.$inferSelect;
+export type CuentaCliente = typeof cuentaCliente.$inferSelect;
 export type Turno = typeof turno.$inferSelect;
 export type Gasto = typeof gasto.$inferSelect;
 export type Cotizacion = typeof cotizacion.$inferSelect;
