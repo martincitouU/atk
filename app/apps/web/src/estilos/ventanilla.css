@@ -76,7 +76,7 @@
 
 .dest {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: baseline;
   gap: 0 12px;
   padding: 8px 10px;
@@ -100,13 +100,25 @@
   line-height: 1;
 }
 
+/* El destino: el código grande y, debajo, el nombre completo en letra chica,
+   en hasta dos líneas («Dólar / estadounidense»), nunca cortado a mitad */
+.dest .id {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
 .dest .nom {
+  display: -webkit-box;
   overflow: hidden;
-  font-size: 13px;
+  font-size: 11.5px;
   font-weight: 600;
+  line-height: 1.2;
   opacity: 0.85;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
 .dest .t {
@@ -804,12 +816,7 @@ input.monto[aria-invalid="true"] {
   }
 
   .dest {
-    grid-template-columns: auto minmax(0, 1fr) auto auto;
     gap: 0 8px;
-  }
-
-  .dest .nom {
-    font-size: 12px;
   }
 
   .pie {
@@ -818,10 +825,6 @@ input.monto[aria-invalid="true"] {
 }
 
 @media (max-width: 399.98px) {
-  .dest .nom {
-    display: none;
-  }
-
   .libro th,
   .libro td {
     padding-inline: 4px;

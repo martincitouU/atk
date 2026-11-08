@@ -128,8 +128,10 @@ export function Pizarra() {
 function Destino({ fila: f, ahora, vista, onMirar }: { fila: FilaPizarra; ahora: Date; vista: boolean; onMirar: () => void }) {
   const cifras = (
     <>
-      <span className="cod">{f.monedaCodigo}</span>
-      <span className="nom">{f.nombre}</span>
+      <span className="id">
+        <span className="cod">{f.monedaCodigo}</span>
+        <span className="nom">{f.nombre}</span>
+      </span>
       <span className="t">
         <span>Compra</span>
         <b className="num">{tasa(f.compraE6, f.decimalesTasa)}</b>
