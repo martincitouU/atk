@@ -7,6 +7,12 @@ export const TIPOS_OPERACION = ["COMPRA", "VENTA"] as const;
 export const MEDIOS_PAGO = ["EFECTIVO", "TRANSFERENCIA", "TARJETA"] as const;
 export const ESTADOS_OPERACION = ["BORRADOR", "CONFIRMADA", "REVERSADA"] as const;
 export const ESTADOS_CUENTA_CLIENTE = ["PENDIENTE", "VERIFICADA", "RECHAZADA"] as const;
+export const ESTADOS_GASTO = ["VIGENTE", "REVERSADO"] as const;
+export const TIPOS_DOCUMENTO = ["RUT", "PASAPORTE", "DNI", "OTRO"] as const;
+export const ACCIONES_AUDITORIA = [
+  "CREAR", "EDITAR", "ELIMINAR", "CONFIRMAR", "REVERSAR", "AUTORIZAR", "PUBLICAR", "ABRIR", "CERRAR",
+  "GENERAR", "EXPORTAR", "IMPORTAR",
+] as const;
 export const TIPOS_MARGEN = ["PORCENTAJE", "MONTO_FIJO"] as const;
 /** 34 factura exenta, 41 boleta exenta */
 export const TIPOS_DTE = [34, 41] as const;

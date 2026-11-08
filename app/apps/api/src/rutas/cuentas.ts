@@ -1,8 +1,7 @@
 // Portal de clientes: registro público, revisión por el personal y lectura de lo propio.
 
-import { entradaRechazoCuenta, filtrosCuentasCliente, idEnTexto, registroCliente } from "@atk/shared";
+import { entradaRechazoCuenta, filtrosCuentasCliente, registroCliente } from "@atk/shared";
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import { z } from "zod";
 import type { Auth } from "../auth/auth.ts";
 import type { Contexto } from "../servicios/contexto.ts";
 import {
@@ -13,9 +12,8 @@ import {
   registrarCliente,
   verificarCuenta,
 } from "../servicios/cuentas.ts";
+import { idDe } from "./comun.ts";
 
-const conId = z.object({ id: idEnTexto });
-const idDe = (request: FastifyRequest) => conId.parse(request.params).id;
 
 /** IP real del cliente: la pone Nginx en X-Real-IP (no se puede falsificar desde fuera). */
 const ipDe = (request: FastifyRequest) => String(request.headers["x-real-ip"] ?? request.ip);

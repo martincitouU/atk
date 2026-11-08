@@ -2,9 +2,8 @@
 // Cada ruta valida la entrada y llama al servicio; las reglas y los permisos
 // finos (de quién es el borrador, quién autoriza o reversa) los aplica el servicio.
 
-import { cambiosOperacion, entradaOperacion, entradaReverso, filtrosOperaciones, idEnTexto } from "@atk/shared";
-import type { FastifyInstance, FastifyRequest } from "fastify";
-import { z } from "zod";
+import { cambiosOperacion, entradaOperacion, entradaReverso, filtrosOperaciones } from "@atk/shared";
+import type { FastifyInstance } from "fastify";
 import type { Contexto } from "../servicios/contexto.ts";
 import {
   autorizarTasa,
@@ -17,9 +16,8 @@ import {
   previsualizarOperacion,
   reversarOperacion,
 } from "../servicios/operaciones.ts";
+import { idDe } from "./comun.ts";
 
-const conId = z.object({ id: idEnTexto });
-const idDe = (request: FastifyRequest) => conId.parse(request.params).id;
 
 export function rutasOperaciones(api: FastifyInstance, ctx: Contexto) {
   api.get("/operaciones", (request) => listarOperaciones(ctx.db, filtrosOperaciones.parse(request.query)));
