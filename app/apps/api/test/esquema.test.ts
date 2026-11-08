@@ -18,8 +18,12 @@ function baseMigrada() {
 describe("esquema.ts es espejo de las migraciones", () => {
   it("tiene exactamente las mismas tablas", () => {
     const { sqlite } = baseMigrada();
+    // Fuera del espejo: la tabla de migraciones y las de Better Auth
     const enLaBase = sqlite
-      .prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name <> 'migracion'")
+      .prepare(
+        `SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT LIKE 'sqlite_%'
+           AND name NOT IN ('migracion', 'user', 'session', 'account', 'verification')`,
+      )
       .pluck()
       .all() as string[];
 

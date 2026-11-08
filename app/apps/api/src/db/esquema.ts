@@ -5,11 +5,24 @@
 // una migración, se actualiza este archivo; test/esquema.test.ts compara
 // ambos contra una base real y falla si no coinciden.
 //
+// Las tablas de Better Auth (user, session, account, verification) no están
+// aquí: las maneja Better Auth con su propia conexión.
+//
 // Unidades: dinero() en unidad mínima de su moneda; columnas *E6 ×10^6.
 
 import { sql } from "drizzle-orm";
 import { primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { AHORA_MS, booleano, dinero, entero, fecha, idAutomatico } from "./tipos.ts";
+
+export const ROLES = ["ADMIN", "SUPERVISOR", "CAJERO"] as const;
+export const TIPOS_OPERACION = ["COMPRA", "VENTA"] as const;
+export const MEDIOS_PAGO = ["EFECTIVO", "TRANSFERENCIA", "TARJETA"] as const;
+export const ESTADOS_OPERACION = ["BORRADOR", "CONFIRMADA", "REVERSADA"] as const;
+export const TIPOS_MOVIMIENTO = ["OPERACION", "REVERSO", "INGRESO", "RETIRO", "GASTO", "AJUSTE"] as const;
+export const ACCIONES_AUDITORIA = [
+  "CREAR", "EDITAR", "ELIMINAR", "CONFIRMAR", "REVERSAR", "AUTORIZAR", "PUBLICAR", "ABRIR", "CERRAR",
+] as const;
+export const TIPOS_DOCUMENTO = ["RUT", "PASAPORTE", "DNI", "OTRO"] as const;
 
 // ---------------------------------------------------------------------
 // 1. Catálogo y configuración
@@ -60,11 +73,12 @@ export const caja = sqliteTable("caja", {
 
 export const usuario = sqliteTable("usuario", {
   id: idAutomatico(),
+  authUserId: text("auth_user_id"),
   sucursalId: entero("sucursal_id").references(() => sucursal.id),
   rut: text("rut").notNull(),
   nombre: text("nombre").notNull(),
   email: text("email").notNull(),
-  rol: text("rol", { enum: ["ADMIN", "SUPERVISOR", "CAJERO"] }).notNull(),
+  rol: text("rol", { enum: ROLES }).notNull(),
   activo: booleano("activo").notNull().default(true),
   creadoEn: fecha("creado_en").notNull().default(AHORA_MS),
 });
@@ -103,7 +117,6 @@ export const reglaSpread = sqliteTable("regla_spread", {
   vigenteDesde: fecha("vigente_desde").notNull().default(AHORA_MS),
   vigenteHasta: fecha("vigente_hasta"),
   prioridad: entero("prioridad").notNull().default(0),
-  activa: booleano("activa").notNull().default(true),
   creadaPor: entero("creada_por").references(() => usuario.id),
 });
 
@@ -121,18 +134,23 @@ export const cotizacion = sqliteTable("cotizacion", {
 });
 
 // ---------------------------------------------------------------------
-// 4. Operación y caja
+// 4. Clientes, turnos y operación
 // ---------------------------------------------------------------------
 
 export const cliente = sqliteTable("cliente", {
   id: idAutomatico(),
-  tipoDocumento: text("tipo_documento", { enum: ["RUT", "PASAPORTE", "DNI", "OTRO"] }).notNull(),
+  tipoDocumento: text("tipo_documento", { enum: TIPOS_DOCUMENTO }).notNull(),
   numeroDocumento: text("numero_documento").notNull(),
   nombre: text("nombre").notNull(),
   nacionalidad: text("nacionalidad"),
+  oficio: text("oficio"),
+  paisResidencia: text("pais_residencia"),
+  domicilio: text("domicilio"),
   telefono: text("telefono"),
   email: text("email"),
+  relacionPermanente: booleano("relacion_permanente").notNull().default(false),
   creadoEn: fecha("creado_en").notNull().default(AHORA_MS),
+  actualizadoEn: fecha("actualizado_en").notNull().default(AHORA_MS),
 });
 
 export const turno = sqliteTable("turno", {
@@ -186,9 +204,10 @@ export const operacion = sqliteTable("operacion", {
   turnoId: entero("turno_id").references(() => turno.id),
   usuarioId: entero("usuario_id").notNull().references(() => usuario.id),
   clienteId: entero("cliente_id").references(() => cliente.id),
-  tipo: text("tipo", { enum: ["COMPRA", "VENTA"] }).notNull(),
+  tipo: text("tipo", { enum: TIPOS_OPERACION }).notNull(),
   monedaCodigo: text("moneda_codigo").notNull().references(() => casaMoneda.monedaCodigo),
   montoDivisa: dinero("monto_divisa").notNull(),
+  medioPago: text("medio_pago", { enum: MEDIOS_PAGO }).notNull().default("EFECTIVO"),
   tasaAplicadaE6: dinero("tasa_aplicada_e6").notNull(),
   montoBase: dinero("monto_base").notNull(),
   tasaReferenciaE6: dinero("tasa_referencia_e6"),
@@ -196,16 +215,53 @@ export const operacion = sqliteTable("operacion", {
   reglaSpreadId: entero("regla_spread_id").references(() => reglaSpread.id),
   esPreferencial: booleano("es_preferencial").notNull().default(false),
   autorizadoPor: entero("autorizado_por").references(() => usuario.id),
+  autorizadoEn: fecha("autorizado_en"),
   margenBruto: dinero("margen_bruto"),
   margenRealizado: dinero("margen_realizado"),
-  estado: text("estado", { enum: ["VIGENTE", "ANULADA"] }).notNull().default("VIGENTE"),
-  anuladaPor: entero("anulada_por").references(() => usuario.id),
-  anuladaEn: fecha("anulada_en"),
-  motivoAnulacion: text("motivo_anulacion"),
+  equivalenteUsd: dinero("equivalente_usd"),
+  proposito: text("proposito"),
+  tipoDte: entero("tipo_dte"),
+  folioDte: entero("folio_dte"),
+  estado: text("estado", { enum: ESTADOS_OPERACION }).notNull().default("BORRADOR"),
+  confirmadaPor: entero("confirmada_por").references(() => usuario.id),
+  confirmadaEn: fecha("confirmada_en"),
+  reversadaPor: entero("reversada_por").references(() => usuario.id),
+  reversadaEn: fecha("reversada_en"),
+  motivoReverso: text("motivo_reverso"),
   origen: text("origen", { enum: ["SISTEMA", "MIGRACION"] }).notNull().default("SISTEMA"),
   loteMigracionId: entero("lote_migracion_id").references(() => loteMigracion.id),
+  registroDiferido: booleano("registro_diferido").notNull().default(false),
   realizadaEn: fecha("realizada_en").notNull().default(AHORA_MS),
+  registradaEn: fecha("registrada_en").notNull().default(AHORA_MS),
   observacion: text("observacion"),
+});
+
+// ---------------------------------------------------------------------
+// 5. Gastos y libro de caja
+// ---------------------------------------------------------------------
+
+export const categoriaGasto = sqliteTable("categoria_gasto", {
+  id: idAutomatico(),
+  nombre: text("nombre").notNull(),
+  activa: booleano("activa").notNull().default(true),
+});
+
+export const gasto = sqliteTable("gasto", {
+  id: idAutomatico(),
+  fecha: text("fecha").notNull(), // YYYY-MM-DD en la zona horaria de la casa
+  categoriaId: entero("categoria_id").notNull().references(() => categoriaGasto.id),
+  descripcion: text("descripcion").notNull(),
+  monto: dinero("monto").notNull(),
+  medioPago: text("medio_pago", { enum: MEDIOS_PAGO }).notNull(),
+  cajaId: entero("caja_id").references(() => caja.id),
+  turnoId: entero("turno_id").references(() => turno.id),
+  documento: text("documento"),
+  estado: text("estado", { enum: ["VIGENTE", "REVERSADO"] }).notNull().default("VIGENTE"),
+  reversadoPor: entero("reversado_por").references(() => usuario.id),
+  reversadoEn: fecha("reversado_en"),
+  motivoReverso: text("motivo_reverso"),
+  usuarioId: entero("usuario_id").notNull().references(() => usuario.id),
+  registradoEn: fecha("registrado_en").notNull().default(AHORA_MS),
 });
 
 export const movimientoCaja = sqliteTable("movimiento_caja", {
@@ -213,26 +269,38 @@ export const movimientoCaja = sqliteTable("movimiento_caja", {
   cajaId: entero("caja_id").notNull().references(() => caja.id),
   turnoId: entero("turno_id").references(() => turno.id),
   monedaCodigo: text("moneda_codigo").notNull().references(() => moneda.codigo),
-  tipo: text("tipo", { enum: ["OPERACION", "ANULACION", "INGRESO", "RETIRO", "AJUSTE"] }).notNull(),
+  tipo: text("tipo", { enum: TIPOS_MOVIMIENTO }).notNull(),
   monto: dinero("monto").notNull(),
   saldoPost: dinero("saldo_post").notNull(),
   operacionId: entero("operacion_id").references(() => operacion.id),
+  gastoId: entero("gasto_id").references(() => gasto.id),
   usuarioId: entero("usuario_id").notNull().references(() => usuario.id),
   descripcion: text("descripcion"),
   creadoEn: fecha("creado_en").notNull().default(AHORA_MS),
 });
 
 // ---------------------------------------------------------------------
-// 5. Auditoría
+// 6. Auditoría
 // ---------------------------------------------------------------------
 
 export const auditoria = sqliteTable("auditoria", {
   id: idAutomatico(),
   tabla: text("tabla").notNull(),
   registroId: text("registro_id").notNull(),
-  accion: text("accion", { enum: ["INSERT", "UPDATE", "DELETE"] }).notNull(),
+  accion: text("accion", { enum: ACCIONES_AUDITORIA }).notNull(),
+  motivo: text("motivo"),
   datosAntes: text("datos_antes", { mode: "json" }),
   datosDespues: text("datos_despues", { mode: "json" }),
   usuarioId: entero("usuario_id").notNull().references(() => usuario.id),
   registradoEn: fecha("registrado_en").notNull().default(AHORA_MS),
 });
+
+export type Operacion = typeof operacion.$inferSelect;
+export type Cliente = typeof cliente.$inferSelect;
+export type Turno = typeof turno.$inferSelect;
+export type Gasto = typeof gasto.$inferSelect;
+export type Cotizacion = typeof cotizacion.$inferSelect;
+export type ReglaSpread = typeof reglaSpread.$inferSelect;
+export type Rol = (typeof ROLES)[number];
+export type TipoOperacion = (typeof TIPOS_OPERACION)[number];
+export type MedioPago = (typeof MEDIOS_PAGO)[number];

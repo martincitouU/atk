@@ -1,13 +1,14 @@
 -- =====================================================================
 --  Sistema de gestión para casas de cambio — Esquema SQLite
---  Port de docs/casa_cambio_schema_postgres.sql (diseño original).
+--  Port de docs/casa_cambio_schema_postgres.sql (diseño original),
+--  ajustado a los requerimientos funcionales RF-01 a RF-21.
 --
 --  Convención: COMPRA / VENTA se expresan SIEMPRE desde la perspectiva
 --  de la casa de cambio.
 --    COMPRA → la casa recibe divisa y entrega moneda base.
 --    VENTA  → la casa entrega divisa y recibe moneda base.
 --
---  Diferencias con el original:
+--  Unidades y tipos:
 --    - Una base de datos por casa de cambio: no hay casa_id. Los datos de
 --      la casa viven en la tabla "casa" (una sola fila).
 --    - Montos: INTEGER en la unidad mínima de su moneda (moneda.decimales).
@@ -16,14 +17,18 @@
 --      con sufijo _e6. Una sola escala para todas las monedas.
 --        940,50 CLP por USD → 940500000      1,5 % → 1500000
 --    - Fechas: INTEGER, milisegundos desde 1970 en UTC. Los cortes diarios
---      en America/Santiago se calculan en la app (SQLite no tiene zonas).
+--      se calculan en la app con el parámetro zona_horaria.
 --    - Booleanos: INTEGER 0/1. ENUM → TEXT con CHECK.
---    - La lógica de negocio (precios, caja, costo promedio, anulación,
---      turnos) vive en la app, en TypeScript. Aquí quedan solo las
---      restricciones y los triggers que protegen los datos aunque la app
---      tenga un bug.
---    - La auditoría la escribe la app, en la misma transacción, con el
---      usuario obligatorio y sin datos sensibles.
+--
+--  Ciclo de una operación (RF-07):
+--    BORRADOR   se edita y se puede eliminar; no mueve la caja.
+--    CONFIRMADA mueve la caja; ya no se modifica ni se elimina.
+--    REVERSADA  se anuló con motivo; los movimientos inversos quedan en el
+--               libro de caja. Tampoco se modifica.
+--
+--  La lógica de negocio (precios, caja, costo promedio, reverso, turnos)
+--  vive en la app, en TypeScript. Aquí quedan las restricciones y los
+--  triggers que protegen los datos aunque la app tenga un bug.
 --
 --  La app debe abrir cada conexión con:
 --    PRAGMA foreign_keys = ON;      (SQLite no lo guarda en el archivo)
@@ -32,9 +37,10 @@
 --  y hacer las escrituras con BEGIN IMMEDIATE.
 --
 --  Organización:
---    1. Catálogo y configuración     4. Operación y caja
---    2. Usuarios                     5. Auditoría
---    3. Precios y spread             6. Triggers de protección
+--    1. Catálogo y configuración     5. Gastos y libro de caja
+--    2. Usuarios y autenticación     6. Auditoría
+--    3. Precios y spread             7. Triggers de protección
+--    4. Clientes, turnos y operación 8. Datos de referencia
 -- =====================================================================
 
 
@@ -89,20 +95,37 @@ CREATE TABLE caja (
 
 
 -- =====================================================================
--- 2. USUARIOS
+-- 2. USUARIOS Y AUTENTICACIÓN (RF-14)
 -- =====================================================================
 
--- Sin contraseña: el login lo maneja Better Auth (fase 4), que guarda las
--- credenciales en sus propias tablas. Esta tabla se fusionará con la suya.
+-- Tablas de Better Auth: SQL generado por Better Auth 1.7 con el plugin
+-- admin. No son STRICT (Better Auth usa el tipo "date") y no se modifican
+-- a mano: las maneja Better Auth con su propia conexión.
+create table "user" ("id" text not null primary key, "name" text not null, "email" text not null unique, "emailVerified" integer not null, "image" text, "createdAt" date not null, "updatedAt" date not null, "role" text, "banned" integer, "banReason" text, "banExpires" date);
+
+create table "session" ("id" text not null primary key, "expiresAt" date not null, "token" text not null unique, "createdAt" date not null, "updatedAt" date not null, "ipAddress" text, "userAgent" text, "userId" text not null references "user" ("id") on delete cascade, "impersonatedBy" text);
+
+create table "account" ("id" text not null primary key, "accountId" text not null, "providerId" text not null, "userId" text not null references "user" ("id") on delete cascade, "accessToken" text, "refreshToken" text, "idToken" text, "accessTokenExpiresAt" date, "refreshTokenExpiresAt" date, "scope" text, "password" text, "createdAt" date not null, "updatedAt" date not null);
+
+create table "verification" ("id" text not null primary key, "identifier" text not null, "value" text not null, "expiresAt" date not null, "createdAt" date not null, "updatedAt" date not null);
+
+create index "session_userId_idx" on "session" ("userId");
+create index "account_userId_idx" on "account" ("userId");
+create index "verification_identifier_idx" on "verification" ("identifier");
+
+-- Usuarios del negocio. El rol de esta tabla es el que autoriza; la
+-- contraseña vive en Better Auth ("account"). Sin auth_user_id, el usuario
+-- no puede iniciar sesión.
 CREATE TABLE usuario (
-    id           INTEGER NOT NULL PRIMARY KEY,
-    sucursal_id  INTEGER REFERENCES sucursal(id),   -- NULL = todas las sucursales
-    rut          TEXT    NOT NULL UNIQUE,
-    nombre       TEXT    NOT NULL,
-    email        TEXT    NOT NULL UNIQUE,
-    rol          TEXT    NOT NULL CHECK (rol IN ('ADMIN', 'SUPERVISOR', 'CAJERO')),
-    activo       INTEGER NOT NULL DEFAULT 1 CHECK (activo IN (0, 1)),
-    creado_en    INTEGER NOT NULL DEFAULT (CAST(unixepoch('subsec') * 1000 AS INTEGER))
+    id            INTEGER NOT NULL PRIMARY KEY,
+    auth_user_id  TEXT    UNIQUE REFERENCES "user"(id),
+    sucursal_id   INTEGER REFERENCES sucursal(id),   -- NULL = todas las sucursales
+    rut           TEXT    NOT NULL UNIQUE,
+    nombre        TEXT    NOT NULL,
+    email         TEXT    NOT NULL UNIQUE,           -- el mismo de Better Auth
+    rol           TEXT    NOT NULL CHECK (rol IN ('ADMIN', 'SUPERVISOR', 'CAJERO')),
+    activo        INTEGER NOT NULL DEFAULT 1 CHECK (activo IN (0, 1)),
+    creado_en     INTEGER NOT NULL DEFAULT (CAST(unixepoch('subsec') * 1000 AS INTEGER))
 ) STRICT;
 
 -- Parámetros del rubro (clave-valor tipado). La app convierte "valor"
@@ -118,10 +141,10 @@ CREATE TABLE parametro (
 
 
 -- =====================================================================
--- 3. PRECIOS: TASA DE REFERENCIA → REGLA DE SPREAD → COTIZACIÓN
+-- 3. PRECIOS: TASA DE REFERENCIA → REGLA DE SPREAD → COTIZACIÓN (RF-08)
 -- =====================================================================
 
--- Valor de mercado ("medio") de 1 unidad de divisa en moneda base. Histórico.
+-- Valor de mercado ("medio") de 1 unidad de divisa en moneda base. Historial.
 CREATE TABLE tasa_referencia (
     id              INTEGER NOT NULL PRIMARY KEY,
     moneda_codigo   TEXT    NOT NULL REFERENCES casa_moneda(moneda_codigo),
@@ -135,6 +158,8 @@ CREATE TABLE tasa_referencia (
 -- la tasa de referencia. Admite tramos por monto y vigencia.
 --   PORCENTAJE : margen_*_e6 es un porcentaje ×10^6   (1,5 % → 1500000)
 --   MONTO_FIJO : margen_*_e6 es moneda base ×10^6     (5 CLP → 5000000)
+-- Una regla no se modifica: para cambiar un margen se cierra su vigencia y
+-- se crea otra. Así cada operación conserva la regla con que se cobró.
 CREATE TABLE regla_spread (
     id                INTEGER NOT NULL PRIMARY KEY,
     sucursal_id       INTEGER REFERENCES sucursal(id),   -- NULL = regla general
@@ -147,12 +172,12 @@ CREATE TABLE regla_spread (
     vigente_desde     INTEGER NOT NULL DEFAULT (CAST(unixepoch('subsec') * 1000 AS INTEGER)),
     vigente_hasta     INTEGER,
     prioridad         INTEGER NOT NULL DEFAULT 0,
-    activa            INTEGER NOT NULL DEFAULT 1 CHECK (activa IN (0, 1)),
     creada_por        INTEGER REFERENCES usuario(id),
     CHECK (monto_hasta IS NULL OR monto_hasta > monto_desde),
-    CHECK (vigente_hasta IS NULL OR vigente_hasta > vigente_desde),
+    CHECK (vigente_hasta IS NULL OR vigente_hasta >= vigente_desde),
     CHECK (tipo_margen <> 'PORCENTAJE' OR margen_compra_e6 < 100000000)  -- < 100 %
 ) STRICT;
+CREATE INDEX ix_regla_spread_moneda ON regla_spread (moneda_codigo, vigente_desde);
 
 -- Precio publicado en pizarra (historial completo; vigente_hasta NULL = actual)
 CREATE TABLE cotizacion (
@@ -172,25 +197,34 @@ CREATE TABLE cotizacion (
 CREATE UNIQUE INDEX ux_cotizacion_vigente
     ON cotizacion (ifnull(sucursal_id, 0), moneda_codigo)
     WHERE vigente_hasta IS NULL;
+-- Para buscar la cotización vigente a una hora pasada (registro diferido, RF-21)
+CREATE INDEX ix_cotizacion_historial ON cotizacion (moneda_codigo, vigente_desde);
 
 
 -- =====================================================================
--- 4. OPERACIÓN Y CAJA
+-- 4. CLIENTES, TURNOS Y OPERACIÓN
 -- =====================================================================
 
+-- Ficha de cliente con los datos que exige la UAF (RF-17). Las columnas
+-- opcionales se exigen en la app cuando la operación requiere la ficha.
 CREATE TABLE cliente (
-    id                INTEGER NOT NULL PRIMARY KEY,
-    tipo_documento    TEXT    NOT NULL CHECK (tipo_documento IN ('RUT', 'PASAPORTE', 'DNI', 'OTRO')),
-    numero_documento  TEXT    NOT NULL,
-    nombre            TEXT    NOT NULL,
-    nacionalidad      TEXT    CHECK (nacionalidad GLOB '[A-Z][A-Z]'),  -- ISO 3166-1 alfa-2
-    telefono          TEXT,
-    email             TEXT,
-    creado_en         INTEGER NOT NULL DEFAULT (CAST(unixepoch('subsec') * 1000 AS INTEGER)),
+    id                   INTEGER NOT NULL PRIMARY KEY,
+    tipo_documento       TEXT    NOT NULL CHECK (tipo_documento IN ('RUT', 'PASAPORTE', 'DNI', 'OTRO')),
+    numero_documento     TEXT    NOT NULL,
+    nombre               TEXT    NOT NULL,
+    nacionalidad         TEXT    CHECK (nacionalidad GLOB '[A-Z][A-Z]'),     -- ISO 3166-1 alfa-2
+    oficio               TEXT,                                             -- profesión u oficio
+    pais_residencia      TEXT    CHECK (pais_residencia GLOB '[A-Z][A-Z]'),  -- ISO 3166-1 alfa-2
+    domicilio            TEXT,
+    telefono             TEXT,
+    email                TEXT,
+    relacion_permanente  INTEGER NOT NULL DEFAULT 0 CHECK (relacion_permanente IN (0, 1)),
+    creado_en            INTEGER NOT NULL DEFAULT (CAST(unixepoch('subsec') * 1000 AS INTEGER)),
+    actualizado_en       INTEGER NOT NULL DEFAULT (CAST(unixepoch('subsec') * 1000 AS INTEGER)),
     UNIQUE (tipo_documento, numero_documento)
 ) STRICT;
 
--- El turno es de una persona en una caja (pendiente confirmar con el cliente)
+-- El turno es de una persona en una caja
 CREATE TABLE turno (
     id           INTEGER NOT NULL PRIMARY KEY,
     caja_id      INTEGER NOT NULL REFERENCES caja(id),
@@ -216,7 +250,7 @@ CREATE TABLE saldo_caja (
     PRIMARY KEY (caja_id, moneda_codigo)
 ) STRICT;
 
--- Conteo físico al cerrar turno vs. saldo del sistema. Solo inserción.
+-- Conteo físico al cerrar turno vs. saldo del sistema (RF-06). Solo inserción.
 CREATE TABLE arqueo (
     id             INTEGER NOT NULL PRIMARY KEY,
     turno_id       INTEGER NOT NULL REFERENCES turno(id),
@@ -228,7 +262,7 @@ CREATE TABLE arqueo (
     UNIQUE (turno_id, moneda_codigo)
 ) STRICT;
 
--- Importación de historial (papel / Excel)
+-- Importación de historial (papel / Excel, RF-13)
 CREATE TABLE lote_migracion (
     id                INTEGER NOT NULL PRIMARY KEY,
     archivo_origen    TEXT    NOT NULL,
@@ -240,95 +274,174 @@ CREATE TABLE lote_migracion (
     observaciones     TEXT
 ) STRICT;
 
--- Inmutable: solo se puede anular o editar la observación (ver triggers)
+-- Compra o venta de divisa (RF-01, RF-02). Ver el ciclo de estados arriba.
+-- La divisa siempre se entrega en efectivo; medio_pago es cómo se pagan
+-- los pesos: solo EFECTIVO mueve los pesos de la caja.
 CREATE TABLE operacion (
     id                  INTEGER NOT NULL PRIMARY KEY,
     caja_id             INTEGER NOT NULL REFERENCES caja(id),
     turno_id            INTEGER REFERENCES turno(id),
-    usuario_id          INTEGER NOT NULL REFERENCES usuario(id),
+    usuario_id          INTEGER NOT NULL REFERENCES usuario(id),     -- quien la registra
     cliente_id          INTEGER REFERENCES cliente(id),
     tipo                TEXT    NOT NULL CHECK (tipo IN ('COMPRA', 'VENTA')),
     moneda_codigo       TEXT    NOT NULL REFERENCES casa_moneda(moneda_codigo),
-    monto_divisa        INTEGER NOT NULL CHECK (monto_divisa > 0),     -- unidad mínima de la divisa
+    monto_divisa        INTEGER NOT NULL CHECK (monto_divisa > 0),   -- unidad mínima de la divisa
+    medio_pago          TEXT    NOT NULL DEFAULT 'EFECTIVO' CHECK (medio_pago IN ('EFECTIVO', 'TRANSFERENCIA', 'TARJETA')),
     tasa_aplicada_e6    INTEGER NOT NULL CHECK (tasa_aplicada_e6 > 0),
-    monto_base          INTEGER NOT NULL CHECK (monto_base > 0),       -- unidad mínima de la moneda base
-    tasa_referencia_e6  INTEGER,                                       -- snapshot al momento de operar
+    monto_base          INTEGER NOT NULL CHECK (monto_base > 0),     -- unidad mínima de la moneda base
+    tasa_referencia_e6  INTEGER,                                     -- snapshot al momento de operar
     cotizacion_id       INTEGER REFERENCES cotizacion(id),
     regla_spread_id     INTEGER REFERENCES regla_spread(id),
     es_preferencial     INTEGER NOT NULL DEFAULT 0 CHECK (es_preferencial IN (0, 1)),
     autorizado_por      INTEGER REFERENCES usuario(id),
-    margen_bruto        INTEGER,   -- moneda base, vs. tasa de referencia
+    autorizado_en       INTEGER,
+    margen_bruto        INTEGER,   -- moneda base, vs. tasa de referencia (RF-03)
     margen_realizado    INTEGER,   -- moneda base, solo ventas: vs. costo promedio del stock
-    estado              TEXT    NOT NULL DEFAULT 'VIGENTE' CHECK (estado IN ('VIGENTE', 'ANULADA')),
-    anulada_por         INTEGER REFERENCES usuario(id),
-    anulada_en          INTEGER,
-    motivo_anulacion    TEXT,
+    equivalente_usd     INTEGER CHECK (equivalente_usd >= 0),        -- unidad mínima del USD (RF-17, RF-19)
+    proposito           TEXT,                                        -- propósito de la transacción (RF-17)
+    tipo_dte            INTEGER CHECK (tipo_dte IN (34, 41)),        -- 34 factura exenta, 41 boleta exenta (RF-20)
+    folio_dte           INTEGER CHECK (folio_dte > 0),
+    estado              TEXT    NOT NULL DEFAULT 'BORRADOR' CHECK (estado IN ('BORRADOR', 'CONFIRMADA', 'REVERSADA')),
+    confirmada_por      INTEGER REFERENCES usuario(id),
+    confirmada_en       INTEGER,
+    reversada_por       INTEGER REFERENCES usuario(id),
+    reversada_en        INTEGER,
+    motivo_reverso      TEXT,
     origen              TEXT    NOT NULL DEFAULT 'SISTEMA' CHECK (origen IN ('SISTEMA', 'MIGRACION')),
     lote_migracion_id   INTEGER REFERENCES lote_migracion(id),
-    realizada_en        INTEGER NOT NULL DEFAULT (CAST(unixepoch('subsec') * 1000 AS INTEGER)),
+    registro_diferido   INTEGER NOT NULL DEFAULT 0 CHECK (registro_diferido IN (0, 1)),  -- RF-21
+    realizada_en        INTEGER NOT NULL DEFAULT (CAST(unixepoch('subsec') * 1000 AS INTEGER)),  -- cuándo ocurrió
+    registrada_en       INTEGER NOT NULL DEFAULT (CAST(unixepoch('subsec') * 1000 AS INTEGER)),  -- cuándo se ingresó
     observacion         TEXT,
-    CHECK ((estado = 'VIGENTE' AND anulada_en IS NULL AND anulada_por IS NULL AND motivo_anulacion IS NULL) OR
-           (estado = 'ANULADA' AND anulada_en IS NOT NULL AND anulada_por IS NOT NULL
-                               AND motivo_anulacion IS NOT NULL AND trim(motivo_anulacion) <> '')),
+    CHECK ((estado = 'BORRADOR'   AND confirmada_en IS NULL     AND confirmada_por IS NULL
+                                  AND reversada_en IS NULL      AND reversada_por IS NULL AND motivo_reverso IS NULL) OR
+           (estado = 'CONFIRMADA' AND confirmada_en IS NOT NULL AND confirmada_por IS NOT NULL
+                                  AND reversada_en IS NULL      AND reversada_por IS NULL AND motivo_reverso IS NULL) OR
+           (estado = 'REVERSADA'  AND confirmada_en IS NOT NULL AND confirmada_por IS NOT NULL
+                                  AND reversada_en IS NOT NULL  AND reversada_por IS NOT NULL
+                                  AND motivo_reverso IS NOT NULL AND trim(motivo_reverso) <> '')),
     CHECK ((origen = 'SISTEMA'   AND turno_id IS NOT NULL AND lote_migracion_id IS NULL) OR
            (origen = 'MIGRACION' AND lote_migracion_id IS NOT NULL)),
-    CHECK (es_preferencial = 0 OR autorizado_por IS NOT NULL)
+    CHECK (estado = 'BORRADOR' OR es_preferencial = 0 OR autorizado_por IS NOT NULL),
+    CHECK ((autorizado_por IS NULL) = (autorizado_en IS NULL)),
+    CHECK ((tipo_dte IS NULL) = (folio_dte IS NULL)),
+    CHECK (registro_diferido = 0 OR realizada_en <= registrada_en),
+    UNIQUE (tipo_dte, folio_dte)
 ) STRICT;
 CREATE INDEX ix_operacion_caja_fecha   ON operacion (caja_id, realizada_en);
 CREATE INDEX ix_operacion_moneda_fecha ON operacion (moneda_codigo, realizada_en);
+CREATE INDEX ix_operacion_fecha        ON operacion (realizada_en);
 CREATE INDEX ix_operacion_cliente      ON operacion (cliente_id) WHERE cliente_id IS NOT NULL;
 CREATE INDEX ix_operacion_turno        ON operacion (turno_id);
 
--- Libro de movimientos de caja (cada entrada/salida de dinero). Solo inserción.
+
+-- =====================================================================
+-- 5. GASTOS Y LIBRO DE CAJA (RF-04, RF-05)
+-- =====================================================================
+
+CREATE TABLE categoria_gasto (
+    id      INTEGER NOT NULL PRIMARY KEY,
+    nombre  TEXT    NOT NULL UNIQUE,
+    activa  INTEGER NOT NULL DEFAULT 1 CHECK (activa IN (0, 1))
+) STRICT;
+
+-- Gasto operacional en moneda base. Pagado en EFECTIVO sale de una caja,
+-- dentro de un turno; pagado de otra forma no toca la caja.
+CREATE TABLE gasto (
+    id              INTEGER NOT NULL PRIMARY KEY,
+    fecha           TEXT    NOT NULL CHECK (fecha GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' AND date(fecha) = fecha),
+    categoria_id    INTEGER NOT NULL REFERENCES categoria_gasto(id),
+    descripcion     TEXT    NOT NULL CHECK (trim(descripcion) <> ''),
+    monto           INTEGER NOT NULL CHECK (monto > 0),   -- unidad mínima de la moneda base
+    medio_pago      TEXT    NOT NULL CHECK (medio_pago IN ('EFECTIVO', 'TRANSFERENCIA', 'TARJETA')),
+    caja_id         INTEGER REFERENCES caja(id),
+    turno_id        INTEGER REFERENCES turno(id),
+    documento       TEXT,                                 -- boleta o factura del proveedor
+    estado          TEXT    NOT NULL DEFAULT 'VIGENTE' CHECK (estado IN ('VIGENTE', 'REVERSADO')),
+    reversado_por   INTEGER REFERENCES usuario(id),
+    reversado_en    INTEGER,
+    motivo_reverso  TEXT,
+    usuario_id      INTEGER NOT NULL REFERENCES usuario(id),
+    registrado_en   INTEGER NOT NULL DEFAULT (CAST(unixepoch('subsec') * 1000 AS INTEGER)),
+    CHECK ((medio_pago = 'EFECTIVO'  AND caja_id IS NOT NULL AND turno_id IS NOT NULL) OR
+           (medio_pago <> 'EFECTIVO' AND caja_id IS NULL     AND turno_id IS NULL)),
+    CHECK ((estado = 'VIGENTE'   AND reversado_en IS NULL     AND reversado_por IS NULL AND motivo_reverso IS NULL) OR
+           (estado = 'REVERSADO' AND reversado_en IS NOT NULL AND reversado_por IS NOT NULL
+                                 AND motivo_reverso IS NOT NULL AND trim(motivo_reverso) <> ''))
+) STRICT;
+CREATE INDEX ix_gasto_fecha ON gasto (fecha);
+
+-- Libro de movimientos de caja: cada entrada (+) o salida (−) de dinero
+-- físico. Solo inserción.
 CREATE TABLE movimiento_caja (
     id             INTEGER NOT NULL PRIMARY KEY,
     caja_id        INTEGER NOT NULL REFERENCES caja(id),
     turno_id       INTEGER REFERENCES turno(id),
     moneda_codigo  TEXT    NOT NULL REFERENCES moneda(codigo),
-    tipo           TEXT    NOT NULL CHECK (tipo IN ('OPERACION', 'ANULACION', 'INGRESO', 'RETIRO', 'AJUSTE')),
-    monto          INTEGER NOT NULL CHECK (monto <> 0),   -- + entra, − sale; unidad mínima
+    tipo           TEXT    NOT NULL CHECK (tipo IN ('OPERACION', 'REVERSO', 'INGRESO', 'RETIRO', 'GASTO', 'AJUSTE')),
+    monto          INTEGER NOT NULL CHECK (monto <> 0),   -- unidad mínima
     saldo_post     INTEGER NOT NULL,
     operacion_id   INTEGER REFERENCES operacion(id),
+    gasto_id       INTEGER REFERENCES gasto(id),
     usuario_id     INTEGER NOT NULL REFERENCES usuario(id),
     descripcion    TEXT,
-    creado_en      INTEGER NOT NULL DEFAULT (CAST(unixepoch('subsec') * 1000 AS INTEGER))
+    creado_en      INTEGER NOT NULL DEFAULT (CAST(unixepoch('subsec') * 1000 AS INTEGER)),
+    CHECK (tipo <> 'OPERACION' OR operacion_id IS NOT NULL),
+    CHECK (tipo <> 'GASTO'     OR gasto_id IS NOT NULL),
+    CHECK (tipo <> 'REVERSO'   OR operacion_id IS NOT NULL OR gasto_id IS NOT NULL),
+    CHECK (tipo NOT IN ('INGRESO', 'RETIRO', 'AJUSTE') OR (descripcion IS NOT NULL AND trim(descripcion) <> '')),
+    CHECK (tipo <> 'INGRESO' OR monto > 0),
+    CHECK (tipo NOT IN ('RETIRO', 'GASTO') OR monto < 0)
 ) STRICT;
 CREATE INDEX ix_movimiento_caja ON movimiento_caja (caja_id, moneda_codigo, creado_en);
 
 
 -- =====================================================================
--- 5. AUDITORÍA
+-- 6. AUDITORÍA (RF-15)
 -- =====================================================================
 
 -- La escribe la app en la misma transacción que el cambio. El usuario es
--- obligatorio y los datos no incluyen credenciales. Solo inserción.
+-- obligatorio, el reverso exige motivo y los datos no incluyen
+-- credenciales. Solo inserción.
 CREATE TABLE auditoria (
     id             INTEGER NOT NULL PRIMARY KEY,
     tabla          TEXT    NOT NULL,
     registro_id    TEXT    NOT NULL,
-    accion         TEXT    NOT NULL CHECK (accion IN ('INSERT', 'UPDATE', 'DELETE')),
+    accion         TEXT    NOT NULL CHECK (accion IN ('CREAR', 'EDITAR', 'ELIMINAR', 'CONFIRMAR', 'REVERSAR',
+                                                      'AUTORIZAR', 'PUBLICAR', 'ABRIR', 'CERRAR')),
+    motivo         TEXT,
     datos_antes    TEXT    CHECK (datos_antes   IS NULL OR json_valid(datos_antes)),
     datos_despues  TEXT    CHECK (datos_despues IS NULL OR json_valid(datos_despues)),
     usuario_id     INTEGER NOT NULL REFERENCES usuario(id),
-    registrado_en  INTEGER NOT NULL DEFAULT (CAST(unixepoch('subsec') * 1000 AS INTEGER))
+    registrado_en  INTEGER NOT NULL DEFAULT (CAST(unixepoch('subsec') * 1000 AS INTEGER)),
+    CHECK (accion <> 'REVERSAR' OR (motivo IS NOT NULL AND trim(motivo) <> ''))
 ) STRICT;
 CREATE INDEX ix_auditoria_registro ON auditoria (tabla, registro_id);
+CREATE INDEX ix_auditoria_fecha    ON auditoria (registrado_en);
 
 
 -- =====================================================================
--- 6. TRIGGERS DE PROTECCIÓN
+-- 7. TRIGGERS DE PROTECCIÓN
 --    Solo invariantes: la lógica de negocio está en la app.
 -- =====================================================================
 
--- --- operacion ------------------------------------------------------
+-- --- operacion: ciclo BORRADOR → CONFIRMADA → REVERSADA (RF-07) -----
 
-CREATE TRIGGER operacion_nace_vigente BEFORE INSERT ON operacion
-WHEN NEW.estado <> 'VIGENTE'
+-- Lo que registra el sistema nace como borrador; solo la importación del
+-- histórico inserta operaciones ya confirmadas.
+CREATE TRIGGER operacion_nace_borrador BEFORE INSERT ON operacion
+WHEN NEW.origen = 'SISTEMA' AND NEW.estado <> 'BORRADOR'
 BEGIN
-    SELECT RAISE(ABORT, 'Una operación nueva debe estar VIGENTE');
+    SELECT RAISE(ABORT, 'Una operación nueva debe nacer como BORRADOR');
 END;
 
 CREATE TRIGGER operacion_no_moneda_base BEFORE INSERT ON operacion
+WHEN NEW.moneda_codigo = (SELECT moneda_base FROM casa WHERE id = 1)
+BEGIN
+    SELECT RAISE(ABORT, 'No se puede comprar ni vender la moneda base');
+END;
+
+CREATE TRIGGER operacion_no_moneda_base_al_editar BEFORE UPDATE OF moneda_codigo ON operacion
 WHEN NEW.moneda_codigo = (SELECT moneda_base FROM casa WHERE id = 1)
 BEGIN
     SELECT RAISE(ABORT, 'No se puede comprar ni vender la moneda base');
@@ -343,27 +456,56 @@ BEGIN
     SELECT RAISE(ABORT, 'La operación requiere un turno abierto del mismo usuario en esa caja');
 END;
 
-CREATE TRIGGER operacion_no_borrar BEFORE DELETE ON operacion
+CREATE TRIGGER operacion_turno_valido_al_confirmar BEFORE UPDATE OF estado ON operacion
+WHEN NEW.estado = 'CONFIRMADA' AND OLD.estado = 'BORRADOR' AND NEW.origen = 'SISTEMA' AND NOT EXISTS (
+    SELECT 1 FROM turno t
+     WHERE t.id = NEW.turno_id AND t.estado = 'ABIERTO'
+       AND t.caja_id = NEW.caja_id AND t.usuario_id = NEW.usuario_id)
 BEGIN
-    SELECT RAISE(ABORT, 'Las operaciones no se eliminan: se anulan');
+    SELECT RAISE(ABORT, 'La operación requiere un turno abierto del mismo usuario en esa caja');
 END;
 
-CREATE TRIGGER operacion_anulada_inmutable BEFORE UPDATE ON operacion
-WHEN OLD.estado = 'ANULADA'
-BEGIN
-    SELECT RAISE(ABORT, 'Una operación anulada no se puede modificar');
-END;
-
--- Todas las columnas menos estado, anulada_*, motivo_anulacion y observacion.
--- Si se agrega una columna a operacion, agregarla aquí.
-CREATE TRIGGER operacion_campos_inmutables BEFORE UPDATE OF
-    id, caja_id, turno_id, usuario_id, cliente_id, tipo, moneda_codigo,
-    monto_divisa, tasa_aplicada_e6, monto_base, tasa_referencia_e6,
-    cotizacion_id, regla_spread_id, es_preferencial, autorizado_por,
-    margen_bruto, margen_realizado, origen, lote_migracion_id, realizada_en
+-- Dónde, quién y de dónde viene una operación no cambia nunca
+CREATE TRIGGER operacion_origen_inmutable BEFORE UPDATE OF
+    id, caja_id, turno_id, usuario_id, origen, lote_migracion_id, registrada_en
 ON operacion
 BEGIN
-    SELECT RAISE(ABORT, 'Solo se puede anular una operación o editar su observación');
+    SELECT RAISE(ABORT, 'No se puede cambiar la caja, el turno, el cajero ni el origen de una operación');
+END;
+
+CREATE TRIGGER operacion_transicion_valida BEFORE UPDATE OF estado ON operacion
+WHEN NOT (OLD.estado = NEW.estado
+       OR (OLD.estado = 'BORRADOR'   AND NEW.estado = 'CONFIRMADA')
+       OR (OLD.estado = 'CONFIRMADA' AND NEW.estado = 'REVERSADA'))
+BEGIN
+    SELECT RAISE(ABORT, 'Transición de estado no permitida: BORRADOR → CONFIRMADA → REVERSADA');
+END;
+
+CREATE TRIGGER operacion_no_borrar BEFORE DELETE ON operacion
+WHEN OLD.estado <> 'BORRADOR'
+BEGIN
+    SELECT RAISE(ABORT, 'Una operación confirmada no se elimina: se reversa');
+END;
+
+CREATE TRIGGER operacion_reversada_inmutable BEFORE UPDATE ON operacion
+WHEN OLD.estado = 'REVERSADA'
+BEGIN
+    SELECT RAISE(ABORT, 'Una operación reversada no se puede modificar');
+END;
+
+-- Una confirmada solo puede pasar a REVERSADA. Lista: todas las columnas
+-- menos estado, reversada_*, motivo_reverso y las de operacion_origen_inmutable.
+-- Si se agrega una columna a operacion, agregarla aquí.
+CREATE TRIGGER operacion_confirmada_inmutable BEFORE UPDATE OF
+    cliente_id, tipo, moneda_codigo, monto_divisa, medio_pago, tasa_aplicada_e6,
+    monto_base, tasa_referencia_e6, cotizacion_id, regla_spread_id, es_preferencial,
+    autorizado_por, autorizado_en, margen_bruto, margen_realizado, equivalente_usd,
+    proposito, tipo_dte, folio_dte, confirmada_por, confirmada_en, registro_diferido,
+    realizada_en, observacion
+ON operacion
+WHEN OLD.estado = 'CONFIRMADA'
+BEGIN
+    SELECT RAISE(ABORT, 'Una operación confirmada no se modifica: solo se reversa');
 END;
 
 -- --- cotizacion: solo se puede cerrar su vigencia, una vez ---------
@@ -387,7 +529,28 @@ BEGIN
     SELECT RAISE(ABORT, 'Una cotización cerrada no se modifica');
 END;
 
--- --- turno: cerrado no se toca; nunca se borra ---------------------
+-- --- regla_spread: solo se puede cerrar su vigencia ---------------
+
+CREATE TRIGGER regla_spread_no_borrar BEFORE DELETE ON regla_spread
+BEGIN
+    SELECT RAISE(ABORT, 'Las reglas de spread son historial: no se eliminan');
+END;
+
+CREATE TRIGGER regla_spread_campos_inmutables BEFORE UPDATE OF
+    id, sucursal_id, moneda_codigo, tipo_margen, margen_compra_e6, margen_venta_e6,
+    monto_desde, monto_hasta, vigente_desde, prioridad, creada_por
+ON regla_spread
+BEGIN
+    SELECT RAISE(ABORT, 'Una regla de spread no se modifica: se cierra y se crea otra');
+END;
+
+CREATE TRIGGER regla_spread_cerrada_inmutable BEFORE UPDATE ON regla_spread
+WHEN OLD.vigente_hasta IS NOT NULL
+BEGIN
+    SELECT RAISE(ABORT, 'Una regla de spread cerrada no se modifica');
+END;
+
+-- --- turno: no se cierra con borradores; cerrado no se toca --------
 
 CREATE TRIGGER turno_no_borrar BEFORE DELETE ON turno
 BEGIN
@@ -398,6 +561,67 @@ CREATE TRIGGER turno_cerrado_inmutable BEFORE UPDATE ON turno
 WHEN OLD.estado = 'CERRADO'
 BEGIN
     SELECT RAISE(ABORT, 'Un turno cerrado no se puede modificar');
+END;
+
+CREATE TRIGGER turno_no_cerrar_con_borradores BEFORE UPDATE OF estado ON turno
+WHEN NEW.estado = 'CERRADO' AND EXISTS (
+    SELECT 1 FROM operacion WHERE turno_id = NEW.id AND estado = 'BORRADOR')
+BEGIN
+    SELECT RAISE(ABORT, 'El turno tiene operaciones en borrador: confírmelas o elimínelas antes de cerrar');
+END;
+
+-- --- gasto: nace vigente; solo puede reversarse --------------------
+
+CREATE TRIGGER gasto_nace_vigente BEFORE INSERT ON gasto
+WHEN NEW.estado <> 'VIGENTE'
+BEGIN
+    SELECT RAISE(ABORT, 'Un gasto nuevo debe estar VIGENTE');
+END;
+
+CREATE TRIGGER gasto_turno_valido BEFORE INSERT ON gasto
+WHEN NEW.medio_pago = 'EFECTIVO' AND NOT EXISTS (
+    SELECT 1 FROM turno t
+     WHERE t.id = NEW.turno_id AND t.estado = 'ABIERTO'
+       AND t.caja_id = NEW.caja_id AND t.usuario_id = NEW.usuario_id)
+BEGIN
+    SELECT RAISE(ABORT, 'Un gasto en efectivo requiere un turno abierto del mismo usuario en esa caja');
+END;
+
+CREATE TRIGGER gasto_no_borrar BEFORE DELETE ON gasto
+BEGIN
+    SELECT RAISE(ABORT, 'Los gastos no se eliminan: se reversan');
+END;
+
+CREATE TRIGGER gasto_reversado_inmutable BEFORE UPDATE ON gasto
+WHEN OLD.estado = 'REVERSADO'
+BEGIN
+    SELECT RAISE(ABORT, 'Un gasto reversado no se puede modificar');
+END;
+
+CREATE TRIGGER gasto_campos_inmutables BEFORE UPDATE OF
+    id, fecha, categoria_id, descripcion, monto, medio_pago, caja_id, turno_id,
+    documento, usuario_id, registrado_en
+ON gasto
+BEGIN
+    SELECT RAISE(ABORT, 'Un gasto no se modifica: se reversa y se registra de nuevo');
+END;
+
+-- --- libro de caja: coherente con lo que registra ------------------
+
+-- Un borrador nunca mueve la caja
+CREATE TRIGGER movimiento_de_operacion_confirmada BEFORE INSERT ON movimiento_caja
+WHEN NEW.tipo = 'OPERACION'
+ AND (SELECT estado FROM operacion WHERE id = NEW.operacion_id) <> 'CONFIRMADA'
+BEGIN
+    SELECT RAISE(ABORT, 'Solo una operación CONFIRMADA mueve la caja');
+END;
+
+CREATE TRIGGER movimiento_de_reverso BEFORE INSERT ON movimiento_caja
+WHEN NEW.tipo = 'REVERSO' AND (
+       (NEW.operacion_id IS NOT NULL AND (SELECT estado FROM operacion WHERE id = NEW.operacion_id) <> 'REVERSADA')
+    OR (NEW.gasto_id IS NOT NULL AND (SELECT estado FROM gasto WHERE id = NEW.gasto_id) <> 'REVERSADO'))
+BEGIN
+    SELECT RAISE(ABORT, 'Un movimiento de reverso requiere la operación o el gasto ya reversado');
 END;
 
 -- --- tablas de solo inserción --------------------------------------
@@ -437,3 +661,38 @@ CREATE TRIGGER tasa_referencia_no_borrar BEFORE DELETE ON tasa_referencia
 BEGIN
     SELECT RAISE(ABORT, 'tasa_referencia es historial: solo inserción');
 END;
+
+
+-- =====================================================================
+-- 8. DATOS DE REFERENCIA
+--    Catálogos y configuración por defecto: valen en producción. Los
+--    valores de los parámetros deben validarse con el mandante. Los datos
+--    de EJEMPLO (casa, cajas, usuarios, tasas) van en db/semillas/.
+-- =====================================================================
+
+INSERT INTO moneda (codigo, nombre, simbolo, decimales) VALUES
+    ('CLP', 'Peso chileno',          '$',   0),
+    ('USD', 'Dólar estadounidense',  'US$', 2),
+    ('EUR', 'Euro',                  '€',   2),
+    ('BRL', 'Real brasileño',        'R$',  2),
+    ('ARS', 'Peso argentino',        'AR$', 2);
+
+INSERT INTO parametro (clave, valor, tipo_dato, descripcion) VALUES
+    ('zona_horaria',                       'America/Coyhaique', 'TEXTO',    'Zona horaria de los cortes diarios. Aysén usa UTC-3 todo el año desde 2025'),
+    ('umbral_ficha_cliente_usd',           '5000',              'ENTERO',   'Equivalente en USD desde el cual la operación exige ficha de cliente completa y propósito (RF-17)'),
+    ('umbral_roe_usd',                     '10000',             'ENTERO',   'Equivalente en USD sobre el cual una operación en efectivo va al ROE (RF-19)'),
+    ('permitir_saldo_negativo',            'false',             'BOOLEANO', 'Si es false, no se puede entregar dinero que la caja no tiene'),
+    ('vigencia_cotizacion_minutos',        '720',               'ENTERO',   'Minutos que una pizarra es válida antes de exigir publicar una nueva'),
+    ('reverso_requiere_supervisor',        'true',              'BOOLEANO', 'Si los reversos requieren rol SUPERVISOR o ADMIN'),
+    ('desviacion_maxima_preferencial_pct', '5',                 'DECIMAL',  'Desviación máxima de una tasa preferencial respecto de la pizarra, en %'),
+    ('folio_obligatorio_al_confirmar',     'true',              'BOOLEANO', 'Si una operación exige el folio del DTE para confirmarse (RF-20)'),
+    ('sesion_inactividad_minutos',         '15',                'ENTERO',   'Minutos sin actividad tras los cuales se cierra la sesión (RF-14)');
+
+INSERT INTO categoria_gasto (nombre) VALUES
+    ('Arriendo'),
+    ('Remuneraciones'),
+    ('Servicios básicos'),
+    ('Comisiones bancarias'),
+    ('Transporte de valores'),
+    ('Insumos y oficina'),
+    ('Otros');

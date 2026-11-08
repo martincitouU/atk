@@ -80,7 +80,14 @@ La app debe:
   `app/db/migraciones/NNNN_nombre.sql`. drizzle-kit no se usa: no sabe
   expresar `STRICT`, triggers ni columnas generadas.
 - Las migraciones aplicadas **no se editan**: se escribe una nueva.
-  `migrar()` se detiene si el hash de una aplicada cambió.
+  `migrar()` se detiene si el hash de una aplicada cambió. `0001` se
+  reescribió por última vez antes del primer despliegue de la app (no había
+  ninguna base real); desde ese despliegue, todo cambio es una migración nueva.
+- `0001` trae datos de referencia que valen en producción (monedas,
+  parámetros, categorías de gasto). Los de ejemplo van en `semillas/`.
+- Las tablas de Better Auth (`user`, `session`, `account`, `verification`)
+  están en `0001` con el SQL que genera Better Auth, no son STRICT y Better
+  Auth las usa con su propia conexión (sin `safeIntegers`).
 - `apps/api/src/db/esquema.ts` es el espejo en Drizzle para consultar con
   tipos. Al cambiar una migración se actualiza; `test/esquema.test.ts` lo
   compara con una base real.
@@ -96,9 +103,27 @@ La app debe:
 - Drizzle inserta NULL en columnas sin valor ni default declarado: toda
   columna con `DEFAULT` en el SQL repite su default en `esquema.ts`.
 - En JSON los montos viajan como string (`JSON.stringify` falla con `bigint`).
-- Todo cálculo monto × tasa vive en **una sola función**, con `BigInt` y
-  redondeo explícito, y tiene tests exhaustivos.
+- Tasas, precios, costos y márgenes: enteros con **escala única ×10^6**
+  (sufijo `_e6`/`E6`), igual para todas las monedas.
+- Todo cálculo con dinero vive en `apps/api/src/dominio/dinero.ts` (puro,
+  `bigint`, redondeo explícito) y tiene tablas de casos en sus tests.
+- Redondeo a favor de la casa: lo que paga, hacia abajo; lo que cobra,
+  hacia arriba; márgenes y costos, al más cercano.
 - La tabla de auditoría tiene triggers que abortan `UPDATE` y `DELETE`.
+
+### Lógica de negocio (`apps/api/src/servicios/`)
+- Un archivo por tema: `cotizaciones`, `operaciones`, `caja`, `turnos`,
+  `gastos`, `clientes`, `auditoria`, `resumen`. Cada acción pública abre su
+  propia transacción `IMMEDIATE` y audita dentro de ella.
+- Todo servicio recibe un `Contexto` (base + reloj) y un `Actor` (id + rol).
+  El reloj es inyectable: los tests controlan la hora.
+- Los errores esperables son `ErrorNegocio` (código + mensaje en español
+  para mostrar tal cual). Un parámetro faltante es un `Error` común.
+- Operación: **BORRADOR** (se edita/elimina, no mueve caja) →
+  **CONFIRMADA** (mueve caja, inmutable) → **REVERSADA** (con motivo,
+  movimientos inversos). Los triggers lo garantizan también en SQL.
+- Los tests de servicios se nombran por RF (`RF-07: ...`) y usan
+  `test/servicios/escenario.ts` (semilla + reloj + usuarios).
 
 ## Estructura
 
@@ -149,11 +174,29 @@ docker compose down && rm -rf data
 - Nginx usa `resolver 127.0.0.11` + `proxy_pass` a una variable para no
   responder 502 cuando la app se recrea con otra IP.
 - No usar `ansible.posix.synchronize`: usa rsync sobre SSH y no funciona por SSM.
+- Zona horaria por defecto **`America/Coyhaique`** (UTC-3 todo el año desde
+  2025), no `America/Santiago`: en invierno los cortes diarios se correrían
+  una hora.
+- Confirmar recalcula con la pizarra vigente: si cambió desde el borrador,
+  no se confirma (el cliente vería un precio y pagaría otro).
+- Cambiar un margen cierra la regla de spread y crea otra: cada operación
+  conserva la regla con que se cobró.
+- La divisa siempre es efectivo; `medio_pago` es cómo se pagan los pesos.
+  Solo EFECTIVO mueve los pesos de la caja.
+- Umbrales UAF en USD (ficha desde 5.000, ROE sobre 10.000), con el
+  equivalente calculado con la referencia del USD y guardado en la operación.
+
+## Supuestos de la iteración 1 (por confirmar con el cliente)
+
+- Folio del DTE (tipo 41 o 34) obligatorio para confirmar (parámetro).
+- Reverso: solo supervisor o admin, y solo con el turno de la operación abierto.
+- Las diferencias del arqueo no se ajustan solas: el supervisor registra un AJUSTE.
+- Registro diferido: hora real del mismo día en que se abrió el turno.
+- ROE: ¿se suman las operaciones fraccionadas de un cliente en el día?
+- ¿Se aplica el redondeo del efectivo a $10?
 
 ## Decisiones pendientes
 
-- Representación de la tasa (entero escalado o fracción) y regla de redondeo.
-- Unidad mínima de cada divisa (CLP sin decimales, USD con 2, etc.).
 - Dominio y HTTPS: requisito antes de usar datos reales.
 - Backups del EBS (DLM) y de SQLite (Litestream o VACUUM INTO a S3).
 - Obligaciones del cliente ante la UAF y la Ley 21.719: confirmar con el
