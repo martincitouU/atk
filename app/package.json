@@ -12,6 +12,8 @@
   "scripts": {
     "test": "npm run test --workspaces",
     "typecheck": "npm run typecheck --workspaces",
+    "dev": "npm run dev -w @atk/web",
+    "dev:api": "node apps/api/src/cli/demo.ts",
     "db:probar": "./db/probar.sh"
   }
 }
