@@ -1,0 +1,720 @@
+/*
+ * Clientes y Configuración. Cada sección abre con su cartel de servicio:
+ * azul de servicios para Clientes y gris neutro para Configuración, con el
+ * filete blanco de la señalética (más fino que el de la pizarra, que es el
+ * letrero principal). Debajo, paneles y tablas con las medidas de la
+ * Ventanilla.
+ */
+
+:root {
+  /* Los carteles no cambian de color de noche, como el letrero de la pizarra */
+  --clientes-letrero: #1e4fa0;       /* blanco encima: 7,8:1 */
+  --clientes-letrero-suave: #d5e0f3; /* 5,9:1 sobre el azul */
+  --config-letrero: #5d666c;         /* blanco encima: 5,9:1 */
+  --config-letrero-suave: #e8eaeb;   /* 4,9:1 sobre el gris */
+  --clientes-fila-hover: var(--lamina);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --clientes-letrero: #1e4fa0;
+    --clientes-letrero-suave: #d5e0f3;
+    --config-letrero: #4f575c;       /* un punto más hondo: de noche el gris no encandila */
+    --config-letrero-suave: #e8eaeb; /* 6,1:1 */
+    --clientes-fila-hover: #232a2f;
+  }
+}
+
+.clientes,
+.config {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ------------------------------------------------------------------ */
+/* El cartel de la sección */
+
+.cartel-seccion {
+  --cartel-fondo: var(--clientes-letrero);
+  --cartel-suave: var(--clientes-letrero-suave);
+  padding: 5px;
+  border-radius: 12px;
+  background: var(--cartel-fondo);
+  box-shadow: 0 2px 0 rgb(0 0 0 / 0.08);
+  color: #fff;
+}
+
+.cartel-seccion.gris {
+  --cartel-fondo: var(--config-letrero);
+  --cartel-suave: var(--config-letrero-suave);
+}
+
+.cartel-seccion-in {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 24px;
+  min-height: 58px;
+  padding: 8px 10px 8px 18px;
+  border: 2px solid #fff;
+  border-radius: 8px;
+}
+
+.cartel-titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 14px;
+}
+
+.cartel-titulo h1 {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  line-height: 1.15;
+}
+
+.cartel-titulo p {
+  color: var(--cartel-suave);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.cartel-titulo .sint {
+  white-space: nowrap;
+}
+
+.btn-cartel {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 6px 14px;
+  border: 2px solid #fff;
+  border-radius: var(--radio-control);
+  background: transparent;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  transition: background-color 0.15s ease-out;
+}
+
+.btn-cartel:hover {
+  background: rgb(255 255 255 / 0.14);
+}
+
+.clientes-herramientas {
+  display: flex;
+  flex: 1 1 340px;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+  max-width: 600px;
+}
+
+.clientes-buscar {
+  position: relative;
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.clientes-buscar > svg {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  color: var(--suave);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.clientes-buscar input {
+  min-height: 40px;
+  padding: 7px 12px 7px 38px;
+  border-color: var(--panel);
+}
+
+/* ------------------------------------------------------------------ */
+/* Paneles */
+
+.clientes-trabajo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 448px;
+  gap: 18px;
+  align-items: start;
+}
+
+/* El .panel de base.css; aquí su cabecera se centra y guarda alto para la X
+   de la ficha, para que las cabeceras de lado a lado queden parejas */
+.clientes .panel > header,
+.config .panel > header {
+  align-items: center;
+  min-height: 49px;
+  padding: 10px 12px 10px 18px;
+}
+
+.clientes .panel h2,
+.config .panel h2 {
+  margin-right: auto;
+}
+
+.clientes-estado {
+  padding: 14px 18px;
+}
+
+.clientes-nota {
+  padding: 10px 18px;
+  border-top: 1px solid var(--linea);
+  color: var(--suave);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.clientes-vacio {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  padding: 32px 18px;
+  color: var(--suave);
+  font-weight: 600;
+  text-align: center;
+}
+
+/* ------------------------------------------------------------------ */
+/* La tabla de fichas */
+
+.clientes-tabla {
+  overflow-x: auto;
+}
+
+.clientes-tabla td {
+  vertical-align: top;
+  padding-block: 11px;
+}
+
+.clientes-tabla th:first-child {
+  width: 34%;
+}
+
+.clientes-tabla .clientes-col-doc {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.clientes-tabla tbody tr {
+  cursor: pointer;
+  transition: background-color 0.12s ease-out;
+}
+
+.clientes-tabla tbody tr:hover {
+  background: var(--clientes-fila-hover);
+}
+
+.clientes-tabla tbody tr.elegido {
+  background: var(--fila-elegida);
+}
+
+.clientes-tabla tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.clientes-nombre {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--tinta);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  transition: text-decoration-color 0.12s ease-out;
+}
+
+.clientes-tabla tr:hover .clientes-nombre,
+.clientes-nombre:focus-visible,
+.clientes-nombre[aria-current="true"] {
+  text-decoration-color: currentColor;
+}
+
+.clientes-doc {
+  color: var(--suave);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.clientes-doc-movil {
+  display: none;
+  margin-top: 2px;
+  color: var(--suave);
+  font-size: 12px;
+}
+
+.clientes-permanente {
+  display: block;
+  margin-top: 3px;
+  color: var(--suave);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.clientes-faltan {
+  display: block;
+  max-width: 46ch;
+  margin-top: 5px;
+  color: var(--suave);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------------------ */
+/* La guía (sin ficha abierta) */
+
+.clientes-guia-cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 16px 18px 18px;
+  font-size: 13.5px;
+}
+
+.clientes-guia-cuerpo p {
+  max-width: 62ch;
+}
+
+.clientes-guia-cuerpo p:first-child {
+  color: var(--suave);
+  font-weight: 600;
+}
+
+.clientes-siete {
+  align-self: stretch;
+  padding: 0;
+  border-top: 1px solid var(--linea-fila);
+  list-style: none;
+  counter-reset: dato;
+}
+
+.clientes-siete li {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--linea-fila);
+  font-weight: 700;
+  counter-increment: dato;
+}
+
+.clientes-siete li::before {
+  min-width: 1ch;
+  color: var(--suave);
+  font: 700 12px var(--familia-num);
+  content: counter(dato);
+}
+
+/* ------------------------------------------------------------------ */
+/* La ficha */
+
+.clientes-ficha form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px 18px 18px;
+}
+
+.clientes-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.clientes-rotulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 8px;
+}
+
+.clientes-falta {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--obra-fondo);
+  color: var(--obra-tinta);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+/* Dos campos lado a lado. Con subgrid, rótulo, campo y ayuda van en filas
+   comunes: si un rótulo baja a dos líneas por su «Falta para la UAF», los
+   dos campos siguen alineados. */
+.clientes-duo {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px 12px;
+}
+
+.clientes-duo > .clientes-campo {
+  display: grid;
+  grid-row: span 3;
+  grid-template-rows: subgrid;
+  gap: 5px;
+}
+
+.clientes-duo > .clientes-campo > label,
+.clientes-duo > .clientes-campo > .clientes-rotulo {
+  align-self: end;
+}
+
+.clientes-duo-doc {
+  grid-template-columns: 148px minmax(0, 1fr);
+}
+
+.clientes-pais {
+  font-family: var(--familia-num);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.clientes-ayuda {
+  color: var(--suave);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.clientes-contacto {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+
+.clientes-contacto legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 8px;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 0;
+  color: var(--tinta);
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+/* La casilla: el label de base es una columna; aquí, casilla y texto en fila */
+.clientes-permanente-campo {
+  flex-direction: row;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 11px 12px;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-control);
+  color: var(--suave);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.clientes-permanente-campo:hover {
+  border-color: var(--borde-control);
+}
+
+.clientes-permanente-campo input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--vial);
+}
+
+.clientes-permanente-campo b {
+  display: block;
+  color: var(--tinta);
+  font-size: 13.5px;
+  font-weight: 800;
+}
+
+.clientes-acciones {
+  display: flex;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.clientes-acciones .btn.prim {
+  flex: 1;
+}
+
+/* Lo guardado: verde de «confirmada», con su ícono */
+.clientes-guardado {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 2px solid var(--ok-tinta);
+  border-radius: var(--radio-control);
+  background: var(--ok-fondo);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.clientes-guardado > svg {
+  flex: none;
+  color: var(--ok-tinta);
+}
+
+.clientes-volver {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  margin-left: auto;
+  font-weight: 800;
+}
+
+/* ------------------------------------------------------------------ */
+/* Configuración */
+
+/* Un rótulo, no un botón: sin borde, para que nadie intente pulsarlo */
+.config-lectura {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 4px 8px;
+  color: var(--cartel-suave);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.config-dos {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.config-tabla {
+  overflow-x: auto;
+}
+
+.config-tabla td {
+  white-space: nowrap;
+}
+
+.config-tabla tbody tr:last-child td {
+  border-bottom: 1px solid var(--linea);
+}
+
+.config-tabla tfoot td {
+  padding: 10px 12px 12px;
+  border-bottom: 0;
+  color: var(--suave);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: normal;
+}
+
+.config-tabla tfoot b {
+  color: var(--tinta);
+}
+
+.config-parametros > div {
+  display: grid;
+  grid-template-columns: minmax(0, 13em) minmax(0, 1fr);
+  gap: 2px 18px;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--linea-fila);
+}
+
+.config-parametros > div:last-child {
+  border-bottom: 0;
+}
+
+.config-parametros dt {
+  grid-row: 1 / span 2;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.config-parametros dd {
+  grid-column: 2;
+  margin: 0;
+}
+
+.config-valor {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.config-para {
+  max-width: 60ch;
+  color: var(--suave);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.config-denominaciones {
+  padding: 4px 18px 10px;
+  list-style: none;
+}
+
+.config-denominaciones > li {
+  display: grid;
+  grid-template-columns: 60px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--linea-fila);
+}
+
+.config-denominaciones > li:last-child {
+  border-bottom: 0;
+}
+
+/* Cada billete, un rectángulo de lámina con su valor */
+.config-billetes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0;
+  list-style: none;
+}
+
+.config-billetes li {
+  min-width: 48px;
+  padding: 4px 8px 3px;
+  border: 1px solid var(--linea);
+  border-radius: 4px;
+  background: var(--lamina);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.config-esqueleto,
+.clientes-ficha-espera {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Responsivo */
+
+/* Bajo 1200 px la ficha se apila: arriba si está abierta, la guía al final */
+@media (max-width: 1199.98px) {
+  .clientes-trabajo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .clientes-ficha {
+    order: -1;
+  }
+
+  .config-dos {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 899.98px) {
+  .clientes-herramientas {
+    flex-basis: 100%;
+    max-width: none;
+  }
+}
+
+@media (max-width: 639.98px) {
+  .clientes-col-doc,
+  .config-col-extra {
+    display: none;
+  }
+
+  .config-tabla th {
+    letter-spacing: 0.06em;
+    white-space: normal;
+  }
+
+  .config-tabla th,
+  .config-tabla td {
+    padding-inline: 8px;
+  }
+
+  .clientes-doc-movil {
+    display: block;
+    white-space: nowrap;
+  }
+
+  .clientes-tabla th:first-child {
+    width: 54%;
+  }
+
+  .clientes-tabla th,
+  .clientes-tabla td {
+    padding-inline: 10px;
+  }
+
+  .config-parametros > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .config-parametros dt,
+  .config-parametros dd {
+    grid-row: auto;
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 479.98px) {
+  .clientes-duo,
+  .clientes-duo-doc {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .clientes-duo > .clientes-campo {
+    display: flex;
+    grid-row: auto;
+  }
+
+  .clientes-duo > .clientes-campo > label,
+  .clientes-duo > .clientes-campo > .clientes-rotulo {
+    align-self: stretch;
+  }
+
+  /* El título y la X en la primera línea; lo que falta, debajo */
+  .clientes-ficha > header .est {
+    order: 3;
+  }
+
+  .clientes-herramientas {
+    flex-wrap: wrap;
+  }
+
+  .clientes-herramientas .btn-cartel {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .cartel-seccion-in {
+    padding-left: 14px;
+  }
+}

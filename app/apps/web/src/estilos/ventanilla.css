@@ -1,0 +1,787 @@
+/*
+ * La Ventanilla. Medidas del comp aprobado (assigned.html): el letrero de
+ * 14 px de radio con su filete blanco, los destinos en cifras de 21–26 px,
+ * el registro de 420 px con la placa invertida y el libro con su pie.
+ */
+
+.ventanilla {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 18px;
+}
+
+/* En el PC de la ventanilla, la pantalla entera sin scroll: el libro corre por dentro */
+@media (min-width: 1200px) and (min-height: 640px) {
+  .ventanilla {
+    height: calc(100dvh - 40px);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* El letrero: la pizarra */
+
+.letrero {
+  padding: 6px;
+  border-radius: var(--radio-letrero);
+  background: var(--vial);
+  box-shadow: var(--sombra-letrero);
+  color: #fff;
+}
+
+.letrero-in {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 12px;
+  align-items: center;
+  padding: 14px 22px 12px;
+  border: 3px solid #fff;
+  border-radius: 10px;
+}
+
+.letrero h2 {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  opacity: 0.85;
+  text-transform: uppercase;
+}
+
+.letrero-acc {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px 14px;
+}
+
+.vig {
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.85;
+  text-align: right;
+}
+
+.letrero-error {
+  grid-column: 1 / -1;
+  font-weight: 700;
+}
+
+.filas {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px 14px;
+  margin-top: 6px;
+}
+
+.dest {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: baseline;
+  gap: 0 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.dest.esperando {
+  grid-template-columns: 1fr;
+  min-height: 52px;
+  align-items: center;
+}
+
+.dest.esperando .esqueleto {
+  background: rgb(255 255 255 / 0.25);
+}
+
+.dest .cod {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.dest .nom {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.85;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dest .t {
+  text-align: right;
+}
+
+.dest .t > span {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  opacity: 0.8;
+  text-transform: uppercase;
+}
+
+.dest .t b {
+  font: 700 21px/1.05 var(--familia-num);
+  font-variant-numeric: tabular-nums;
+}
+
+.aviso-dest {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  color: var(--reflejo);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* La tasa que cambió: encendida, con el borde reflectante, hasta que se mira.
+   Al llegar, el borde destella como un letrero que recoge los focos. */
+.dest.cambio {
+  cursor: pointer;
+  outline: 3px solid var(--amarillo);
+  outline-offset: -1px;
+  background: var(--encendida);
+  transition:
+    outline-color 0.2s ease-out,
+    background-color 0.2s ease-out;
+  animation: reflejo 1.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Con foco, el anillo es blanco (8:1 sobre el verde): el amarillo ya dice «cambió».
+   Sin animación, para que el destello no le devuelva el amarillo al contorno. */
+.dest.cambio:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 0;
+  box-shadow: 0 0 0 5px var(--foco-canto);
+  animation: none;
+}
+
+.dest.cambio.vista {
+  outline-color: transparent;
+  background: transparent;
+  animation: none;
+}
+
+.dest.cambio.vista:hover {
+  background: rgb(255 255 255 / 0.06);
+}
+
+.dest.cambio.vista:focus-visible {
+  outline-color: #fff;
+}
+
+.dest.cambio.vista .aviso-dest {
+  color: #fff;
+  opacity: 0.75;
+}
+
+/* Solo destella el borde: el fondo queda en --encendida y el aviso nunca baja de 4,86:1 */
+@keyframes reflejo {
+  0%,
+  44% {
+    outline-color: #fff;
+  }
+  22%,
+  100% {
+    outline-color: var(--amarillo);
+  }
+}
+
+.dest.vencida .t b {
+  opacity: 0.55;
+}
+
+/* ------------------------------------------------------------------ */
+/* El área de trabajo: registro y libro */
+
+.trabajo {
+  display: grid;
+  grid-template-columns: 420px minmax(0, 1fr);
+  gap: 18px;
+  min-height: 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* El registro */
+
+.registro form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 18px 18px;
+  overflow-y: auto;
+}
+
+fieldset.campo-divisa {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+
+.campo-divisa legend {
+  margin-bottom: 5px;
+  padding: 0;
+  color: var(--suave);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.campo-divisa .espera {
+  color: var(--tinta);
+}
+
+.divisas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.registro label.div {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 7px 10px;
+  border: 2px solid var(--linea);
+  border-radius: var(--radio-control);
+  background: var(--panel);
+  color: var(--tinta);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0;
+  transition: border-color 0.15s ease-out;
+}
+
+.registro label.div:hover {
+  border-color: var(--borde-control);
+}
+
+.registro label.div.elegida {
+  border-color: var(--trazo);
+  box-shadow: inset 0 0 0 1px var(--trazo);
+}
+
+/* La divisa con foco (el radio está oculto): el anillo del foco va en su rótulo */
+.registro label.div:has(:focus-visible) {
+  outline: 3px solid var(--foco);
+  outline-offset: 0;
+  box-shadow: 0 0 0 5px var(--foco-canto);
+}
+
+.registro label.div.elegida:has(:focus-visible) {
+  box-shadow:
+    inset 0 0 0 1px var(--trazo),
+    0 0 0 5px var(--foco-canto);
+}
+
+.div > i {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.div kbd {
+  margin-left: auto;
+}
+
+input.monto {
+  padding: 8px 12px;
+  border-color: var(--trazo);
+  font: 700 28px var(--familia-num);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+input.monto::placeholder {
+  color: var(--borde-control);
+}
+
+input.monto[aria-invalid="true"] {
+  border-color: var(--pare);
+}
+
+.duo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* La placa invertida: lo que Rolando le lee al cliente */
+.placa {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.3fr) minmax(0, 0.9fr);
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--placa-borde);
+  border-radius: var(--radio-panel);
+  background: var(--placa);
+  color: var(--placa-tinta);
+}
+
+.placa span {
+  color: var(--placa-suave);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.placa b {
+  display: block;
+  overflow-wrap: anywhere;
+  font: 700 19px var(--familia-num);
+  font-variant-numeric: tabular-nums;
+}
+
+.placa .total b {
+  font-size: 24px;
+}
+
+.placa b.largo {
+  font-size: 17px;
+}
+
+.placa .total b.largo {
+  font-size: 20px;
+}
+
+.placa b {
+  transition: opacity 0.15s ease-out;
+}
+
+.placa.desfasada b {
+  opacity: 0.6;
+}
+
+.nota-placa {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  margin-top: -4px;
+  color: var(--tinta);
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.nota-placa:empty {
+  display: none;
+}
+
+.nota-placa svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--faena);
+}
+
+/* La ficha de la UAF dentro del aviso amarillo */
+.ficha .ficha-titulo {
+  font-weight: 800;
+}
+
+.ficha label {
+  color: var(--tinta);
+}
+
+.ficha input {
+  min-height: 40px;
+  padding: 7px 10px;
+  font-size: 14px;
+}
+
+.resultados {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0;
+  list-style: none;
+}
+
+.resultado {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  align-items: baseline;
+  width: 100%;
+  min-height: 40px;
+  padding: 7px 10px;
+  border: 1px solid var(--borde-control);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--tinta);
+  text-align: left;
+}
+
+.resultado:hover {
+  border-color: var(--trazo);
+}
+
+.crear-ficha {
+  font-weight: 800;
+}
+
+/* Dentro del «Ficha incompleta» rojo: el enlace va en la tinta del aviso */
+.completar-ficha {
+  color: var(--tinta);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ */
+/* El libro */
+
+.libro-tabla {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* El libro con foco (↑/↓ eligen la fila): el anillo rodea el panel entero; la
+   tabla corre por dentro de un scroll y su cabecera taparía un anillo interior */
+.libro table:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.libro:has(table:focus-visible) {
+  outline: 3px solid var(--foco);
+  box-shadow: 0 0 0 5px var(--foco-canto);
+}
+
+.libro tbody tr {
+  cursor: pointer;
+  transition: background-color 0.12s ease-out;
+}
+
+.libro tbody tr:hover {
+  background: var(--lamina);
+}
+
+.libro tbody tr[aria-selected="true"] {
+  background: var(--fila-elegida);
+}
+
+.libro td {
+  white-space: nowrap;
+}
+
+.libro tr.reversada .m {
+  color: var(--suave);
+  text-decoration: line-through;
+  text-decoration-color: var(--pare);
+}
+
+.libro tr.borrador td {
+  color: var(--suave);
+}
+
+.libro .motivo {
+  display: block;
+  max-width: 24ch;
+  margin-left: auto;
+  overflow: hidden;
+  color: var(--rev-tinta);
+  font-family: var(--familia);
+  font-size: 11px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* base.css define .enlace en línea: aquí va debajo del chip */
+.libro .retomar {
+  display: block;
+  margin-top: 3px;
+  color: var(--tinta);
+  font-size: 12px;
+}
+
+.libro .solo-movil {
+  display: none;
+}
+
+/* La línea del motivo bajo una fila reversada: solo en el teléfono */
+.libro .fila-motivo {
+  display: none;
+}
+
+.libro .esqueleto {
+  width: 70%;
+}
+
+/* El pie: los totales del día */
+.pie {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  margin-top: auto;
+  padding: 12px 18px;
+  border-top: 2px solid var(--trazo);
+  color: var(--suave);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pie dd {
+  margin: 0;
+  color: var(--tinta);
+  font: 700 17px var(--familia-num);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------------ */
+/* El diálogo «Actualizar pizarra» */
+
+.dialogo-pizarra form {
+  display: flex;
+  flex-direction: column;
+}
+
+.dialogo-cab {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--linea);
+}
+
+.dialogo-cab h2 {
+  margin-bottom: 4px;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.reglas {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 20px;
+  overflow-y: auto;
+}
+
+.regla {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr 1fr;
+  gap: 8px 10px;
+  min-width: 0;
+  margin: 0;
+  padding: 12px 14px 12px;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-control);
+}
+
+.regla legend {
+  padding: 0 6px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.regla input,
+.regla select {
+  min-height: 40px;
+  padding: 7px 10px;
+  font-size: 14px;
+}
+
+.queda {
+  grid-column: 1 / -1;
+  color: var(--suave);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.queda b {
+  color: var(--tinta);
+}
+
+.queda.mal {
+  color: var(--rev-tinta);
+}
+
+.dialogo-fallo {
+  margin: 0 20px 4px;
+}
+
+.dialogo-pie {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding: 14px 20px 18px;
+  border-top: 1px solid var(--linea);
+}
+
+/* ------------------------------------------------------------------ */
+/* Entre 900 y 1200 px: el registro y el libro uno sobre otro */
+
+@media (max-width: 1199.98px) {
+  .trabajo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .registro {
+    max-width: 640px;
+  }
+
+  .libro-tabla {
+    max-height: 70dvh;
+  }
+}
+
+/* Bajo 900 px: una columna (pizarra, registro, libro) */
+@media (max-width: 899.98px) {
+  .ventanilla {
+    gap: 14px;
+  }
+
+  .letrero-in {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 12px 14px 10px;
+  }
+
+  .letrero-acc {
+    justify-content: space-between;
+  }
+
+  .vig {
+    text-align: left;
+  }
+
+  .filas {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .dest {
+    padding: 6px 8px;
+  }
+
+  .dest .cod {
+    font-size: 22px;
+  }
+
+  .dest .t b {
+    font-size: 18px;
+  }
+
+  .registro {
+    max-width: none;
+  }
+
+  .registro form {
+    overflow: visible;
+  }
+
+  .regla {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .libro-tabla {
+    max-height: none;
+  }
+}
+
+/* En el teléfono, el libro deja la tasa y el folio (la tasa está en la pizarra);
+   la hora y el tipo pasan bajo la divisa. Quedan divisa, monto, pesos y estado. */
+@media (max-width: 639.98px) {
+  .col-tasa,
+  .col-folio,
+  .col-hora,
+  .col-tipo {
+    display: none;
+  }
+
+  .libro .solo-movil {
+    display: block;
+    margin-top: 2px;
+    color: var(--suave);
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .libro th,
+  .libro td {
+    padding-inline: 6px;
+    font-size: 12.5px;
+  }
+
+  .libro th {
+    font-size: 10px;
+    letter-spacing: 0.06em;
+  }
+
+  .libro .est {
+    padding: 2px 5px;
+    font-size: 10px;
+    letter-spacing: 0.03em;
+  }
+
+  /* El motivo deja la celda de los pesos (ahí sigue para el lector de pantalla)
+     y baja entero a su propia línea, bajo la fila, como en la Jornada */
+  .libro .motivo {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .libro tr.con-motivo td {
+    border-bottom: 0;
+  }
+
+  .libro .fila-motivo {
+    display: table-row;
+  }
+
+  .libro .fila-motivo td {
+    padding-top: 0;
+    color: var(--rev-tinta);
+    font-size: 11.5px;
+    font-weight: 700;
+    line-height: 1.35;
+    white-space: normal;
+  }
+
+  /* Las dos líneas son una sola operación: se eligen y se iluminan juntas */
+  .libro tbody tr.con-motivo:hover + .fila-motivo,
+  .libro tbody tr.con-motivo:has(+ .fila-motivo:hover) {
+    background: var(--lamina);
+  }
+
+  .libro tbody tr[aria-selected="true"] + .fila-motivo,
+  .libro tbody tr[aria-selected="true"]:has(+ .fila-motivo:hover) {
+    background: var(--fila-elegida);
+  }
+
+  .dest {
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    gap: 0 8px;
+  }
+
+  .dest .nom {
+    font-size: 12px;
+  }
+
+  .pie {
+    gap: 8px 18px;
+  }
+}
+
+@media (max-width: 399.98px) {
+  .dest .nom {
+    display: none;
+  }
+
+  .libro th,
+  .libro td {
+    padding-inline: 4px;
+    font-size: 12px;
+  }
+}

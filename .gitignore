@@ -18,9 +18,14 @@ deploy/data/
 # App: dependencias y bases de datos. Una base puede tener datos reales:
 # nunca se sube al repo.
 node_modules/
+dist/
 *.db
 *.db-wal
 *.db-shm
 
 # Sistema
 .DS_Store
+
+# Front: capturas de revisión y registros locales de impeccable (no van al repo)
+.impeccable/review/
+.impeccable/questions/

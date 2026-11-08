@@ -1,0 +1,302 @@
+/* El marco: el riel de asfalto y el área de trabajo. Medidas del comp. */
+.marco {
+  display: grid;
+  grid-template-columns: var(--riel-ancho) minmax(0, 1fr);
+  min-height: 100dvh;
+}
+
+.marco-principal {
+  min-width: 0;
+  padding: 20px 24px;
+}
+
+.saltar {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 20;
+  padding: 8px 12px;
+  border-radius: var(--radio-control);
+  background: var(--amarillo);
+  color: #1d2226;
+  font-weight: 800;
+  transform: translateY(-200%);
+}
+
+.saltar:focus-visible {
+  transform: none;
+  outline-color: var(--asfalto);
+}
+
+/* El riel */
+.riel {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  padding: 20px 0;
+  overflow-y: auto;
+  background: var(--riel);
+  box-shadow: inset -1px 0 0 var(--riel-borde);
+  color: var(--riel-tinta);
+}
+
+.riel-marca {
+  padding: 0 22px 22px;
+  border-bottom: 1px solid var(--riel-linea);
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+}
+
+.riel-marca small {
+  display: block;
+  margin-top: 2px;
+  color: var(--riel-suave);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+.riel ul {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 0;
+  list-style: none;
+}
+
+.riel a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 22px;
+  color: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  transition: background-color 0.15s ease-out;
+}
+
+.riel a:hover {
+  background: var(--riel-activo);
+}
+
+/* En el riel el anillo va por dentro del tramo (amarillo sobre asfalto, 8,8:1) */
+.riel a:focus-visible {
+  outline-offset: -5px;
+  box-shadow: inset 0 0 0 2px var(--foco-canto);
+}
+
+/* La sección activa: el tramo iluminado y su cuadro con el anillo reflectante */
+.riel a[aria-current="page"] {
+  background: var(--riel-activo);
+  color: #fff;
+}
+
+.riel-cuadro {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--riel-tinta);
+  border-radius: 3px;
+}
+
+.riel a[aria-current="page"] .riel-cuadro {
+  outline: 2px solid var(--riel-tinta);
+  outline-offset: 2px;
+}
+
+.riel a kbd {
+  margin-left: auto;
+  border-color: var(--riel-kbd-borde);
+  background: var(--riel-kbd-fondo);
+  color: var(--riel-kbd-tinta);
+  font-weight: 600;
+}
+
+.riel .corto {
+  display: none;
+}
+
+/* El pie del riel: el turno y «Salir» */
+.riel-pie {
+  margin-top: auto;
+  border-top: 1px solid var(--riel-linea);
+}
+
+.riel-turno {
+  padding: 16px 22px 6px;
+  color: var(--riel-turno);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.riel-turno b {
+  display: block;
+  color: #fff;
+  font-size: 13px;
+}
+
+.riel-salir {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 22px;
+  border: 0;
+  background: transparent;
+  color: var(--riel-tinta);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-align: left;
+  transition: background-color 0.15s ease-out;
+}
+
+.riel-salir:hover:not(:disabled) {
+  background: var(--riel-activo);
+}
+
+.riel-salir:focus-visible {
+  outline-offset: -5px;
+  box-shadow: inset 0 0 0 2px var(--foco-canto);
+}
+
+/* Mientras llega el código de una pantalla: su forma en gris, sin spinner */
+.esqueleto-pantalla {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.esqueleto-pantalla .esqueleto-letrero {
+  height: 110px;
+  border-radius: var(--radio-letrero);
+}
+
+.esqueleto-paneles {
+  display: grid;
+  grid-template-columns: 420px minmax(0, 1fr);
+  gap: 18px;
+}
+
+.esqueleto-paneles .esqueleto {
+  height: 420px;
+  border-radius: var(--radio-panel);
+}
+
+.esqueleto-entrar {
+  display: grid;
+  grid-template-columns: min(100%, 392px);
+  place-content: center;
+  gap: 16px;
+  min-height: 100dvh;
+  padding: 32px 16px;
+}
+
+.esqueleto-entrar .esqueleto-letrero {
+  height: 119px;
+  border-radius: var(--radio-letrero);
+}
+
+.esqueleto-entrar .esqueleto-formulario {
+  height: 290px;
+  border-radius: var(--radio-panel);
+}
+
+@media (max-width: 1199.98px) {
+  .esqueleto-paneles {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .esqueleto-paneles .esqueleto {
+    height: 240px;
+  }
+}
+
+/* Bajo 900 px el riel baja y se vuelve una barra de cinco pestañas */
+@media (max-width: 899.98px) {
+  .marco {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .marco-principal {
+    padding: 16px 16px calc(var(--barra-alto) + env(safe-area-inset-bottom, 0px) + 16px);
+  }
+
+  .riel {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 10;
+    flex-direction: row;
+    height: auto;
+    padding: 0 0 env(safe-area-inset-bottom, 0px);
+    overflow: visible;
+    border-top: 1px solid var(--riel-linea);
+    box-shadow: none;
+  }
+
+  .riel-marca,
+  .riel-turno,
+  .riel a kbd,
+  .riel .largo {
+    display: none;
+  }
+
+  .riel .corto {
+    display: inline;
+  }
+
+  .riel nav {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .riel ul {
+    flex-direction: row;
+    gap: 0;
+    padding: 0;
+  }
+
+  /* «Salir», la última pestaña: más angosta y separada de las secciones */
+  .riel-pie {
+    flex: none;
+    margin-top: 0;
+    border-top: 0;
+    border-left: 1px solid var(--riel-linea);
+  }
+
+  .riel-salir {
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+    min-height: var(--barra-alto);
+    padding: 10px 10px 8px;
+    font-size: 11.5px;
+    letter-spacing: 0;
+    text-align: center;
+  }
+
+  .riel li {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .riel a {
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+    min-height: var(--barra-alto);
+    padding: 10px 2px 8px;
+    font-size: 11.5px;
+    letter-spacing: 0;
+    text-align: center;
+  }
+}

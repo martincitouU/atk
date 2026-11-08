@@ -1,0 +1,395 @@
+/*
+ * La Jornada, primero para el teléfono (desde 360 px). Su letrero es el café
+ * de los servicios turísticos de la ruta, con filete blanco; debajo, los
+ * saldos en filas grandes, el día y las operaciones. Desde 1200 px, dos
+ * columnas.
+ */
+:root {
+  --jornada-letrero: #7a4a2a; /* el café de --turismo: el blanco lee 7,4:1 */
+  --jornada-letrero-tinta: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* --turismo sube de luz de noche (para el riel); el letrero no: con el
+       café claro el blanco bajaría a 3,3:1 */
+    --jornada-letrero: #7a4a2a;
+    --jornada-letrero-tinta: #ffffff;
+  }
+}
+
+.jornada {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 1180px;
+}
+
+/* ------------------------------------------------------------------ */
+/* El letrero café: el día y el selector de fecha */
+
+.jornada-letrero {
+  padding: 5px;
+  border-radius: 12px;
+  background: var(--jornada-letrero);
+  box-shadow: var(--sombra-letrero);
+  color: var(--jornada-letrero-tinta);
+}
+
+.jornada-letrero-in {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px 16px;
+  padding: 12px 16px 14px;
+  border: 3px solid var(--jornada-letrero-tinta);
+  border-radius: 8px;
+}
+
+.jornada-letrero h1 {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.jornada-dia {
+  margin-top: 4px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.jornada-dia .sint {
+  font-size: 12px;
+  white-space: nowrap;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.jornada-fecha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 10px;
+}
+
+.jornada-fecha label {
+  color: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.jornada-fecha input {
+  width: auto;
+  min-height: 44px;
+  padding: 6px 10px;
+  border-color: var(--jornada-letrero-tinta);
+  background: transparent;
+  color: var(--jornada-letrero-tinta);
+  color-scheme: dark; /* el ícono del calendario, en blanco */
+  font: 700 15px var(--familia-num);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.jornada-fecha .btn-letrero {
+  min-height: 44px;
+  padding: 6px 12px;
+  border: 2px solid var(--jornada-letrero-tinta);
+  border-radius: var(--radio-control);
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  transition: background-color 0.15s ease-out;
+}
+
+.jornada-fecha .btn-letrero:hover {
+  background: rgb(255 255 255 / 0.12);
+}
+
+/* ------------------------------------------------------------------ */
+
+.jornada-cuerpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+
+.jornada-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.jornada-bloque {
+  min-width: 0;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-panel);
+  background: var(--panel);
+}
+
+.jornada-bloque > h2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 10px;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--linea);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+/* Borradores pendientes: el naranja de faena cuando hay alguno */
+.jornada-borradores {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+  padding: 10px 16px;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-panel);
+  background: var(--panel);
+  color: var(--tinta);
+  font-weight: 700;
+  text-decoration: none;
+  transition: border-color 0.15s ease-out;
+}
+
+.jornada-borradores b {
+  font-size: 17px;
+}
+
+.jornada-borradores.hay {
+  border: 2px solid var(--faena);
+  background: var(--obra-fondo);
+}
+
+.jornada-borradores .ir {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.jornada-borradores:hover .ir {
+  text-decoration-thickness: 2px;
+}
+
+/* Los saldos: el código con su color, el saldo grande, y la barra si aporta */
+.saldos,
+.ops {
+  padding: 0;
+  list-style: none;
+}
+
+.saldos li {
+  display: grid;
+  grid-template-areas:
+    "cod monto"
+    "nom eq"
+    "barra barra";
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 2px 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--linea-fila);
+}
+
+.saldos li:last-child {
+  border-bottom: 0;
+}
+
+.saldo-cod {
+  display: inline-flex;
+  grid-area: cod;
+  align-items: center;
+  gap: 8px;
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+}
+
+.saldo-cod > i {
+  flex: none;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+}
+
+.saldo-nom {
+  overflow: hidden;
+  grid-area: nom;
+  color: var(--suave);
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.saldo-monto {
+  grid-area: monto;
+  font-size: 21px;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.saldo-eq {
+  grid-area: eq;
+  color: var(--suave);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.saldo-barra {
+  display: block;
+  grid-area: barra;
+  height: 4px;
+  margin-top: 6px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--linea-fila);
+}
+
+.saldo-barra > i {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+}
+
+.saldos-nota {
+  padding: 10px 16px 12px;
+  border-top: 1px solid var(--linea-fila);
+  color: var(--suave);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* El día: margen y gastos */
+.jornada-cifras {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.jornada-cifras > div {
+  min-width: 0;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--linea-fila);
+}
+
+.jornada-cifras > div:nth-child(2) {
+  border-left: 1px solid var(--linea-fila);
+}
+
+.jornada-cifras > .ancho {
+  grid-column: 1 / -1;
+  border-bottom: 0;
+}
+
+.jornada-cifras dt {
+  color: var(--suave);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.jornada-cifras dd {
+  margin: 2px 0 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.jornada-cifras .ancho dd {
+  font-size: 14px;
+}
+
+.jornada-cifras .esqueleto {
+  width: 70%;
+  margin-top: 6px;
+}
+
+/* Las operaciones: divisa y monto, el estado; debajo la hora, el tipo y los pesos */
+.ops li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 3px 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--linea-fila);
+}
+
+.ops li:last-child {
+  border-bottom: 0;
+}
+
+.op-divisa {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.op-monto {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.op-pie {
+  grid-column: 1 / -1;
+  color: var(--suave);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.ops li.reversada .op-monto,
+.ops li.reversada .op-pesos {
+  color: var(--suave);
+  text-decoration: line-through;
+  text-decoration-color: var(--pare);
+}
+
+.ops li.borrador .op-monto {
+  color: var(--suave);
+}
+
+.op-motivo {
+  grid-column: 1 / -1;
+  color: var(--rev-tinta);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.jornada .vacio {
+  padding: 24px 16px;
+}
+
+/* ------------------------------------------------------------------ */
+
+@media (max-width: 639.98px) {
+  .jornada-letrero-in {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 11px 13px 13px;
+  }
+}
+
+/* En el PC: los saldos y el día a la izquierda, las operaciones a la derecha */
+@media (min-width: 1200px) {
+  .jornada-cuerpo {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}

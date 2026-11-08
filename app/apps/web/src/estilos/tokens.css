@@ -1,0 +1,184 @@
+/*
+ * Tokens de «Carretera Austral». Los valores claros salen del :root del comp
+ * aprobado (.impeccable/mocks/decision/src/assigned.html); los que el comp
+ * escribía sueltos en sus reglas tienen aquí su nombre.
+ *
+ * Oscuro: letreros bajo los focos. El asfalto se hunde, el letrero sigue en
+ * verde vial y los blancos reflejan. Todo texto cumple AA sobre --panel y
+ * --fondo; los colores de divisa y de función suben de luz para leerse de
+ * noche.
+ */
+:root {
+  color-scheme: light dark;
+
+  /* Señalética */
+  --vial: #005c45;
+  --vial-hi: #0b7a5d;
+  --amarillo: #f2b705;
+  --faena: #e06a1b;
+  --pare: #c8102e;
+  --servicios: #1e4fa0;
+  --turismo: #7a4a2a;
+  --neutro: #6b7378;
+
+  /* Superficies */
+  --fondo: #ecede6;
+  --lamina: #f4f4ef;
+  --panel: #ffffff;
+  --cabecera: #fafaf7;
+  --asfalto: #1d2226;
+  --asfalto-2: #2a3035;
+
+  /* Tinta y líneas */
+  --tinta: #1d2226;
+  --suave: #5d666c;
+  --linea: #d9dbd3;
+  --linea-fila: #ecede7;
+  --trazo: #1d2226;          /* bordes fuertes: segmentado, botones, monto, cabecera de tabla */
+  --borde-control: #8a9296;  /* contorno de input y select: 3:1 sobre el panel */
+  --cursor: var(--vial-hi);
+
+  /* Divisas: un color fijo por destino */
+  --usd: #2f7d4f;
+  --ars: #3e8fc9;
+  --eur: #2d3f9e;
+
+  /* Teclas */
+  --kbd-fondo: #f7f7f3;
+  --kbd-borde: #c7cac1;
+  --kbd-tinta: #1d2226;
+
+  /* Estados de una operación */
+  --ok-tinta: #005c45;
+  --ok-fondo: #e1efe9;
+  --obra-tinta: #8a3d0b;
+  --obra-fondo: #fce9da;
+  --rev-tinta: #c8102e;
+  --rev-fondo: #fbe3e6;
+
+  /* La placa invertida de la vista previa */
+  --placa: var(--asfalto);
+  --placa-tinta: #ffffff;
+  --placa-suave: #aeb6ba;
+  --placa-borde: transparent;
+
+  /* El foco: la pintura amarilla con su canto de asfalto, como un letrero de
+     advertencia. El amarillo solo da 1,8:1 sobre el blanco; el canto, 16:1, y
+     el amarillo contra el canto, 8,8:1 (sobre el riel, 8,8:1; sobre el letrero
+     verde, 4,4:1). Así el anillo pasa 3:1 en la lámina, el panel, el riel y los
+     letreros, en claro y en oscuro (WCAG 1.4.11). */
+  --foco: var(--amarillo);
+  --foco-canto: var(--asfalto);
+
+  /* El letrero: el reflejo amarillo del aviso «cambió» (4,7:1 sobre el verde
+     teñido; el amarillo de señal daba 3,8:1) y el tinte de la fila encendida */
+  --reflejo: #ffd54a;
+  --encendida: rgb(242 183 5 / 0.12);
+
+  /* El segmentado Compra/Venta y la divisa elegida */
+  --activo-fondo: var(--asfalto);
+  --activo-tinta: #ffffff;
+  --activo-kbd: var(--asfalto-2);
+
+  /* Avisos: advertencia (amarillo) y error (PARE) */
+  --aviso-fondo: #fff4cc;
+  --aviso-borde: var(--amarillo);
+  --error-fondo: #fbe3e6;
+  --error-borde: var(--pare);
+
+  /* El botón que reversa: rojo PARE con tinta que cumple AA en los dos modos */
+  --peligro-fondo: var(--pare);
+  --peligro-tinta: #ffffff;
+
+  /* La fila elegida del libro: un trazo de destacador amarillo */
+  --fila-elegida: #fcf1cd;
+
+  /* El riel (es de asfalto en los dos modos) */
+  --riel: var(--asfalto);
+  --riel-activo: var(--asfalto-2);
+  --riel-tinta: #e9eae4;
+  --riel-suave: #9aa3a8;
+  --riel-turno: #b5bcc0;
+  --riel-linea: #3a4146;
+  --riel-kbd-fondo: #e2e4de;
+  --riel-kbd-tinta: #3f474c;
+  --riel-kbd-borde: #c7cac1;
+  --riel-borde: transparent;
+
+  /* Medidas */
+  --riel-ancho: 208px;
+  --barra-alto: 60px;
+  --radio-letrero: 14px;
+  --radio-panel: 10px;
+  --radio-control: 8px;
+  --sombra-letrero: 0 2px 0 rgb(0 0 0 / 0.08), 0 10px 24px -14px rgb(0 40 30 / 0.55);
+
+  --familia: "Overpass", system-ui, sans-serif;
+  --familia-num: "Overpass Mono", ui-monospace, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --vial: #005c45;           /* el letrero no cambia de color */
+    --vial-hi: #0b7a5d;
+    --amarillo: #f2b705;       /* 8,9:1 sobre el panel */
+    --faena: #e06a1b;          /* 4,8:1 sobre el panel */
+    --pare: #f5596b;           /* 5,0:1 sobre el panel */
+    --servicios: #5b8be0;
+    --turismo: #b98057;
+    --neutro: #7a8287;
+
+    --fondo: #14181b;
+    --lamina: #22282c;
+    --panel: #1c2125;
+    --cabecera: #20262a;
+    --asfalto: #0e1113;
+    --asfalto-2: #1f252a;
+
+    --tinta: #ecede6;
+    --suave: #9aa3a8;
+    --linea: #2c3338;
+    --linea-fila: #262c30;
+    --trazo: #c8cdc6;
+    --borde-control: #6b7479;
+    --cursor: var(--amarillo);
+
+    --usd: #4fb477;
+    --ars: #3e8fc9;
+    --eur: #7b8cf0;
+
+    --kbd-fondo: #262c31;
+    --kbd-borde: #4a5358;
+    --kbd-tinta: #ecede6;
+
+    --ok-tinta: #6fd3ae;
+    --ok-fondo: #12352b;
+    --obra-tinta: #f59a5c;
+    --obra-fondo: #3a2414;
+    --rev-tinta: #ff7a8a;
+    --rev-fondo: #3a1a20;
+
+    /* La placa es la única lámina invertida: de noche refleja, clara, con
+       tinta de asfalto (no una caja de asfalto sobre un panel de asfalto). */
+    --placa: #f4f4ef;          /* 14,7:1 contra el panel */
+    --placa-tinta: #1d2226;    /* 14,5:1 */
+    --placa-suave: #5d666c;    /* 5,3:1 */
+
+    --activo-fondo: var(--trazo);
+    --activo-tinta: #14181b;
+    --activo-kbd: #e2e5df;
+
+    --aviso-fondo: #33290a;
+    --error-fondo: #3a1a20;
+
+    --peligro-fondo: #f5596b;
+    --peligro-tinta: #14181b;  /* 5,5:1; el blanco daría 3,2:1 */
+
+    --fila-elegida: #3a3112;
+
+    --riel-linea: #252b30;
+    --riel-borde: #252b30;     /* de noche el riel y el fondo casi se tocan */
+
+    --sombra-letrero: 0 2px 0 rgb(0 0 0 / 0.4), 0 10px 28px -12px rgb(0 0 0 / 0.8);
+  }
+}

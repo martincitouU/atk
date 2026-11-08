@@ -1,0 +1,668 @@
+/* Fuentes autohospedadas (solo el subconjunto latino: el español cabe entero). */
+@import "@fontsource/overpass/latin-400.css";
+@import "@fontsource/overpass/latin-600.css";
+@import "@fontsource/overpass/latin-700.css";
+@import "@fontsource/overpass/latin-800.css";
+@import "@fontsource/overpass/latin-900.css";
+@import "@fontsource/overpass-mono/latin-500.css";
+@import "@fontsource/overpass-mono/latin-700.css";
+
+/* Reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: var(--borde-control) transparent;
+}
+
+body {
+  min-height: 100dvh;
+  font-family: var(--familia);
+  font-size: 14px;
+  line-height: 1.4;
+  background: var(--fondo);
+  color: var(--tinta);
+  caret-color: var(--cursor);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+/* Lo que el navegador dibuja: selección y foco con la pintura de la ruta */
+::selection {
+  background: var(--amarillo);
+  color: #1d2226;
+}
+
+/* El foco: 3 px de amarillo y, por fuera, 2 px de canto de asfalto (tokens.css,
+   --foco). Lo que va dentro de una franja (el riel, el segmentado) lo lleva por
+   dentro: canto en el borde y el amarillo hacia el centro. */
+:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 0;
+  box-shadow: 0 0 0 5px var(--foco-canto);
+}
+
+/* Cifras: monoespaciadas y tabulares, para que las columnas cuadren */
+.num {
+  font-family: var(--familia-num);
+  font-variant-numeric: tabular-nums;
+}
+
+.oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Teclas */
+kbd {
+  font: 700 11px/1.3 var(--familia-num);
+  border: 1px solid var(--kbd-borde);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 1px 5px;
+  background: var(--kbd-fondo);
+  color: var(--kbd-tinta);
+  white-space: nowrap;
+}
+
+/* Divisa: el punto de su color y el código */
+.divisa {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  font-size: 12px;
+}
+
+.divisa > i {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+/* Tablas: el libro */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+th {
+  position: sticky;
+  top: 0;
+  padding: 9px 12px;
+  border-bottom: 2px solid var(--trazo);
+  background: var(--cabecera);
+  color: var(--suave);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--linea-fila);
+  vertical-align: middle;
+}
+
+th.r,
+td.r {
+  text-align: right;
+}
+
+/* Controles nativos */
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: var(--suave);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+input,
+select {
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 2px solid var(--borde-control);
+  border-radius: var(--radio-control);
+  background: var(--panel);
+  color: var(--tinta);
+  font: 600 15px var(--familia);
+  transition: border-color 0.15s ease-out;
+}
+
+input::placeholder {
+  color: var(--suave);
+  opacity: 1;
+}
+
+input[aria-invalid="true"],
+select[aria-invalid="true"] {
+  border-color: var(--pare);
+}
+
+input:disabled,
+select:disabled,
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+button {
+  cursor: pointer;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 11px 16px;
+  border: 2px solid var(--trazo);
+  border-radius: var(--radio-control);
+  background: var(--panel);
+  color: var(--tinta);
+  font: 800 15px var(--familia);
+  transition:
+    background-color 0.15s ease-out,
+    border-color 0.15s ease-out;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--lamina);
+}
+
+.btn.prim {
+  border-color: var(--vial);
+  background: var(--vial);
+  color: #fff;
+}
+
+.btn.prim:hover:not(:disabled) {
+  border-color: var(--vial-hi);
+  background: var(--vial-hi);
+}
+
+.btn.prim kbd {
+  border-color: #3c9a7f;
+  background: var(--vial-hi);
+  color: #fff;
+}
+
+.btn.peligro {
+  border-color: var(--peligro-fondo);
+  background: var(--peligro-fondo);
+  color: var(--peligro-tinta);
+}
+
+.btn.peligro:hover:not(:disabled) {
+  filter: brightness(0.92);
+}
+
+/* Un botón que se lee como enlace: acciones secundarias dentro de una fila o un aviso */
+.enlace {
+  display: inline;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.enlace:hover {
+  text-decoration-thickness: 2px;
+}
+
+textarea {
+  width: 100%;
+  min-height: 88px;
+  padding: 9px 12px;
+  border: 2px solid var(--borde-control);
+  border-radius: var(--radio-control);
+  background: var(--panel);
+  color: var(--tinta);
+  font: 600 15px/1.4 var(--familia);
+  resize: vertical;
+}
+
+/* Avisos: advertencia (amarillo de faena) y error (PARE). El ícono dice el
+   tono además del color. */
+.aviso {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 10px;
+  align-items: start;
+  padding: 10px 12px;
+  border: 2px solid var(--aviso-borde);
+  border-radius: var(--radio-control);
+  background: var(--aviso-fondo);
+  color: var(--tinta);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.aviso > svg {
+  flex: none;
+  margin-top: 1px;
+}
+
+.aviso > .aviso-cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.aviso.error {
+  border-color: var(--error-borde);
+  background: var(--error-fondo);
+}
+
+.aviso.error > svg {
+  color: var(--rev-tinta);
+}
+
+/* ------------------------------------------------------------------ */
+/* Piezas que comparten las pantallas (la Ventanilla, el Cierre, la Jornada,
+   Clientes y Configuración). Las de una sola pantalla viven en su CSS. */
+
+/* Un panel blanco con su cabecera: el registro, el libro, los gastos, las fichas */
+.panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-panel);
+  background: var(--panel);
+}
+
+.panel > header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 14px 18px 10px;
+  border-bottom: 1px solid var(--linea);
+}
+
+.panel h2 {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+/* Texto de apoyo junto a un título */
+.hint {
+  color: var(--suave);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Lo secundario de un rótulo: «· datos de ejemplo» */
+.sint {
+  font-weight: 600;
+}
+
+/* El separador «·» (componentes/Sep.tsx). El «·» de Overpass es una marca de
+   ancho cero; el de Overpass Mono es un glifo normal, centrado en su celda
+   (el mismo margen a cada lado). Va entre dos espacios iguales, sin espaciado
+   de letras propio (si no, el aire de la derecha crece), y el margen negativo
+   simétrico le quita el exceso de la celda: ~0,3 em de aire por lado. Es un
+   glifo en línea, no un inline-block: así el espacio duro de la izquierda
+   impide que la línea se corte antes del punto. */
+.sep {
+  margin-inline: -0.17em;
+  font-family: var(--familia-num);
+  letter-spacing: 0;
+}
+
+/* El botón sobre un letrero de color: contorno blanco */
+.btn-letrero {
+  min-height: 28px;
+  margin-block: -6px; /* no agranda la fila del título: el letrero mide lo del comp */
+  padding: 3px 10px 2px;
+  border: 2px solid #fff;
+  border-radius: 6px;
+  background: transparent;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  transition: background-color 0.15s ease-out;
+}
+
+.btn-letrero:hover {
+  background: rgb(255 255 255 / 0.12);
+}
+
+/* El segmentado: Compra/Venta, gasto/retiro/ingreso */
+.seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  overflow: hidden;
+  border: 2px solid var(--trazo);
+  border-radius: var(--radio-control);
+}
+
+.seg button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 9px;
+  border: 0;
+  background: var(--panel);
+  color: var(--tinta);
+  font: 800 15px var(--familia);
+  transition: background-color 0.15s ease-out;
+}
+
+.seg button:hover {
+  background: var(--lamina);
+}
+
+.seg button:focus-visible {
+  outline-offset: -5px;
+  box-shadow: inset 0 0 0 2px var(--foco-canto);
+}
+
+.seg button[aria-pressed="true"] {
+  background: var(--activo-fondo);
+  color: var(--activo-tinta);
+}
+
+.seg button[aria-pressed="true"] kbd {
+  border-color: #555;
+  background: var(--activo-kbd);
+  color: var(--activo-tinta);
+}
+
+/* La fila de botones de un formulario: el principal se estira */
+.acciones {
+  display: flex;
+  gap: 10px;
+}
+
+.acciones .btn.prim {
+  flex: 1;
+}
+
+/* Lo que salió bien, con su ícono */
+.hecho {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  color: var(--ok-tinta);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.hecho:empty {
+  display: none;
+}
+
+.hecho svg {
+  flex: none;
+  margin-top: 1px;
+}
+
+/* El error de un campo, junto a él: ícono y texto, no solo el borde rojo */
+.error-campo {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: var(--rev-tinta);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.error-campo > svg {
+  flex: none;
+}
+
+/* El documento de un cliente y lo que le falta a su ficha */
+.doc {
+  color: var(--suave);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.falta {
+  color: var(--rev-tinta);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* El estado de una operación o de una ficha: verde, naranja de faena o rojo PARE */
+.est {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.est.ok {
+  background: var(--ok-fondo);
+  color: var(--ok-tinta);
+}
+
+.est.obra {
+  background: var(--obra-fondo);
+  color: var(--obra-tinta);
+}
+
+.est.rev {
+  background: var(--rev-fondo);
+  color: var(--rev-tinta);
+}
+
+/* Una nota bajo la cabecera de un panel */
+.nota-libro {
+  padding: 8px 18px;
+  border-bottom: 1px solid var(--linea);
+  background: var(--lamina);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.nota-libro:empty {
+  display: none;
+}
+
+/* Sin datos todavía */
+.vacio {
+  padding: 28px 18px;
+  color: var(--suave);
+  font-weight: 600;
+  text-align: center;
+  white-space: normal;
+}
+
+/* El reverso: un panel aparte, con aire alrededor, sobre la parte derecha del libro */
+.reverso {
+  position: absolute;
+  z-index: 2;
+  top: 52px;
+  right: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(360px, calc(100% - 28px));
+  max-height: calc(100% - 66px);
+  padding: 16px 18px 18px;
+  overflow-y: auto;
+  border: 2px solid var(--pare);
+  border-radius: var(--radio-panel);
+  background: var(--panel);
+  box-shadow: 0 16px 36px -14px rgb(0 0 0 / 0.4);
+}
+
+.reverso h3 {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.reverso-datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  color: var(--suave);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.reverso-datos dd {
+  margin: 0;
+  color: var(--tinta);
+  font: 700 15px var(--familia-num);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.reverso form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reverso .acciones .btn.peligro {
+  flex: 1;
+}
+
+/* La X que cierra un panel o un diálogo */
+.cerrar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--suave);
+  transition: background-color 0.15s ease-out;
+}
+
+.cerrar:hover {
+  background: var(--lamina);
+  color: var(--tinta);
+}
+
+@media (max-width: 899.98px) {
+  .reverso {
+    position: static;
+    width: auto;
+    max-height: none;
+    margin: 12px 14px 0;
+  }
+}
+
+@media (max-width: 639.98px) {
+  .acciones {
+    flex-wrap: wrap;
+  }
+}
+
+/* Un diálogo nativo, con el fondo atenuado como letrero apagado */
+dialog {
+  width: min(680px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-panel);
+  background: var(--panel);
+  color: var(--tinta);
+  box-shadow: 0 18px 48px -16px rgb(0 0 0 / 0.45);
+}
+
+dialog::backdrop {
+  background: rgb(14 17 19 / 0.55);
+}
+
+/* Carga: barras grises del tamaño de lo que viene, sin spinner */
+.esqueleto {
+  display: block;
+  height: 0.9em;
+  border-radius: 4px;
+  background: var(--linea);
+  animation: esqueleto 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes esqueleto {
+  to {
+    opacity: 0.45;
+  }
+}
+
+/* Movimiento reducido: sin transiciones ni animaciones */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,635 @@
+/*
+ * El Cierre del día. Su letrero es el de advertencia de la ruta: amarillo con
+ * filete negro (el color de función del Cierre en el riel y el de los
+ * descuadres). Debajo, un bloque de conteo por moneda, la barra que cierra el
+ * turno y los gastos, retiros e ingresos.
+ */
+:root {
+  --cierre-letrero: #f2b705;
+  --cierre-letrero-tinta: #1d2226; /* 8,8:1 sobre el amarillo */
+  /* La franja de un descuadre: amarillo pálido con su filete */
+  --descuadre-fondo: var(--aviso-fondo);
+  --descuadre-tinta: var(--tinta);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Bajo los focos el letrero sigue amarillo, un punto menos encandilante */
+    --cierre-letrero: #e3aa05;
+    --cierre-letrero-tinta: #14181b; /* 8,5:1 */
+    /* De noche el amarillo pálido se vuelve café y el descuadre se pierde:
+       la franja es una placa amarilla entera, como el letrero */
+    --descuadre-fondo: var(--cierre-letrero);
+    --descuadre-tinta: var(--cierre-letrero-tinta);
+  }
+}
+
+.cierre {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ------------------------------------------------------------------ */
+/* El letrero */
+
+.cierre-letrero {
+  padding: 6px;
+  border-radius: var(--radio-letrero);
+  background: var(--cierre-letrero);
+  box-shadow: var(--sombra-letrero);
+  color: var(--cierre-letrero-tinta);
+}
+
+.cierre-letrero ::selection {
+  background: var(--cierre-letrero-tinta);
+  color: var(--cierre-letrero);
+}
+
+.cierre-letrero-in {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 4px 16px;
+  padding: 12px 22px 13px;
+  border: 3px solid var(--cierre-letrero-tinta);
+  border-radius: 10px;
+}
+
+.cierre-letrero h1 {
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.cierre-dia {
+  font-size: 13px;
+  font-weight: 800;
+  text-align: right;
+}
+
+.cierre-turno {
+  grid-column: 1 / -1;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.cierre-letrero .sint {
+  font-weight: 600;
+}
+
+.cierre-esperando {
+  padding: 18px;
+}
+
+/* Un título de sección suelto (fuera de un panel) */
+.cierre-cab {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+
+.cierre-cab h2 {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+/* ------------------------------------------------------------------ */
+/* Los borradores que bloquean el cierre */
+
+.borradores {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0;
+  list-style: none;
+}
+
+.borradores li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--panel);
+}
+
+.borrador-acciones {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin-left: auto;
+}
+
+.borrador-acciones .enlace {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ------------------------------------------------------------------ */
+/* El conteo: un bloque por moneda */
+
+.cierre-conteo {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.arqueos {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.arqueo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-panel);
+  background: var(--panel);
+}
+
+.arqueo.esperando {
+  gap: 14px;
+  min-height: 360px;
+  padding: 18px 16px;
+}
+
+.arqueo > header {
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--linea);
+}
+
+.arqueo h3 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+}
+
+.arqueo h3 > i {
+  flex: none;
+  align-self: center;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+}
+
+.arqueo h3 > span {
+  overflow: hidden;
+  color: var(--suave);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arqueo-filas {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 16px 14px;
+}
+
+/* cantidad × billete = subtotal */
+.billete {
+  display: grid;
+  grid-template-columns: 64px auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.arqueo input {
+  min-height: 40px;
+  padding: 6px 10px;
+  font: 700 16px var(--familia-num);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.billete .por {
+  color: var(--suave);
+  font-weight: 700;
+}
+
+.billete .den {
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.billete output {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.billete output.nada {
+  color: var(--suave);
+}
+
+.arqueo .sueltos {
+  display: grid;
+  grid-template-columns: auto minmax(96px, 1fr);
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  color: var(--tinta);
+  font-size: 13px;
+}
+
+.arqueo .total {
+  color: var(--tinta);
+  font-size: 13px;
+}
+
+.arqueo .total input {
+  min-height: 52px;
+  border-color: var(--trazo);
+  font-size: 24px;
+}
+
+.arqueo input[aria-invalid="true"] {
+  border-color: var(--pare);
+}
+
+.enlace.modo {
+  align-self: flex-start;
+  margin-top: 2px;
+  padding-block: 6px;
+  font-size: 12.5px;
+}
+
+/* Lo contado contra el sistema, al pie de cada bloque */
+.arqueo-totales {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 6px 12px;
+  margin-top: auto;
+  padding: 12px 16px 14px;
+  border-top: 2px solid var(--trazo);
+  color: var(--suave);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.arqueo-totales dt,
+.arqueo-totales dd {
+  line-height: 22px;
+}
+
+.arqueo-totales dd {
+  margin: 0;
+  color: var(--tinta);
+  font-size: 15px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.arqueo-totales dd.sin {
+  color: var(--suave);
+  font-size: 13px;
+}
+
+/* La diferencia al pie del bloque: una franja de lado a lado */
+.arqueo-totales dd.franja {
+  grid-column: 1 / -1;
+  margin-top: 2px;
+}
+
+.franja .dif {
+  display: flex;
+  width: 100%;
+  justify-content: flex-start;
+  padding: 7px 10px;
+  border-radius: 6px;
+}
+
+.franja .dif b {
+  margin-left: auto;
+  font-size: 15px;
+}
+
+/* La diferencia: verde si cuadra, amarillo de advertencia (con su signo) si no */
+.dif {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px 6px;
+  max-width: 100%;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-family: var(--familia);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.dif b {
+  font-family: var(--familia-num);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.dif.cuadra {
+  background: var(--ok-fondo);
+  color: var(--ok-tinta);
+}
+
+.dif.pendiente {
+  background: var(--lamina);
+  color: var(--suave);
+}
+
+.dif.descuadre {
+  background: var(--descuadre-fondo);
+  box-shadow: inset 0 0 0 1px var(--amarillo);
+  color: var(--descuadre-tinta);
+}
+
+/* La barra que cierra el turno: dice qué falta y por qué el botón espera */
+.cierre-barra {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px 20px;
+  padding: 14px 18px;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-panel);
+  background: var(--panel);
+}
+
+.cierre-estado {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.cierre-barra .btn {
+  min-width: 220px;
+}
+
+.cierre-fallo {
+  grid-column: 1 / -1;
+}
+
+/* ------------------------------------------------------------------ */
+/* Sin turno: abrirlo; y el arqueo que quedó al cerrar */
+
+.cierre-abrir-cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 680px;
+  padding: 16px 18px 18px;
+  font-weight: 600;
+}
+
+.cierre-abrir-fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.cierre-abrir-fila label {
+  min-width: 200px;
+}
+
+.cierre-cerrado h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cierre-cerrado h2 svg {
+  color: var(--ok-tinta);
+}
+
+.cierre-cerrado tbody th {
+  position: static;
+  border-bottom: 1px solid var(--linea-fila);
+  background: none;
+  color: var(--tinta);
+  font-size: 13.5px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+/* ------------------------------------------------------------------ */
+/* Gastos, retiros e ingresos */
+
+.cierre-movs {
+  display: grid;
+  grid-template-columns: 420px minmax(0, 1fr);
+  align-items: start;
+  gap: 18px;
+}
+
+.cierre-form form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 18px 18px;
+}
+
+.seg.mov-tipo {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.mov-campos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.mov-monto.ancho {
+  grid-column: 1 / -1;
+}
+
+.mov-monto input {
+  font: 700 20px var(--familia-num);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.campo-error {
+  color: var(--rev-tinta);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.cierre-form .acciones .btn {
+  flex: 1;
+}
+
+.cierre-gastos-cuerpo {
+  padding: 14px 18px;
+}
+
+.gastos-lista {
+  padding: 0;
+  list-style: none;
+}
+
+.gastos-lista li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 16px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--linea-fila);
+}
+
+.gastos-lista li:last-child {
+  border-bottom: 0;
+}
+
+.gasto-cat {
+  font-weight: 800;
+}
+
+.gasto-monto {
+  font-size: 15px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.gasto-desc {
+  grid-column: 1 / -1;
+  color: var(--suave);
+  font-weight: 600;
+}
+
+.gasto-pie {
+  display: flex;
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: 4px 14px;
+  margin-top: 4px;
+  color: var(--suave);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.gasto-pie .enlace {
+  margin-left: auto;
+  color: var(--tinta);
+}
+
+.gastos-lista li.reversado .gasto-monto {
+  color: var(--suave);
+  text-decoration: line-through;
+  text-decoration-color: var(--pare);
+}
+
+.gastos-lista .motivo {
+  color: var(--rev-tinta);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* En la lista de gastos el reverso va en línea, bajo el título: la lista
+   puede tener un solo gasto y el panel flotante del libro quedaría cortado */
+.cierre-gastos .reverso {
+  position: static;
+  width: auto;
+  max-height: none;
+  margin: 12px 18px;
+  box-shadow: none;
+}
+
+.cierre-nota {
+  color: var(--suave);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+/* ------------------------------------------------------------------ */
+
+/* Bajo 1280 px los bloques de conteo van de a dos */
+@media (max-width: 1279.98px) {
+  .arqueos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1199.98px) {
+  .cierre-movs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cierre-form {
+    max-width: 640px;
+  }
+}
+
+@media (max-width: 899.98px) {
+  .cierre {
+    gap: 14px;
+  }
+
+  /* En el teléfono no hay teclado físico */
+  .solo-teclado {
+    display: none;
+  }
+
+  .cierre-letrero-in {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 10px 14px 11px;
+  }
+
+  .cierre-letrero h1 {
+    font-size: 21px;
+  }
+
+  .cierre-dia {
+    text-align: left;
+  }
+}
+
+/* En el teléfono: un bloque por fila, campos de 44 px y la barra apilada */
+@media (max-width: 639.98px) {
+  .arqueos {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .arqueo input {
+    min-height: 44px;
+  }
+
+  .cierre-barra {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cierre-barra .btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .borrador-acciones {
+    margin-left: 0;
+  }
+}
