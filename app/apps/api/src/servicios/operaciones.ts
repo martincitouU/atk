@@ -7,6 +7,7 @@
 // recalcula todo, se validan folio (RF-20) y ficha UAF (RF-17), y se mueve
 // la caja (RF-04). Una confirmada solo se anula con un reverso con motivo.
 
+import { TIPOS_DTE } from "@atk/shared";
 import { and, desc, eq, gte, lt, type SQL } from "drizzle-orm";
 import {
   categoriaCliente,
@@ -50,7 +51,6 @@ import { cotizacionEn, precioPara } from "./cotizaciones.ts";
 import { leerParametros, type Parametros } from "./parametros.ts";
 import { turnoAbiertoDe } from "./turnos.ts";
 
-export const TIPOS_DTE = [34, 41] as const; // 34 factura exenta, 41 boleta exenta
 
 export type EntradaOperacion = {
   tipo: TipoOperacion;

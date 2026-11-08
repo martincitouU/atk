@@ -12,12 +12,12 @@
 
 import { sql } from "drizzle-orm";
 import { primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { ESTADOS_OPERACION, MEDIOS_PAGO, ROLES, TIPOS_OPERACION } from "@atk/shared";
 import { AHORA_MS, booleano, dinero, entero, fecha, idAutomatico } from "./tipos.ts";
 
-export const ROLES = ["ADMIN", "SUPERVISOR", "CAJERO"] as const;
-export const TIPOS_OPERACION = ["COMPRA", "VENTA"] as const;
-export const MEDIOS_PAGO = ["EFECTIVO", "TRANSFERENCIA", "TARJETA"] as const;
-export const ESTADOS_OPERACION = ["BORRADOR", "CONFIRMADA", "REVERSADA"] as const;
+// Los valores que también usa el front viven en @atk/shared
+export { ESTADOS_OPERACION, MEDIOS_PAGO, ROLES, TIPOS_OPERACION };
+export type { MedioPago, Rol, TipoOperacion } from "@atk/shared";
 export const TIPOS_MOVIMIENTO = ["OPERACION", "REVERSO", "INGRESO", "RETIRO", "GASTO", "AJUSTE"] as const;
 export const ACCIONES_AUDITORIA = [
   "CREAR", "EDITAR", "ELIMINAR", "CONFIRMAR", "REVERSAR", "AUTORIZAR", "PUBLICAR", "ABRIR", "CERRAR",
@@ -343,6 +343,3 @@ export type Turno = typeof turno.$inferSelect;
 export type Gasto = typeof gasto.$inferSelect;
 export type Cotizacion = typeof cotizacion.$inferSelect;
 export type ReglaSpread = typeof reglaSpread.$inferSelect;
-export type Rol = (typeof ROLES)[number];
-export type TipoOperacion = (typeof TIPOS_OPERACION)[number];
-export type MedioPago = (typeof MEDIOS_PAGO)[number];
