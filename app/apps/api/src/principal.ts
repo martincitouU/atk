@@ -15,7 +15,8 @@ if (!rutaBase) {
 
 const conexion = abrirBase(rutaBase);
 const aplicadas = migrar(conexion.sqlite);
-const app = construirServidor(conexion);
+// Hasta que exista el login (fase B), nadie tiene sesión: toda ruta de /api responde 401
+const app = construirServidor(conexion, { obtenerActor: () => null });
 app.log.info({ base: rutaBase, aplicadas }, aplicadas.length ? "migraciones aplicadas" : "base al día");
 
 // docker stop manda SIGTERM: se termina lo que está en curso y se cierra la base
