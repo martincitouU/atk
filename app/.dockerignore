@@ -1,0 +1,10 @@
+# Lo que no entra a la imagen
+**/node_modules
+**/*.db
+**/*.db-wal
+**/*.db-shm
+apps/api/test
+db/semillas
+db/probar.sh
+Dockerfile
+.dockerignore
