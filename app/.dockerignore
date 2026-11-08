@@ -8,3 +8,4 @@ db/semillas
 db/probar.sh
 Dockerfile
 .dockerignore
+packages/*/test

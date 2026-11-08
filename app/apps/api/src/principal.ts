@@ -2,9 +2,12 @@
 // pendientes y atiende HTTP. Contrato con la infra (CLAUDE.md): escucha en
 // PORT y guarda SQLite en DATABASE_PATH.
 
+import { crearAuth } from "./auth/auth.ts";
+import { actorDesdeSesion } from "./auth/sesion.ts";
 import { abrirBase } from "./db/conexion.ts";
 import { migrar } from "./db/migrar.ts";
 import { construirServidor } from "./servidor.ts";
+import { leerParametros } from "./servicios/parametros.ts";
 
 const puerto = Number(process.env.PORT ?? 3000);
 const rutaBase = process.env.DATABASE_PATH;
@@ -15,8 +18,29 @@ if (!rutaBase) {
 
 const conexion = abrirBase(rutaBase);
 const aplicadas = migrar(conexion.sqlite);
-const app = construirServidor(conexion);
+// Login: necesita el secreto que firma las cookies y la dirección pública
+// (para validar Origin). En la VM los deja Ansible fuera del repo. Si
+// faltan, la app arranca igual pero cerrada: nadie inicia sesión, toda
+// ruta de /api responde 401 y no se acepta ninguna escritura.
+const secreto = process.env.BETTER_AUTH_SECRET;
+const urlPublica = process.env.BETTER_AUTH_URL ?? null;
+const auth =
+  secreto && urlPublica
+    ? crearAuth({
+        rutaBase,
+        secreto,
+        urlPublica,
+        inactividadMinutos: leerParametros(conexion.db).sesionInactividadMinutos,
+      })
+    : null;
+
+const app = construirServidor(conexion, {
+  auth,
+  urlPublica,
+  obtenerActor: auth ? actorDesdeSesion(auth, conexion.db) : () => null,
+});
 app.log.info({ base: rutaBase, aplicadas }, aplicadas.length ? "migraciones aplicadas" : "base al día");
+if (!auth) app.log.warn("Faltan BETTER_AUTH_SECRET o BETTER_AUTH_URL: el login está desactivado");
 
 // docker stop manda SIGTERM: se termina lo que está en curso y se cierra la base
 for (const senal of ["SIGTERM", "SIGINT"] as const) {

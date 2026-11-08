@@ -12,6 +12,7 @@ RUN apt-get update \
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY apps/api/package.json apps/api/
+COPY packages/shared/package.json packages/shared/
 RUN npm ci --omit=dev
 
 # --- 2. Imagen final ---------------------------------------------------
@@ -23,6 +24,7 @@ COPY --from=dependencias /app/node_modules node_modules
 # El código queda de root: el usuario de la app puede leerlo pero no modificarlo
 COPY package.json ./
 COPY db db
+COPY packages/shared packages/shared
 COPY apps/api apps/api
 
 # Usuario sin privilegios de la imagen (UID 1000): Ansible deja la carpeta

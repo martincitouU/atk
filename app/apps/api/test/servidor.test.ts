@@ -10,7 +10,7 @@ describe("GET /health", () => {
   it("responde 200 con las migraciones aplicadas; una base nueva no está configurada", async () => {
     const conexion = baseTemporal();
     migrar(conexion.sqlite);
-    const app = construirServidor(conexion);
+    const app = construirServidor(conexion, { obtenerActor: () => null, urlPublica: null });
 
     const respuesta = await app.inject({ method: "GET", url: "/health" });
 
@@ -23,7 +23,7 @@ describe("GET /health", () => {
     const conexion = baseTemporal();
     migrar(conexion.sqlite);
     cargarSemilla(conexion.sqlite, "ejemplo");
-    const app = construirServidor(conexion);
+    const app = construirServidor(conexion, { obtenerActor: () => null, urlPublica: null });
 
     expect((await app.inject({ method: "GET", url: "/health" })).json()).toMatchObject({ configurada: true });
     await app.close();
@@ -32,7 +32,7 @@ describe("GET /health", () => {
   it("si la base no responde, no devuelve 200", async () => {
     const conexion = baseTemporal();
     migrar(conexion.sqlite);
-    const app = construirServidor(conexion);
+    const app = construirServidor(conexion, { obtenerActor: () => null, urlPublica: null });
     conexion.sqlite.close();
 
     expect((await app.inject({ method: "GET", url: "/health" })).statusCode).toBe(500);
