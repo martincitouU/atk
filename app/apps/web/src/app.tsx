@@ -18,6 +18,8 @@ const Cierre = lazy(() => import("./pantallas/Cierre/Cierre.tsx").then((m) => ({
 const Jornada = lazy(() => import("./pantallas/Jornada.tsx").then((m) => ({ default: m.Jornada })));
 const Clientes = lazy(() => import("./pantallas/Clientes.tsx").then((m) => ({ default: m.Clientes })));
 const Configuracion = lazy(() => import("./pantallas/Configuracion.tsx").then((m) => ({ default: m.Configuracion })));
+const Usuarios = lazy(() => import("./pantallas/Usuarios.tsx").then((m) => ({ default: m.Usuarios })));
+const Auditoria = lazy(() => import("./pantallas/Auditoria.tsx").then((m) => ({ default: m.Auditoria })));
 
 export const rutas: RouteObject[] = [
   {
@@ -50,6 +52,22 @@ export const rutas: RouteObject[] = [
       },
       { path: "clientes", element: <Clientes /> },
       { path: "configuracion", element: <Configuracion /> },
+      {
+        path: "usuarios",
+        element: (
+          <ConPermiso accion="administrar">
+            <Usuarios />
+          </ConPermiso>
+        ),
+      },
+      {
+        path: "auditoria",
+        element: (
+          <ConPermiso accion="administrar">
+            <Auditoria />
+          </ConPermiso>
+        ),
+      },
       { path: "*", element: <Navigate to="/ventanilla" replace /> },
     ],
   },

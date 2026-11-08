@@ -16,6 +16,8 @@ export type Seccion = {
   tecla?: string;
   /** Si la sección es solo de algunos roles (la API respondería 403). */
   permiso?: Accion;
+  /** Del administrador, en el PC: aparece cuando la sesión lo confirma y no va en la barra del teléfono. */
+  admin?: boolean;
 };
 
 export const SECCIONES: readonly Seccion[] = [
@@ -24,6 +26,8 @@ export const SECCIONES: readonly Seccion[] = [
   { ruta: "/jornada", nombre: "Jornada", corto: "Jornada", color: "var(--turismo)", tecla: "F3", permiso: "verJornada" },
   { ruta: "/clientes", nombre: "Clientes", corto: "Clientes", color: "var(--servicios)", tecla: "F4" },
   { ruta: "/configuracion", nombre: "Configuración", corto: "Config.", color: "var(--neutro)" },
+  { ruta: "/usuarios", nombre: "Usuarios", corto: "Usuarios", color: "var(--neutro)", permiso: "administrar", admin: true },
+  { ruta: "/auditoria", nombre: "Auditoría", corto: "Auditoría", color: "var(--neutro)", permiso: "administrar", admin: true },
 ];
 
 const hora = new Intl.DateTimeFormat("es-CL", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
@@ -85,11 +89,11 @@ function Salir() {
 }
 
 /**
- * Las secciones que ve quien entró. Mientras la sesión no llega se muestran
- * todas (el riel no salta para el admin); después, las de su rol.
+ * Las secciones que ve quien entró. Mientras la sesión no llega, las de todos
+ * (el riel no salta) salvo las del administrador; después, las de su rol.
  */
 export function seccionesDe(sesion: Sesion | undefined): readonly Seccion[] {
-  return SECCIONES.filter((s) => !s.permiso || !sesion || puede(sesion.usuario.rol, s.permiso));
+  return SECCIONES.filter((s) => !s.permiso || (sesion ? puede(sesion.usuario.rol, s.permiso) : !s.admin));
 }
 
 export function Riel({ sesion }: { sesion?: Sesion | undefined }) {
@@ -106,7 +110,7 @@ export function Riel({ sesion }: { sesion?: Sesion | undefined }) {
       <nav aria-label="Secciones">
         <ul>
           {seccionesDe(sesion).map((s) => (
-            <li key={s.ruta}>
+            <li key={s.ruta} className={s.admin ? "riel-admin" : undefined}>
               <NavLink to={s.ruta}>
                 <span className="riel-cuadro" aria-hidden="true" style={{ background: s.color }} />
                 {s.corto === s.nombre ? (

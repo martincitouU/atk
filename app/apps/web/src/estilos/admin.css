@@ -1,0 +1,275 @@
+/*
+ * Usuarios y Auditoría: el trabajo del administrador, en el cartel gris de
+ * Configuración. Paneles y tablas de base.css; aquí solo lo propio.
+ */
+
+.admin .panel > header {
+  align-items: center;
+  min-height: 49px;
+  padding: 10px 12px 10px 18px;
+}
+
+.admin .panel h2 {
+  margin-right: auto;
+}
+
+/* El aviso de lo hecho, sobre los paneles (vacío, no ocupa lugar) */
+.admin-hecho {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+  padding: 10px 16px;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-panel);
+  background: var(--ok-fondo);
+  color: var(--ok-tinta);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.admin-hecho:empty {
+  display: none;
+}
+
+/* La lista a la izquierda y el panel de trabajo a la derecha, como en Clientes */
+.admin-trabajo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  gap: 18px;
+  align-items: start;
+}
+
+.admin-tabla {
+  overflow-x: auto;
+}
+
+.admin-tabla td {
+  vertical-align: top;
+  padding-block: 11px;
+}
+
+.admin-tabla tr.elegido {
+  background: var(--fila-elegida);
+}
+
+.admin-nombre {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--tinta);
+  font: inherit;
+  font-weight: 800;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: var(--linea);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.admin-nombre:hover {
+  text-decoration-color: currentcolor;
+}
+
+.admin-correo,
+.admin-sin-cuenta {
+  display: block;
+  margin-top: 2px;
+  color: var(--suave);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.admin-sin-cuenta {
+  margin-top: 6px;
+}
+
+/* El panel de la derecha: la guía de roles, crear o editar */
+.admin-lado .admin-form,
+.admin-roles,
+.admin-nota {
+  padding: 14px 18px;
+}
+
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-clave {
+  border-top: 1px solid var(--linea);
+}
+
+/* Un campo con su error debajo (el error queda fuera del rótulo, como en Clientes) */
+.admin-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.admin-duo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.admin-form .acciones {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-dato {
+  margin: 0;
+  color: var(--suave);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+/* La casilla va a la izquierda de su texto, en la misma fila */
+.admin-form label.admin-check {
+  flex-direction: row;
+  gap: 10px;
+  align-items: center;
+  color: var(--tinta);
+  font-size: 14px;
+}
+
+.admin-check input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--vial);
+}
+
+.admin-roles {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.admin-roles dt {
+  font-weight: 800;
+}
+
+.admin-roles dd {
+  margin: 2px 0 0;
+  color: var(--suave);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.admin-nota {
+  margin: 0;
+  border-top: 1px solid var(--linea);
+  color: var(--suave);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+/* ------------------------------------------------------------------ */
+/* La auditoría */
+
+.admin-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  align-items: end;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--linea);
+}
+
+.admin-filtros label {
+  min-width: 140px;
+}
+
+.admin-filtros .enlace {
+  margin-bottom: 10px;
+}
+
+.admin-vacio {
+  margin: 0;
+  padding: 32px 18px;
+  color: var(--suave);
+  font-weight: 600;
+  text-align: center;
+}
+
+.admin-cuando {
+  white-space: nowrap;
+}
+
+.admin-cuando span {
+  display: block;
+}
+
+.admin-cuando span + span {
+  color: var(--suave);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.admin-motivo {
+  margin: 0 0 6px;
+  color: var(--rev-tinta);
+  font-weight: 700;
+}
+
+.admin-detalle summary {
+  width: fit-content;
+  color: var(--tinta);
+  font-size: 12.5px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.admin-datos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.admin-datos h3 {
+  margin: 0 0 4px;
+  color: var(--suave);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.admin-datos pre {
+  max-height: 260px;
+  margin: 0;
+  padding: 8px 10px;
+  overflow: auto;
+  border-radius: var(--radio-control);
+  background: var(--lamina);
+  font: 12px/1.45 var(--familia-num);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1199.98px) {
+  .admin-trabajo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-lado {
+    order: -1;
+  }
+}
+
+@media (max-width: 639.98px) {
+  .admin-col-rut {
+    display: none;
+  }
+
+  .admin-duo,
+  .admin-datos {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

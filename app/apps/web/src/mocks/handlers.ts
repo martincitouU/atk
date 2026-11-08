@@ -6,15 +6,18 @@
 
 import {
   cambiosOperacion,
+  cambiosUsuario,
   entradaAbrirTurno,
   entradaCerrarTurno,
   entradaCliente,
+  entradaContrasena,
   entradaGasto,
   entradaIngresoRetiro,
   entradaOperacion,
   entradaPublicacion,
   entradaRechazoCuenta,
   entradaReverso,
+  entradaUsuario,
 } from "@atk/shared";
 import { http, HttpResponse, type HttpHandler, type PathParams } from "msw";
 import { z } from "zod";
@@ -139,6 +142,21 @@ export function handlers(e: m.Estado): HttpHandler[] {
     http.get(en(RUTAS.cuentas), manejar(({ url }) => m.listarCuentas(e, consulta(url, "estado")))),
     http.post(conId(RUTAS.verificarCuenta), manejar(({ params }) => m.verificarCuenta(e, id(params)))),
     http.post(conId(RUTAS.rechazarCuenta), manejar(async ({ request, params }) => m.rechazarCuenta(e, id(params), (await cuerpo(request, entradaRechazoCuenta)).motivo))),
+
+    // Usuarios y auditoría (solo ADMIN)
+    http.get(en(RUTAS.usuarios), manejar(() => m.listarUsuarios(e))),
+    http.post(en(RUTAS.usuarios), manejar(async ({ request }) => m.crearUsuario(e, await cuerpo(request, entradaUsuario)), 201)),
+    http.patch(conId(RUTAS.usuario), manejar(async ({ request, params }) => m.editarUsuario(e, id(params), await cuerpo(request, cambiosUsuario)))),
+    http.post(conId(RUTAS.contrasena), manejar(async ({ request, params }) => m.restablecerContrasena(e, id(params), (await cuerpo(request, entradaContrasena)).contrasena), 204)),
+    http.get(en(RUTAS.auditoria), manejar(({ url }) =>
+      m.consultarAuditoria(e, {
+        desde: consulta(url, "desde"),
+        hasta: consulta(url, "hasta"),
+        tabla: consulta(url, "tabla"),
+        accion: consulta(url, "accion"),
+        usuarioId: consulta(url, "usuarioId"),
+      }),
+    )),
 
     // Resumen y catálogo (los parámetros y las categorías de gasto vienen en el catálogo)
     http.get(en(RUTAS.resumen), manejar(({ url }) => m.resumen(e, consulta(url, "fecha")))),

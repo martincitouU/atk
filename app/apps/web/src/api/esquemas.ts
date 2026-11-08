@@ -11,11 +11,13 @@
 
 import {
   cambiosOperacion,
+  cambiosUsuario,
   entradaCliente,
   entradaGasto,
   entradaIngresoRetiro,
   entradaOperacion,
   entradaPublicacion,
+  entradaUsuario,
   ESTADOS_CUENTA_CLIENTE,
   ESTADOS_GASTO,
   ESTADOS_OPERACION,
@@ -61,6 +63,8 @@ export type EntradaCliente = z.input<typeof entradaCliente>;
 export type EntradaCotizacion = z.input<typeof entradaPublicacion>;
 export type EntradaGasto = z.input<typeof entradaGasto>;
 export type EntradaMovimiento = z.input<typeof entradaIngresoRetiro>;
+export type EntradaUsuario = z.input<typeof entradaUsuario>;
+export type CambiosUsuario = z.input<typeof cambiosUsuario>;
 /** POST /api/auth/sign-in/email (Better Auth). */
 export const EntradaSesion = z.object({ email: z.string(), password: z.string() });
 export type EntradaSesion = z.infer<typeof EntradaSesion>;
@@ -276,6 +280,31 @@ export const CuentaCliente = z.object({
   creadaEn: fecha,
 });
 
+/** GET /api/usuarios (solo ADMIN): el personal, con `tieneCuenta` (si puede iniciar sesión). */
+export const Usuario = z.object({
+  id,
+  rut: z.string(),
+  nombre: z.string(),
+  email: z.string(),
+  rol: z.enum(ROLES),
+  sucursalId: nulo(id),
+  activo: z.boolean(),
+  tieneCuenta: z.boolean(),
+});
+
+/** GET /api/auditoria (solo ADMIN): quién hizo qué y cuándo, con el antes y el después. */
+export const RegistroAuditoria = z.object({
+  id,
+  tabla: z.string(),
+  registroId: z.string(),
+  accion: z.string(),
+  motivo: nulo(z.string()),
+  datosAntes: z.unknown(),
+  datosDespues: z.unknown(),
+  usuarioId: nulo(id),
+  registradoEn: fecha,
+});
+
 /** GET /api/yo: lo primero que se pide al cargar. */
 export const Yo = z.discriminatedUnion("tipo", [
   z.object({
@@ -317,6 +346,10 @@ export const RUTAS = {
   cliente: (id: number) => `/api/clientes/${id}`,
   resumen: "/api/resumen",
   cuentas: "/api/cuentas-cliente",
+  usuarios: "/api/usuarios",
+  usuario: (id: number) => `/api/usuarios/${id}`,
+  contrasena: (id: number) => `/api/usuarios/${id}/contrasena`,
+  auditoria: "/api/auditoria",
   verificarCuenta: (id: number) => `/api/cuentas-cliente/${id}/verificar`,
   rechazarCuenta: (id: number) => `/api/cuentas-cliente/${id}/rechazar`,
   catalogo: "/api/catalogo",
@@ -346,6 +379,8 @@ export type CatalogoApi = z.input<typeof Catalogo>;
 export type Resumen = z.output<typeof Resumen>;
 export type ResumenApi = z.input<typeof Resumen>;
 export type CuentaCliente = z.infer<typeof CuentaCliente>;
+export type Usuario = z.infer<typeof Usuario>;
+export type RegistroAuditoria = z.infer<typeof RegistroAuditoria>;
 export type Yo = z.infer<typeof Yo>;
 export type Sesion = z.infer<typeof Sesion>;
 export type ErrorApi = z.infer<typeof ErrorApi>;

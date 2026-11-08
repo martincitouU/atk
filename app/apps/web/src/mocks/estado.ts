@@ -38,13 +38,23 @@ import {
   type TipoOperacion,
 } from "@atk/shared/dinero";
 import { ErrorNegocio } from "../api/cliente.ts";
-import type { Cierre, EntradaCotizacion, EntradaGasto, EntradaMovimiento, Movimiento } from "../api/esquemas.ts";
+import type {
+  CambiosUsuario,
+  Cierre,
+  EntradaCotizacion,
+  EntradaGasto,
+  EntradaMovimiento,
+  EntradaUsuario,
+  Movimiento,
+  RegistroAuditoria,
+  Usuario as UsuarioApi,
+} from "../api/esquemas.ts";
 
 type Rol = Sesion["usuario"]["rol"];
 type MedioPago = Operacion["medioPago"];
 type TipoMargen = "PORCENTAJE" | "MONTO_FIJO";
 
-type Usuario = { id: number; nombre: string; rol: Rol; email: string; clave: string };
+type Usuario = { id: number; nombre: string; rol: Rol; email: string; clave: string; rut: string; activo: boolean };
 type Divisa = Moneda & { decimalesTasa: number; montoMinimo: bigint };
 
 type CotizacionMock = {
@@ -149,6 +159,8 @@ export type Estado = {
   clientes: ClienteMock[];
   /** Las cuentas del portal (cuentas.ts): se verifican en el local con el carnet. */
   cuentas: CuentaMock[];
+  /** Unas filas de auditoría de ejemplo (la consulta del admin, RF-15). */
+  auditoria: RegistroAuditoria[];
   siguiente: { cotizacion: number; operacion: number; turno: number; movimiento: number; gasto: number; cliente: number };
 };
 
@@ -1043,6 +1055,68 @@ export function rechazarCuenta(e: Estado, id: number, motivo: string) {
 }
 
 // ---------------------------------------------------------------------------
+// Usuarios del personal (usuarios.ts) y auditoría (auditoria.ts), solo ADMIN
+
+const aUsuarioApi = ({ clave: _clave, ...u }: Usuario): UsuarioApi => ({ ...u, sucursalId: null, tieneCuenta: true });
+
+function usuarioPorId(e: Estado, id: number): Usuario {
+  const u = e.usuarios.find((x) => x.id === id);
+  exigir(u, "USUARIO_NO_EXISTE", `El usuario ${id} no existe`);
+  return u;
+}
+
+export function listarUsuarios(e: Estado): UsuarioApi[] {
+  exigirRol(usuarioActual(e), ["ADMIN"], "Ver los usuarios");
+  return [...e.usuarios].sort((a, b) => a.nombre.localeCompare(b.nombre, "es")).map(aUsuarioApi);
+}
+
+/** La entrada ya validada por entradaUsuario (@atk/shared): el RUT y el correo, normalizados aquí como allá. */
+export function crearUsuario(e: Estado, entrada: EntradaUsuario): UsuarioApi {
+  exigirRol(usuarioActual(e), ["ADMIN"], "Crear usuarios");
+  const rut = entrada.rut.replace(/\./g, "").trim().toUpperCase();
+  const email = entrada.email.trim().toLowerCase();
+  exigir(!e.usuarios.some((u) => u.rut === rut || u.email === email), "USUARIO_DUPLICADO", "Ya existe un usuario con ese RUT o correo");
+  const id = Math.max(...e.usuarios.map((u) => u.id)) + 1;
+  const nuevo: Usuario = { id, nombre: entrada.nombre.trim(), rol: entrada.rol, email, clave: entrada.contrasena, rut, activo: true };
+  e.usuarios.push(nuevo);
+  return aUsuarioApi(nuevo);
+}
+
+export function editarUsuario(e: Estado, id: number, cambios: CambiosUsuario): UsuarioApi {
+  const actor = usuarioActual(e);
+  exigirRol(actor, ["ADMIN"], "Editar usuarios");
+  exigir(
+    id !== actor.id || ((cambios.rol === undefined || cambios.rol === "ADMIN") && cambios.activo !== false),
+    "SIN_PERMISO",
+    "No puede quitarse el rol de administrador ni desactivarse a sí mismo",
+  );
+  const nombre = cambios.nombre === undefined ? undefined : limpiar(cambios.nombre);
+  exigir(nombre !== null, "DATO_FALTANTE", "Indique el nombre");
+  const u = usuarioPorId(e, id);
+  if (nombre !== undefined) u.nombre = nombre;
+  if (cambios.rol !== undefined) u.rol = cambios.rol;
+  if (cambios.activo !== undefined) u.activo = cambios.activo;
+  return aUsuarioApi(u);
+}
+
+export function restablecerContrasena(e: Estado, id: number, contrasena: string): void {
+  exigirRol(usuarioActual(e), ["ADMIN"], "Restablecer contraseñas");
+  usuarioPorId(e, id).clave = contrasena;
+}
+
+type FiltrosAuditoriaMock = { desde?: string | undefined; hasta?: string | undefined; tabla?: string | undefined; accion?: string | undefined; usuarioId?: string | undefined };
+
+export function consultarAuditoria(e: Estado, f: FiltrosAuditoriaMock): RegistroAuditoria[] {
+  exigirRol(usuarioActual(e), ["ADMIN"], "Consultar la auditoría");
+  const desde = f.desde ? new Date(f.desde).getTime() : -Infinity;
+  const hasta = f.hasta ? new Date(f.hasta).getTime() : Infinity;
+  return e.auditoria
+    .filter((a) => new Date(a.registradoEn).getTime() >= desde && new Date(a.registradoEn).getTime() < hasta)
+    .filter((a) => (!f.tabla || a.tabla === f.tabla) && (!f.accion || a.accion === f.accion) && (!f.usuarioId || String(a.usuarioId) === f.usuarioId))
+    .sort((a, b) => b.id - a.id);
+}
+
+// ---------------------------------------------------------------------------
 // Catálogo, parámetros y sesión
 
 /** GET /api/catalogo: la moneda base viene solo con código y decimales, y los parámetros adentro. */
@@ -1085,7 +1159,7 @@ export function salir(e: Estado): void {
 // ---------------------------------------------------------------------------
 // La semilla: los datos de ejemplo del comp (.impeccable/mocks/decision/src/assigned.html)
 
-const ROLANDO: Usuario = { id: 1, nombre: "Rolando del Río", rol: "ADMIN", email: "rolando@atk.cl", clave: "ventanilla" };
+const ROLANDO: Usuario = { id: 1, nombre: "Rolando del Río", rol: "ADMIN", email: "rolando@atk.cl", clave: "ventanilla", rut: "12873465-1", activo: true };
 
 const E6 = 1_000_000n;
 
@@ -1134,6 +1208,7 @@ export function crearEstado(ahora: () => Date = () => new Date()): Estado {
     gastos: [],
     clientes: [],
     cuentas: [],
+    auditoria: [],
     siguiente: { cotizacion: 1, operacion: 1, turno: 1, movimiento: 1, gasto: 1, cliente: 1 },
   };
   sembrar(e);
@@ -1207,6 +1282,15 @@ function sembrar(e: Estado): void {
         { id: 2, nombre: "Ana Ruiz Toledo", rut: "12345678-5", estado: "PENDIENTE", clienteId: null, motivoRechazo: null, creadaEn: e.ahora() },
       );
     });
+
+    // La auditoría de ejemplo: lo que dejó la jornada (un gasto, la reversa con su motivo y una publicación)
+    const fila = (minutos: number, tabla: string, registroId: number, accion: string, motivo: string | null, antes: unknown, despues: unknown) =>
+      hace(minutos, () =>
+        e.auditoria.push({ id: e.auditoria.length + 1, tabla, registroId: String(registroId), accion, motivo, datosAntes: antes, datosDespues: despues, usuarioId: 1, registradoEn: iso(e.ahora()) }),
+      );
+    fila(84, "gasto", 1, "CREAR", null, null, { monto: "18990", descripcion: "Resma de papel y tinta para la impresora de boletas" });
+    fila(43, "operacion", reversada.id, "REVERSAR", "Monto mal digitado", { estado: "CONFIRMADA" }, { estado: "REVERSADA" });
+    fila(2, "cotizacion", 4, "PUBLICAR", null, null, { monedaCodigo: "USD", referenciaE6: "943500000" });
   } finally {
     e.ahora = reloj;
   }

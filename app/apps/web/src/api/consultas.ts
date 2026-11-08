@@ -17,19 +17,23 @@ import {
   Gasto,
   Movimiento,
   Operacion,
+  RegistroAuditoria,
   Resumen,
   RUTAS,
   SaldoCaja,
   Turno,
+  Usuario,
   Vista,
   Yo,
   type CambiosOperacion,
+  type CambiosUsuario,
   type EntradaCliente,
   type EntradaCotizacion,
   type EntradaGasto,
   type EntradaMovimiento,
   type EntradaOperacion,
   type EntradaSesion,
+  type EntradaUsuario,
   type Sesion,
 } from "./esquemas.ts";
 
@@ -322,6 +326,44 @@ export function useRechazarCuenta() {
     onSuccess: () => invalidar(["cuentas"]),
   });
 }
+
+/** El personal de la casa (solo ADMIN). */
+export const useUsuarios = () => useQuery({ queryKey: ["usuarios"], queryFn: ({ signal }) => pedir(RUTAS.usuarios, z.array(Usuario), { signal }) });
+
+export function useCrearUsuario() {
+  const invalidar = useInvalidar();
+  return useMutation({
+    mutationFn: (entrada: EntradaUsuario) => enviar(RUTAS.usuarios, Usuario, entrada),
+    onSuccess: () => invalidar(["usuarios"]),
+  });
+}
+
+/** Cambia el nombre, el rol o si está activo (desactivar cierra sus sesiones). */
+export function useEditarUsuario() {
+  const invalidar = useInvalidar();
+  return useMutation({
+    mutationFn: ({ id, cambios }: { id: number; cambios: CambiosUsuario }) => enviar(RUTAS.usuario(id), Usuario, cambios, "PATCH"),
+    onSuccess: () => invalidar(["usuarios"]),
+  });
+}
+
+/** Fija una contraseña nueva (204) y cierra las sesiones de esa persona. */
+export function useRestablecerContrasena() {
+  return useMutation({
+    mutationFn: ({ id, contrasena }: { id: number; contrasena: string }) => enviar(RUTAS.contrasena(id), z.null(), { contrasena }),
+  });
+}
+
+/** Filtros de la auditoría, como los pide GET /api/auditoria (los instantes en ISO). */
+export type FiltrosAuditoria = { desde?: string; hasta?: string; tabla?: string; accion?: string; usuarioId?: string };
+
+/** La auditoría (solo ADMIN), de lo más reciente a lo más antiguo; hasta 200 filas. */
+export const useAuditoria = (filtros: FiltrosAuditoria) =>
+  useQuery({
+    queryKey: ["auditoria", filtros],
+    queryFn: ({ signal }) => pedir(conConsulta(RUTAS.auditoria, { ...filtros, limite: "200" }), z.array(RegistroAuditoria), { signal }),
+    placeholderData: keepPreviousData,
+  });
 
 /** Inicia sesión (Better Auth). Su respuesta no se usa: después se vuelve a pedir /api/yo. */
 export function useEntrar() {

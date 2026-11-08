@@ -289,6 +289,11 @@
     min-width: 0;
   }
 
+  /* Usuarios y Auditoría son trabajo de escritorio: no caben en la barra */
+  .riel li.riel-admin {
+    display: none;
+  }
+
   .riel a {
     flex-direction: column;
     justify-content: center;
