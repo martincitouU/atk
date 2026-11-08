@@ -1,0 +1,37 @@
+# 2 GB de swap: la t3.micro tiene 1 GB de RAM y construir la imagen de la
+# app (npm ci, compilar better-sqlite3) puede quedarse sin memoria.
+
+- name: Crear el archivo de swap
+  ansible.builtin.command: fallocate -l 2G /swapfile
+  args:
+    creates: /swapfile
+  register: archivo_swap
+
+# Solo root puede leerlo: puede contener memoria de cualquier proceso
+- name: Dejar el archivo de swap solo para root
+  ansible.builtin.file:
+    path: /swapfile
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Darle formato de swap
+  ansible.builtin.command: mkswap /swapfile
+  when: archivo_swap is changed
+
+- name: Ver si el swap ya está activo
+  ansible.builtin.command: swapon --show=NAME --noheadings
+  register: swap_activo
+  changed_when: false
+
+- name: Activar el swap
+  ansible.builtin.command: swapon /swapfile
+  when: "'/swapfile' not in swap_activo.stdout"
+
+- name: Activarlo también al arrancar
+  ansible.posix.mount:
+    path: none
+    src: /swapfile
+    fstype: swap
+    opts: sw
+    state: present
