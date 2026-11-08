@@ -1,8 +1,10 @@
 # En la VM este archivo vive en /srv/atk; las rutas relativas parten de ahí.
-# Prueba local: HTTP_PORT=8080 docker compose up -d --build
+# Ansible copia el código de app/ a /srv/atk/codigo.
+# Prueba local (desde deploy/): CODIGO=../app HTTP_PORT=8080 docker compose up -d --build
 services:
   app:
-    build: ./app
+    # La imagen real de la app (app/Dockerfile)
+    build: ${CODIGO:-./codigo}
     restart: unless-stopped
     environment:
       PORT: "3000"

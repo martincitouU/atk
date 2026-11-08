@@ -1,4 +1,5 @@
-# Despliega deploy/ y levanta los contenedores.
+# Despliega la app: copia deploy/ y el código de app/, construye la imagen
+# y levanta los contenedores.
 
 # copy y no synchronize: synchronize usa rsync sobre SSH y no funciona por SSM.
 # La barra final en src copia el contenido de deploy/, no la carpeta.
@@ -10,6 +11,41 @@
     group: root
     mode: u=rwX,g=rX,o=rX
 
+# El código se empaqueta en el equipo que corre Ansible, sin node_modules
+# (las dependencias se instalan dentro de la imagen, para Linux) y sin
+# bases de datos locales. Un solo archivo viaja mucho más rápido por SSM.
+- name: Empaquetar el código de la app
+  ansible.builtin.command:
+    cmd: >-
+      tar -czf /tmp/atk-codigo.tgz -C {{ playbook_dir }}/../../../app
+      --exclude=node_modules --exclude='*.db' --exclude='*.db-wal' --exclude='*.db-shm' .
+  delegate_to: localhost
+  become: false
+  run_once: true
+  changed_when: false
+
+- name: Crear la carpeta del código
+  ansible.builtin.file:
+    path: "{{ atk_root }}/codigo"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+# unarchive compara con lo que ya hay: si el código no cambió, no reporta cambios
+- name: Copiar y extraer el código en la VM
+  ansible.builtin.unarchive:
+    src: /tmp/atk-codigo.tgz
+    dest: "{{ atk_root }}/codigo"
+    owner: root
+    group: root
+
+# La app de prueba vivía en /srv/atk/app; la real se construye desde codigo/
+- name: Quitar la app de prueba anterior
+  ansible.builtin.file:
+    path: "{{ atk_root }}/app"
+    state: absent
+
 # Equivale a "docker compose up -d --build", pero solo reinicia contenedores
 # si algo cambió. remove_orphans quita servicios borrados de compose.yaml.
 - name: Construir y levantar los contenedores
@@ -19,13 +55,19 @@
     remove_orphans: true
     state: present
 
-# Prueba de humo: pasa por Nginx y por la app, y /health escribe en el disco
-# de datos. Si falla, el playbook falla y el despliegue roto se nota ahora.
+# Prueba de humo: pasa por Nginx y por la app, y /health consulta la base
+# en el disco de datos. Si falla, el playbook falla y el despliegue roto se
+# nota ahora.
 - name: Comprobar que la app responde a través de Nginx
   ansible.builtin.uri:
     url: http://localhost/health
     status_code: 200
+    return_content: true
   register: atk_health
   until: atk_health.status == 200
-  retries: 10
+  retries: 20
   delay: 3
+
+- name: Mostrar el estado de la base
+  ansible.builtin.debug:
+    msg: "{{ atk_health.json }}"

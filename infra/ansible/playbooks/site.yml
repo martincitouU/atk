@@ -5,6 +5,7 @@
   # Por SSM se entra como ssm-user; become usa sudo para instalar y montar
   become: true
   roles:
+    - swap
     - docker
     - data_volume
     - app

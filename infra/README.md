@@ -6,8 +6,9 @@ Cómo crear la VM en AWS y desplegar la app. Son tres etapas, en este orden:
 2. **Ansible** configura la VM por SSM (Docker, disco de datos, contenedores).
 3. **Verificar** desde el navegador y desde la VM.
 
-> La app todavía no existe: lo que se despliega es el contenedor de prueba de
-> `deploy/app/`. Sirve para comprobar que la infraestructura funciona.
+> Lo que se despliega es la imagen de `app/` (`app/Dockerfile`): por ahora
+> aplica las migraciones sobre el disco de datos y responde `/health`. La API
+> y las pantallas se agregan sobre la misma imagen.
 
 ## 0. Requisitos (una vez, en tu computador)
 
@@ -15,9 +16,12 @@ Cómo crear la VM en AWS y desplegar la app. Son tres etapas, en este orden:
 |---|---|---|
 | Terraform ≥ 1.11 | Crear recursos | `brew install terraform` |
 | AWS CLI v2 | Credenciales y SSM | `brew install awscli` |
-| session-manager-plugin | Conectarse a la VM por SSM | `brew install --cask session-manager-plugin` |
-| Ansible | Configurar la VM | `brew install ansible` |
-| boto3 + CRT | Lo usan el inventario y la conexión SSM. El extra `crt` hace falta si inicias sesión con `aws login` | `"$(brew --prefix ansible)/libexec/bin/python" -m pip install boto3 "botocore[crt]"` |
+| session-manager-plugin | Entrar a la VM por SSM (`aws ssm start-session`) | `brew install --cask session-manager-plugin` |
+| Docker | Ansible corre dentro de un contenedor (ver sección 3) | Docker Desktop |
+
+Ansible **no** se instala en el computador: corre en el contenedor de
+`infra/ansible/Dockerfile`, que trae Ansible, boto3, las colecciones y el
+plugin de SSM para Linux.
 
 Credenciales de AWS: cada integrante usa su propio perfil (`aws configure
 --profile atk` o SSO). Antes de trabajar:
@@ -85,35 +89,30 @@ Cuando aparezca la instancia con `Online`, sigue.
 
 ## 3. Ansible: configurar la VM
 
-Todo desde `infra/ansible/`, para que Ansible lea su `ansible.cfg`:
+Ansible se corre con `infra/ansible/run.sh`, que lo ejecuta en un contenedor
+Linux. **En macOS no funciona instalado directamente**: la conexión por SSM
+hace que sus procesos se caigan ("Python se cerró inesperadamente"), porque
+macOS no deja que un proceso creado con `fork` use DNS.
+
+`run.sh` toma las credenciales temporales de tu sesión de AWS, lee de
+Terraform el bucket de paso y el volumen de datos, y monta el repo en solo
+lectura. Necesita una sesión vigente (`aws login`) y Terraform inicializado.
 
 ```bash
-cd infra/ansible
-ansible-galaxy collection install -r requirements.yml
-
-# Datos que vienen de Terraform
-SSM_BUCKET=$(terraform -chdir=../terraform output -raw ssm_bucket_name)
-DATA_VOLUME=$(terraform -chdir=../terraform output -raw data_volume_id)
-
-# ¿El inventario encuentra la VM? Debe listar un i-xxxxxxxx
-ansible-inventory --graph
-
-# ¿Ansible llega por SSM?
-ansible all -m ping -e ansible_aws_ssm_bucket_name=$SSM_BUCKET
-
-# Configurar todo
-ansible-playbook playbooks/site.yml \
-  -e ansible_aws_ssm_bucket_name=$SSM_BUCKET \
-  -e data_volume_id=$DATA_VOLUME
+infra/ansible/run.sh ansible-inventory --graph   # debe listar un i-xxxxxxxx
+infra/ansible/run.sh ansible all -m ping         # Ansible llega por SSM
+infra/ansible/run.sh ansible-playbook playbooks/site.yml
 ```
 
-La primera ejecución tarda unos minutos (instala Docker). Termina con la
-tarea "Comprobar que la app responde a través de Nginx"; si esa falla, el
-despliegue no quedó bien.
+El playbook agrega swap, instala Docker, monta el disco de datos, copia
+`deploy/` y el código de `app/` (sin `node_modules`), construye la imagen en
+la VM y levanta los contenedores. La primera vez tarda varios minutos.
+Termina mostrando el `/health` de la app; si esa tarea falla, el despliegue
+no quedó bien.
 
-**Para volver a desplegar** (por ejemplo, después de cambiar algo en
-`deploy/`), se corre el mismo `ansible-playbook`. Es idempotente: lo que ya
-está bien aparece como `ok` y no se toca.
+**Para volver a desplegar** (por ejemplo, después de cambiar algo en `app/`
+o en `deploy/`), se corre el mismo playbook. Es idempotente: lo que ya está
+bien aparece como `ok` y no se toca.
 
 **Simulacro (`--check --diff`)**: agrega esas opciones para ver qué cambiaría
 sin cambiar nada. En una VM recién creada falla, porque algunas tareas
@@ -124,12 +123,12 @@ Docker); es esperado. Es útil desde la segunda ejecución en adelante.
 
 ```bash
 curl http://$(terraform -chdir=infra/terraform output -raw public_ip)/health
-# {"status":"ok","firstBoot":"..."}
+# {"status":"ok","migraciones":["0001_esquema.sql"],"configurada":false}
 ```
 
-`firstBoot` es la fecha en que la app escribió por primera vez en el disco
-de datos. Si después de recrear el contenedor o la VM sigue igual, el
-volumen persiste.
+`migraciones` son las aplicadas a la base del disco de datos
+(`/srv/atk/data/atk.db`). `configurada` dice si ya se cargaron los datos de
+la casa de cambio; en una base nueva es `false`.
 
 Para entrar a la VM (no hay SSH):
 
@@ -143,11 +142,12 @@ df -h /srv/atk/data   # debe mostrar el volumen EBS, no el disco del sistema
 
 | Síntoma | Causa probable |
 |---|---|
-| `ansible-inventory --graph` no muestra hosts | `AWS_PROFILE` no exportado, VM detenida o tags distintos a `Project=atk` y `Environment=dev` |
-| `session-manager-plugin` not found | El plugin está en otra ruta: agrega `-e ansible_aws_ssm_plugin=$(which session-manager-plugin)` |
+| `run.sh` dice que la sesión expiró | Vuelve a iniciar sesión con `aws login` |
+| `ansible-inventory --graph` no muestra hosts | VM detenida o tags distintos a `Project=atk` y `Environment=dev` |
+| "Python se cerró inesperadamente" en macOS | Se corrió Ansible fuera del contenedor: usa `run.sh` |
 | `ping` se queda esperando | El agente SSM aún no está `Online` (ver paso 2) |
 | Falla "Esperar a que el disco aparezca" | `data_volume_id` incorrecto o el attachment no terminó: revisa `terraform output` |
-| `/health` responde 503 | El disco de datos no está montado o no es del UID 1000: revisa `df -h /srv/atk/data` en la VM |
+| La app se reinicia con `unable to open database file` | El disco de datos no está montado o no es del UID 1000: revisa `df -h /srv/atk/data` en la VM |
 | `502 Bad Gateway` | La app no está corriendo: `sudo docker compose -f /srv/atk/compose.yaml logs app` |
 
 ## Lo que protege los datos

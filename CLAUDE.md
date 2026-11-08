@@ -65,7 +65,8 @@ La app debe:
 - **Excel del histórico**: exceljs (no el paquete `xlsx` de npm).
 - **Tests**: Vitest.
 - Un solo contenedor sirve la API (`/api/*`) y el front compilado: mismo
-  origen, sin CORS. Hoy `deploy/app/` es todavía el contenedor de prueba.
+  origen, sin CORS. La imagen es `app/Dockerfile`; hoy solo aplica las
+  migraciones y responde `/health` (`apps/api/src/principal.ts`).
 
 ### SQLite: configuración obligatoria
 - Tablas `STRICT`, `PRAGMA foreign_keys = ON` en cada conexión,
@@ -129,9 +130,11 @@ La app debe:
 
 - `infra/terraform/`: VPC, subred, IGW, rutas, SG, EC2, EIP, EBS, IAM y el
   bucket SSM. Estado en S3 con `use_lockfile`.
-- `infra/ansible/`: inventario dinámico por tags; roles `docker`,
-  `data_volume` y `app`. Se ejecuta desde `infra/ansible/`.
-- `deploy/`: lo que se copia a `/srv/atk` en la VM (compose, nginx, app).
+- `infra/ansible/`: inventario dinámico por tags; roles `swap`, `docker`,
+  `data_volume` y `app`. **Se corre con `infra/ansible/run.sh`**, dentro de
+  un contenedor Linux (`infra/ansible/Dockerfile`).
+- `deploy/`: compose y nginx; se copian a `/srv/atk` en la VM. El código de
+  `app/` se copia a `/srv/atk/codigo` y la imagen se construye en la VM.
 - `app/`: la aplicación (npm workspaces). `app/db/` tiene migraciones,
   semillas y `probar.sh`; `app/apps/api/` el backend.
 - `docs/casa_cambio_schema_postgres.sql`: diseño original del modelo, solo
@@ -150,10 +153,13 @@ cd infra/ansible && ANSIBLE_INVENTORY_ENABLED=host_list ansible-playbook -i loca
 # App: tests, tipos y pruebas SQL del esquema
 cd app && npm test && npm run typecheck && npm run db:probar
 
-# Prueba local del stack
-cd deploy && HTTP_PORT=8080 docker compose up -d --build --wait
+# Prueba local del stack (imagen real de app/)
+cd deploy && CODIGO=../app HTTP_PORT=8080 docker compose up -d --build --wait
 curl localhost:8080/health
 docker compose down && rm -rf data
+
+# Desplegar en la VM (requiere aws login y Terraform inicializado)
+infra/ansible/run.sh ansible-playbook playbooks/site.yml
 ```
 
 ## Decisiones no obvias (no revertir sin entenderlas)
@@ -174,6 +180,12 @@ docker compose down && rm -rf data
 - Nginx usa `resolver 127.0.0.11` + `proxy_pass` a una variable para no
   responder 502 cuando la app se recrea con otra IP.
 - No usar `ansible.posix.synchronize`: usa rsync sobre SSH y no funciona por SSM.
+- Ansible por SSM **no funciona en macOS** fuera del contenedor: los procesos
+  hijos (fork) no pueden usar DNS y se caen. Por eso `run.sh`.
+- El código viaja a la VM empaquetado **sin `node_modules`** (los del Mac son
+  binarios de macOS); las dependencias se instalan dentro de la imagen.
+- La imagen crea `/data` con dueño `node` solo para volúmenes locales; en la
+  VM la reemplaza el bind mount de `/srv/atk/data`.
 - Zona horaria por defecto **`America/Coyhaique`** (UTC-3 todo el año desde
   2025), no `America/Santiago`: en invierno los cortes diarios se correrían
   una hora.
