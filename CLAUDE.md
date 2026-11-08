@@ -56,8 +56,9 @@ La app debe:
 - **TypeScript** en todo, **Node 24 LTS**. Monorepo con npm workspaces:
   `apps/api`, `apps/web`, `packages/shared`.
 - **API**: Fastify. **BD**: SQLite con better-sqlite3 + Drizzle ORM.
-  Hoy existe solo `apps/api`; `apps/web` y `packages/shared` se crean
-  cuando se necesiten.
+  Existen `apps/api` y `packages/shared`; `apps/web` se crea con el front.
+  Node corre el TypeScript de `@atk/shared` directo (el workspace es un
+  enlace, no está dentro de `node_modules`).
 - **Login**: Better Auth (sesiones en cookie httpOnly, roles). No escribir
   autenticación a mano.
 - **Front**: React + Vite + React Router, TanStack Query, react-hook-form.
@@ -65,8 +66,11 @@ La app debe:
 - **Excel del histórico**: exceljs (no el paquete `xlsx` de npm).
 - **Tests**: Vitest.
 - Un solo contenedor sirve la API (`/api/*`) y el front compilado: mismo
-  origen, sin CORS. La imagen es `app/Dockerfile`; hoy solo aplica las
-  migraciones y responde `/health` (`apps/api/src/principal.ts`).
+  origen, sin CORS. La imagen es `app/Dockerfile`; arranca en
+  `apps/api/src/principal.ts`, aplica las migraciones y sirve `/health` y `/api`.
+- API: `src/servidor.ts` arma Fastify; `src/rutas/` (una por tema, delgadas);
+  `src/http/` (actor, errores, JSON con bigint). Tests en `test/rutas/` con
+  `app.inject` y la cabecera `x-actor-prueba`, que existe solo en los tests.
 
 ### SQLite: configuración obligatoria
 - Tablas `STRICT`, `PRAGMA foreign_keys = ON` en cada conexión,
@@ -197,6 +201,24 @@ infra/ansible/run.sh ansible-playbook playbooks/site.yml
   Solo EFECTIVO mueve los pesos de la caja.
 - Umbrales UAF en USD (ficha desde 5.000, ROE sobre 10.000), con el
   equivalente calculado con la referencia del USD y guardado en la operación.
+
+## Cuentas y acceso (decidido el 2026-11-08)
+
+- Dos tipos de cuenta, ambas con login de Better Auth:
+  - **Personal** (`usuario`, roles ADMIN/SUPERVISOR/CAJERO): la crea un
+    admin; el primer admin, el comando `inicializar`. Solo el personal
+    obtiene un `Actor` y puede llamar a los servicios.
+  - **Cliente** (`cuenta_cliente`, migración 0002): se registra solo, con
+    RUT. **Solo lee** lo suyo en `/api/mi/...`, filtrado siempre por su
+    `cliente_id` de la sesión, nunca por un id de la petición.
+- La cuenta de cliente queda **pendiente** hasta que un cajero verifica su
+  carnet en el local y la aprueba (queda auditado quién y cuándo). Mientras,
+  no ve datos: cualquiera podría registrarse con un RUT ajeno.
+- El rol que autoriza es `usuario.rol`, no el de Better Auth.
+- La API es una capa delgada: valida con zod (`packages/shared`), arma el
+  `Actor` desde la sesión y llama al servicio. `ErrorNegocio` se traduce:
+  `SIN_PERMISO` → 403, `*_NO_EXISTE` → 404, el resto → 409.
+- El portal de clientes no se abre al público sin HTTPS.
 
 ## Supuestos de la iteración 1 (por confirmar con el cliente)
 
