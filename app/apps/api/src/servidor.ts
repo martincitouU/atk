@@ -14,7 +14,12 @@ import { registrarErrores } from "./http/errores.ts";
 import { aJson } from "./http/json.ts";
 import { exigirMismoOrigen } from "./http/origen.ts";
 import { rutasAuth } from "./rutas/auth.ts";
+import { rutasCaja } from "./rutas/caja.ts";
+import { rutasCatalogo } from "./rutas/catalogo.ts";
+import { rutasClientes } from "./rutas/clientes.ts";
+import { rutasConsultas } from "./rutas/consultas.ts";
 import { rutaRegistro, rutasCuentasCliente, rutasPortal } from "./rutas/cuentas.ts";
+import { rutasGastos } from "./rutas/gastos.ts";
 import { rutasCotizaciones } from "./rutas/cotizaciones.ts";
 import { rutasOperaciones } from "./rutas/operaciones.ts";
 import { rutasUsuarios } from "./rutas/usuarios.ts";
@@ -78,8 +83,13 @@ export function construirServidor({ sqlite, db }: Conexion, opciones: OpcionesSe
       // Trabajo de la casa de cambio: solo el personal
       api.register(async (personal) => {
         exigirSesion(personal, opciones.obtenerSesion, "personal");
+        rutasCatalogo(personal, ctx);
         rutasCotizaciones(personal, ctx);
         rutasOperaciones(personal, ctx);
+        rutasCaja(personal, ctx);
+        rutasClientes(personal, ctx);
+        rutasGastos(personal, ctx);
+        rutasConsultas(personal, ctx);
         rutasCuentasCliente(personal, ctx);
         if (auth) rutasUsuarios(personal, ctx, auth);
       });

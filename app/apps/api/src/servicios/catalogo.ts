@@ -1,8 +1,9 @@
 // Consultas pequeñas que usan varios servicios: monedas, cajas y sucursales.
 
-import { and, eq } from "drizzle-orm";
-import { caja, casa, casaMoneda, moneda } from "../db/esquema.ts";
+import { and, asc, eq } from "drizzle-orm";
+import { caja, casa, casaMoneda, categoriaCliente, categoriaGasto, moneda, sucursal } from "../db/esquema.ts";
 import { ErrorNegocio, exigir, type Datos } from "./contexto.ts";
+import { leerParametros } from "./parametros.ts";
 
 export type InfoMoneda = { codigo: string; decimales: number };
 
@@ -38,4 +39,37 @@ export function sucursalDeCaja(datos: Datos, cajaId: number): number {
   const fila = datos.select({ sucursalId: caja.sucursalId }).from(caja).where(eq(caja.id, cajaId)).get();
   exigir(fila, "CAJA_NO_EXISTE", `La caja ${cajaId} no existe`);
   return fila.sucursalId;
+}
+
+/**
+ * Todo lo fijo que el front necesita al cargar: la casa, sus divisas, las
+ * sucursales y cajas, las categorías y los parámetros. Una sola consulta.
+ */
+export function catalogo(datos: Datos) {
+  const laCasa = datos.select().from(casa).where(eq(casa.id, 1)).get() ?? null;
+  const divisas = datos
+    .select({
+      codigo: moneda.codigo,
+      nombre: moneda.nombre,
+      simbolo: moneda.simbolo,
+      decimales: moneda.decimales,
+      decimalesTasa: casaMoneda.decimalesTasa,
+      montoMinimo: casaMoneda.montoMinimo,
+      ordenPizarra: casaMoneda.ordenPizarra,
+    })
+    .from(casaMoneda)
+    .innerJoin(moneda, eq(moneda.codigo, casaMoneda.monedaCodigo))
+    .where(eq(casaMoneda.activa, true))
+    .orderBy(asc(casaMoneda.ordenPizarra))
+    .all();
+  return {
+    casa: laCasa,
+    monedaBase: laCasa ? infoMoneda(datos, laCasa.monedaBase) : null,
+    divisas,
+    sucursales: datos.select().from(sucursal).where(eq(sucursal.activa, true)).orderBy(asc(sucursal.nombre)).all(),
+    cajas: datos.select().from(caja).where(eq(caja.activa, true)).orderBy(asc(caja.nombre)).all(),
+    categoriasGasto: datos.select().from(categoriaGasto).where(eq(categoriaGasto.activa, true)).orderBy(asc(categoriaGasto.nombre)).all(),
+    categoriasCliente: datos.select().from(categoriaCliente).where(eq(categoriaCliente.activa, true)).orderBy(asc(categoriaCliente.nombre)).all(),
+    parametros: leerParametros(datos),
+  };
 }

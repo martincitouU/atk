@@ -12,18 +12,22 @@
 
 import { sql } from "drizzle-orm";
 import { primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { ESTADOS_CUENTA_CLIENTE, ESTADOS_OPERACION, MEDIOS_PAGO, ROLES, TIPOS_OPERACION } from "@atk/shared";
+import {
+  ACCIONES_AUDITORIA,
+  ESTADOS_CUENTA_CLIENTE,
+  ESTADOS_GASTO,
+  ESTADOS_OPERACION,
+  MEDIOS_PAGO,
+  ROLES,
+  TIPOS_DOCUMENTO,
+  TIPOS_OPERACION,
+} from "@atk/shared";
 import { AHORA_MS, booleano, dinero, entero, fecha, idAutomatico } from "./tipos.ts";
 
 // Los valores que también usa el front viven en @atk/shared
-export { ESTADOS_CUENTA_CLIENTE, ESTADOS_OPERACION, MEDIOS_PAGO, ROLES, TIPOS_OPERACION };
+export { ACCIONES_AUDITORIA, ESTADOS_CUENTA_CLIENTE, ESTADOS_GASTO, ESTADOS_OPERACION, MEDIOS_PAGO, ROLES, TIPOS_DOCUMENTO, TIPOS_OPERACION };
 export type { MedioPago, Rol, TipoOperacion } from "@atk/shared";
 export const TIPOS_MOVIMIENTO = ["OPERACION", "REVERSO", "INGRESO", "RETIRO", "GASTO", "AJUSTE"] as const;
-export const ACCIONES_AUDITORIA = [
-  "CREAR", "EDITAR", "ELIMINAR", "CONFIRMAR", "REVERSAR", "AUTORIZAR", "PUBLICAR", "ABRIR", "CERRAR",
-  "GENERAR", "EXPORTAR", "IMPORTAR",
-] as const;
-export const TIPOS_DOCUMENTO = ["RUT", "PASAPORTE", "DNI", "OTRO"] as const;
 
 // ---------------------------------------------------------------------
 // 1. Catálogo y configuración
@@ -312,7 +316,7 @@ export const gasto = sqliteTable("gasto", {
   cajaId: entero("caja_id").references(() => caja.id),
   turnoId: entero("turno_id").references(() => turno.id),
   documento: text("documento"),
-  estado: text("estado", { enum: ["VIGENTE", "REVERSADO"] }).notNull().default("VIGENTE"),
+  estado: text("estado", { enum: ESTADOS_GASTO }).notNull().default("VIGENTE"),
   reversadoPor: entero("reversado_por").references(() => usuario.id),
   reversadoEn: fecha("reversado_en"),
   motivoReverso: text("motivo_reverso"),

@@ -12,6 +12,12 @@ export const entero = z
   .regex(/^[0-9]{1,30}$/, "Debe ser un número entero sin puntos ni comas")
   .transform((texto) => BigInt(texto));
 
+/** Entero con signo como texto → bigint (un ajuste de caja puede restar: "-500"). */
+export const enteroConSigno = z
+  .string()
+  .regex(/^-?[0-9]{1,30}$/, "Debe ser un número entero sin puntos ni comas")
+  .transform((texto) => BigInt(texto));
+
 /** Monto en la unidad mínima de su moneda (US$ 150,25 → "15025"). */
 export const monto = entero;
 
@@ -29,6 +35,9 @@ export const codigoMoneda = z.string().regex(/^[A-Z]{3}$/, "Código de moneda de
 
 /** Fecha y hora con zona (ISO 8601) → Date. */
 export const instante = z.iso.datetime({ offset: true }).transform((texto) => new Date(texto));
+
+/** Fecha local de la casa, sin hora (AAAA-MM-DD). */
+export const fechaLocal = z.iso.date("Fecha en formato AAAA-MM-DD");
 
 /** Texto libre opcional; el servicio quita espacios y convierte "" en null. */
 export const textoOpcional = z.string().max(500).nullish();
