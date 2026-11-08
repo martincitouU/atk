@@ -10,6 +10,7 @@ import {
   margenBruto,
   margenRealizado,
   montoBaseDe,
+  reglaConDescuento,
 } from "../../src/dominio/dinero.ts";
 
 describe("dividir: redondeo explícito", () => {
@@ -190,5 +191,24 @@ describe("formatearMonto: formato chileno", () => {
     [712_500n, 6, "0,712500"],
   ])("%s con %s decimales = %s", (monto, decimales, esperado) => {
     expect(formatearMonto(monto, decimales)).toBe(esperado);
+  });
+});
+
+describe("RF-18: margen reducido por la categoría del cliente", () => {
+  it("un 30 % de descuento deja un margen de 1,5 % en 1,05 %", () => {
+    const regla = { tipoMargen: "PORCENTAJE", margenCompraE6: 1_500_000n, margenVentaE6: 1_500_000n } as const;
+    expect(reglaConDescuento(regla, 30_000_000n)).toEqual({ ...regla, margenCompraE6: 1_050_000n, margenVentaE6: 1_050_000n });
+  });
+
+  it("funciona con margen fijo y con descuento total", () => {
+    const fijo = { tipoMargen: "MONTO_FIJO", margenCompraE6: 5_000_000n, margenVentaE6: 7_000_000n } as const;
+    expect(reglaConDescuento(fijo, 30_000_000n)).toMatchObject({ margenCompraE6: 3_500_000n, margenVentaE6: 4_900_000n });
+    expect(reglaConDescuento(fijo, 100_000_000n)).toMatchObject({ margenCompraE6: 0n, margenVentaE6: 0n });
+  });
+
+  it("el margen reducido se redondea a favor de la casa", () => {
+    // 1 × 0,7 = 0,7 → 1 (hacia arriba)
+    const minimo = { tipoMargen: "PORCENTAJE", margenCompraE6: 1n, margenVentaE6: 1n } as const;
+    expect(reglaConDescuento(minimo, 30_000_000n)).toMatchObject({ margenCompraE6: 1n, margenVentaE6: 1n });
   });
 });

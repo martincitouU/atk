@@ -260,6 +260,61 @@ debe_fallar "modificar una regla cerrada" \
     "UPDATE regla_spread SET vigente_hasta = NULL WHERE id = 3;" "cerrada no se modifica"
 debe_fallar "borrar una regla" "DELETE FROM regla_spread WHERE id = 4;" "no se eliminan"
 
+echo "Fidelización (RF-18)"
+debe_fallar "categoría sin descuento" \
+    "INSERT INTO categoria_cliente (nombre, descuento_margen_pct_e6) VALUES ('Nada', 0);" "CHECK constraint failed"
+debe_fallar "categoría con descuento mayor a 100 %" \
+    "INSERT INTO categoria_cliente (nombre, descuento_margen_pct_e6) VALUES ('Mucho', 100000001);" "CHECK constraint failed"
+debe_fallar "cliente con una categoría inexistente" \
+    "UPDATE cliente SET categoria_id = 99 WHERE id = 1;" "FOREIGN KEY constraint failed"
+debe_funcionar "asignar la categoría Frecuente a un cliente" "UPDATE cliente SET categoria_id = 1 WHERE id = 1;"
+debe_fallar "tasa manual y tasa de categoría a la vez" \
+    "INSERT INTO operacion (caja_id, turno_id, usuario_id, tipo, moneda_codigo, monto_divisa, tasa_aplicada_e6,
+       monto_base, es_preferencial, categoria_cliente_id) VALUES (1, 1, 3, 'VENTA', 'USD', 10000, 950000000, 95000, 1, 1);" \
+    "CHECK constraint failed"
+debe_fallar "cambiar la categoría de una confirmada" \
+    "BEGIN; INSERT INTO operacion (caja_id, turno_id, usuario_id, tipo, moneda_codigo, monto_divisa, tasa_aplicada_e6,
+       monto_base, categoria_cliente_id) VALUES (1, 1, 3, 'VENTA', 'USD', 10000, 949870000, 94987, 1);
+     UPDATE operacion SET $CONFIRMAR WHERE id = last_insert_rowid();
+     UPDATE operacion SET categoria_cliente_id = NULL WHERE id = last_insert_rowid(); COMMIT;" "confirmada no se modifica"
+
+echo "Carga del histórico (RF-13)"
+debe_fallar "lote sin caja asignada" \
+    "INSERT INTO lote_migracion (archivo_origen, importado_por) VALUES ('historico.xlsx', 1);" "NOT NULL constraint failed"
+debe_funcionar "crear un lote asignado a la caja 1" \
+    "INSERT INTO lote_migracion (archivo_origen, caja_id, importado_por) VALUES ('historico-2024.xlsx', 1, 1);"
+debe_funcionar "importar una operación histórica ya confirmada" \
+    "INSERT INTO operacion (caja_id, usuario_id, tipo, moneda_codigo, monto_divisa, tasa_aplicada_e6, monto_base,
+       origen, lote_migracion_id, estado, confirmada_por, confirmada_en, realizada_en)
+     VALUES (1, 1, 'COMPRA', 'USD', 50000, 880000000, 440000, 'MIGRACION', 1, 'CONFIRMADA', 1, $AHORA, 1704067200000);"
+RECHAZO="INSERT INTO lote_migracion_rechazo (lote_migracion_id, fila, causa, datos)"
+debe_funcionar "registrar una fila rechazada con su causa" \
+    "$RECHAZO VALUES (1, 7, 'La fecha 31/02/2024 no existe', '{\"fecha\":\"31/02/2024\",\"monto\":\"100\"}');"
+debe_fallar "la misma fila rechazada dos veces" "$RECHAZO VALUES (1, 7, 'otra', NULL);" "UNIQUE constraint failed"
+debe_fallar "rechazo sin causa" "$RECHAZO VALUES (1, 8, ' ', NULL);" "CHECK constraint failed"
+debe_fallar "fila cero" "$RECHAZO VALUES (1, 0, 'x', NULL);" "CHECK constraint failed"
+debe_fallar "modificar un rechazo" "UPDATE lote_migracion_rechazo SET causa = 'otra';" "solo inserción"
+debe_fallar "borrar un rechazo" "DELETE FROM lote_migracion_rechazo;" "solo inserción"
+
+echo "Reporte de Operaciones en Efectivo (RF-19)"
+ROE="INSERT INTO reporte_roe (anio, trimestre, umbral_usd, cantidad_operaciones, generado_por)"
+debe_funcionar "generar un reporte sin operaciones" "$ROE VALUES (2026, 3, 10000, 0, 1);"
+debe_dar "sin operaciones es un reporte negativo" "SELECT es_negativo FROM reporte_roe WHERE id = 1;" "1"
+debe_fallar "trimestre que no existe" "$ROE VALUES (2026, 5, 10000, 0, 1);" "CHECK constraint failed"
+debe_fallar "cambiar un reporte generado" \
+    "UPDATE reporte_roe SET cantidad_operaciones = 3 WHERE id = 1;" "no se modifica"
+debe_fallar "marcar el envío sin indicar quién" \
+    "UPDATE reporte_roe SET enviado_en = $AHORA WHERE id = 1;" "CHECK constraint failed"
+debe_funcionar "registrar el envío" "UPDATE reporte_roe SET enviado_en = $AHORA, enviado_por = 1 WHERE id = 1;"
+debe_fallar "registrar el envío dos veces" \
+    "UPDATE reporte_roe SET enviado_en = $AHORA, enviado_por = 2 WHERE id = 1;" "ya está marcado como enviado"
+debe_fallar "borrar un reporte" "DELETE FROM reporte_roe;" "no se eliminan"
+debe_funcionar "asociar una operación a un reporte" \
+    "$ROE VALUES (2026, 4, 10000, 1, 1); INSERT INTO reporte_roe_operacion VALUES (last_insert_rowid(), 1);"
+debe_fallar "quitar una operación de un reporte" "DELETE FROM reporte_roe_operacion;" "solo inserción"
+debe_funcionar "auditar una exportación" \
+    "$AUDITORIA VALUES ('operacion', 'periodo-2026-10', 'EXPORTAR', NULL, NULL, 1);"
+
 echo "Arqueo y cierre (RF-06)"
 debe_funcionar "registrar arqueo" \
     "INSERT INTO arqueo (turno_id, moneda_codigo, saldo_sistema, saldo_contado) VALUES (1, 'USD', 10000, 9900);"

@@ -3,7 +3,7 @@
 
 import { and, asc, eq, gt, isNull, lte, or } from "drizzle-orm";
 import { casaMoneda, cotizacion, moneda, reglaSpread, tasaReferencia, type ReglaSpread } from "../db/esquema.ts";
-import { calcularPrecios, type TipoOperacion } from "../dominio/dinero.ts";
+import { calcularPrecios, reglaConDescuento, type TipoOperacion } from "../dominio/dinero.ts";
 import { auditar } from "./auditoria.ts";
 import { divisaHabilitada } from "./catalogo.ts";
 import { enTransaccion, ErrorNegocio, exigir, exigirRol, type Actor, type Contexto, type Datos } from "./contexto.ts";
@@ -92,6 +92,8 @@ export function precioPara(
     instante: Date;
     /** Minutos de validez de la pizarra; null para no exigirla (registro diferido) */
     vigenciaMinutos: number | null;
+    /** Descuento de margen de la categoría del cliente (RF-18); null sin categoría */
+    descuentoMargenPctE6?: bigint | null;
   },
 ): PrecioOperacion {
   const cot = cotizacionEn(datos, p.monedaCodigo, p.sucursalId, p.instante);
@@ -112,9 +114,11 @@ export function precioPara(
 
   let compraE6 = cot.precioCompraE6;
   let ventaE6 = cot.precioVentaE6;
-  if (regla.id !== cot.reglaSpreadId) {
+  if (p.descuentoMargenPctE6 != null || regla.id !== cot.reglaSpreadId) {
+    // Otro tramo o un cliente con categoría: se calcula sobre la misma referencia
     const { decimalesTasa } = divisaHabilitada(datos, p.monedaCodigo);
-    ({ compraE6, ventaE6 } = calcularPrecios(referencia.valorE6, regla, decimalesTasa));
+    const aplicada = p.descuentoMargenPctE6 != null ? reglaConDescuento(regla, p.descuentoMargenPctE6) : regla;
+    ({ compraE6, ventaE6 } = calcularPrecios(referencia.valorE6, aplicada, decimalesTasa));
   }
 
   return {
