@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="es-CL">
+<head>
+<meta charset="utf-8">
+<title>ATK — Ventanilla (comp C)</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--marco:#1A1C1E;--fondo:#232629;--panel:#2C3034;--linea:#3A3F44;--pintura:#F2F0E9;--suave:#A3A9AE;--ambar:#D9A21B;--roja:#C4473F;--acero:#8E959B;--ok:#7BC59A;
+--usd:#5FBF86;--ars:#74B6E3;--eur:#8C9BEA}
+*{box-sizing:border-box;margin:0}
+body{overflow:hidden;font-family:Barlow,system-ui,sans-serif;background:var(--fondo);color:var(--pintura);width:1440px;height:900px;display:grid;grid-template-rows:52px auto auto 1fr;font-size:14px}
+.num{font-variant-numeric:tabular-nums}
+::selection{background:var(--ambar);color:#111}
+header{display:flex;align-items:center;gap:26px;padding:0 24px;background:var(--marco);border-bottom:1px solid var(--linea)}
+.marca{font:700 22px "Barlow Condensed";letter-spacing:.12em}
+nav{display:flex;gap:2px;height:100%}
+nav a{display:flex;align-items:center;padding:0 14px;color:var(--suave);text-decoration:none;font-weight:600;border-bottom:3px solid transparent}
+nav a[aria-current]{color:var(--pintura);border-bottom-color:var(--ambar)}
+.estado{margin-left:auto;font-size:13px;color:var(--suave)}
+.estado b{color:var(--ok);font-weight:700}
+/* tablero */
+.tablero{background:linear-gradient(#2a2d30,#202326);padding:16px 24px 18px;border-bottom:1px solid var(--linea);box-shadow:inset 0 1px 0 #3c4146}
+.tab-h{display:flex;justify-content:space-between;font:600 12px "Barlow Condensed";letter-spacing:.2em;color:var(--acero);text-transform:uppercase;margin-bottom:10px}
+.fila{display:grid;grid-template-columns:110px 200px minmax(0,1fr) minmax(0,1fr) 190px;align-items:center;gap:18px;padding:6px 0}
+.fila+.fila{border-top:1px solid #34393e}
+.rot{font:600 12px "Barlow Condensed";letter-spacing:.2em;color:var(--acero)}
+.flap{display:inline-flex;gap:3px}
+.flap span{width:30px;height:44px;display:grid;place-items:center;font:700 32px/1 "Barlow Condensed";color:var(--pintura);background:linear-gradient(#141516 0 49%,#0b0c0d 49% 51%,#161718 51%);border-radius:3px;box-shadow:0 1px 0 #000,inset 0 1px 0 #2a2c2e}
+.flap.chica span{width:22px;height:34px;font-size:24px}
+.cambio .flap span{color:var(--ambar)}
+.lamp{display:flex;align-items:center;gap:8px;font:600 13px "Barlow Condensed";letter-spacing:.12em;color:var(--suave)}
+.lamp i{width:10px;height:10px;border-radius:50%;background:#444}
+.cambio .lamp i{background:var(--ambar);box-shadow:0 0 0 3px rgba(217,162,27,.25)}
+.cambio .lamp{color:var(--ambar)}
+/* registro en franja */
+.registro{display:grid;grid-template-columns:170px 170px 170px 130px 110px minmax(0,1fr);gap:12px;align-items:end;padding:16px 24px;background:var(--panel);border-bottom:1px solid var(--linea)}
+label{display:flex;flex-direction:column;gap:5px;font:600 12px "Barlow Condensed";letter-spacing:.14em;text-transform:uppercase;color:var(--suave)}
+.seg{display:flex;border:1px solid var(--linea);border-radius:6px;overflow:hidden}
+.seg button{flex:1;font:700 15px Barlow;padding:9px 0;border:0;background:transparent;color:var(--suave)}
+.seg button[aria-pressed=true]{background:var(--pintura);color:#111}
+input,select{font:600 15px Barlow;border:1px solid var(--linea);border-radius:6px;padding:9px 10px;background:#1E2124;color:var(--pintura);width:100%}
+input.monto{font:700 24px "Barlow Condensed";letter-spacing:.04em;text-align:right;border-color:var(--pintura)}
+.prev{display:flex;align-items:center;gap:14px;justify-content:flex-end}
+.prev div span{display:block;font:600 11px "Barlow Condensed";letter-spacing:.16em;color:var(--suave)}
+.prev div b{font:700 22px "Barlow Condensed";letter-spacing:.03em}
+.btn{font:700 15px Barlow;border-radius:6px;padding:11px 18px;border:1px solid var(--pintura);background:var(--pintura);color:#111;white-space:nowrap}
+.btn.sec{background:transparent;color:var(--pintura);border-color:var(--linea)}
+kbd{font:600 11px Barlow;border:1px solid currentColor;border-radius:3px;padding:0 4px;margin-left:6px;opacity:.7}
+/* libro como filas de tablero */
+.libro{padding:14px 24px;min-height:0}
+.libro-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.libro-h h2{font:700 15px "Barlow Condensed";letter-spacing:.2em;text-transform:uppercase}
+.libro-h p{font-size:13px;color:var(--suave)}
+table{width:100%;border-collapse:collapse}
+th{font:600 12px "Barlow Condensed";letter-spacing:.18em;text-transform:uppercase;color:var(--acero);text-align:left;padding:8px 12px;border-bottom:1px solid var(--linea)}
+td{padding:10px 12px;border-bottom:1px solid #30353a;font:600 17px "Barlow Condensed";letter-spacing:.06em;text-transform:uppercase}
+.r{text-align:right}
+tr.rev td{color:#8a5550}
+tr.rev td.m{text-decoration:line-through}
+tr.bor td{color:var(--suave)}
+.est{font:700 12px "Barlow Condensed";letter-spacing:.16em;padding:3px 8px;border-radius:3px}
+.ok{background:#21362a;color:var(--ok)}
+.re{background:#3d2523;color:#E07A72}
+.bo{background:#3a3424;color:var(--ambar)}
+.dv{display:inline-flex;align-items:center;gap:8px}
+.dv i{width:9px;height:9px;border-radius:50%}
+.pie{display:flex;gap:40px;padding:12px 12px 0;color:var(--suave);font-size:13px}
+.pie b{display:block;color:var(--pintura);font:700 20px "Barlow Condensed";letter-spacing:.04em}
+</style>
+</head>
+<body>
+<header>
+  <span class="marca">ATK</span>
+  <nav aria-label="Secciones"><a href="#" aria-current="page">Ventanilla</a><a href="#">Cierre del día</a><a href="#">Jornada</a><a href="#">Clientes</a><a href="#">Configuración</a></nav>
+  <span class="estado"><b>Turno abierto</b> · Caja 1 · desde 09:02 · datos de ejemplo</span>
+</header>
+<section class="tablero" aria-label="Pizarra">
+  <div class="tab-h"><span>Pizarra · pesos por unidad</span><span>Vigente desde 09:30</span></div>
+  <div class="fila cambio"><span class="flap" data-t="USD"></span><span class="rot">DÓLAR ESTADOUNIDENSE</span><span><span class="rot">COMPRA</span><br><span class="flap" data-t="935,00"></span></span><span><span class="rot">VENTA</span><br><span class="flap" data-t="952,00"></span></span><span class="lamp"><i></i>CAMBIÓ · ANTES 949,00</span></div>
+  <div class="fila"><span class="flap" data-t="ARS"></span><span class="rot">PESO ARGENTINO</span><span><span class="rot">COMPRA</span><br><span class="flap" data-t="0,6200"></span></span><span><span class="rot">VENTA</span><br><span class="flap" data-t="0,7100"></span></span><span class="lamp"><i></i>SIN CAMBIOS</span></div>
+  <div class="fila"><span class="flap" data-t="EUR"></span><span class="rot">EURO</span><span><span class="rot">COMPRA</span><br><span class="flap" data-t="1.018,00"></span></span><span><span class="rot">VENTA</span><br><span class="flap" data-t="1.046,00"></span></span><span class="lamp"><i></i>SIN CAMBIOS</span></div>
+</section>
+<form class="registro" aria-label="Registrar operación">
+  <label>Tipo<div class="seg"><button type="button" aria-pressed="false">Compra<kbd>C</kbd></button><button type="button" aria-pressed="true">Venta<kbd>V</kbd></button></div></label>
+  <label>Divisa<select><option>USD · Dólar</option></select></label>
+  <label>Monto<input class="monto num" value="450,00"></label>
+  <label>Medio<select><option>Efectivo</option></select></label>
+  <label>Folio (41)<input class="num" value="18234"></label>
+  <div class="prev"><div><span>TASA</span><b>952,00</b></div><div><span>CLIENTE PAGA</span><b>$428.400</b></div><div><span>MARGEN</span><b>$7.650</b></div><button type="button" class="btn">Confirmar<kbd>Enter</kbd></button><button type="button" class="btn sec">Borrador<kbd>B</kbd></button></div>
+</form>
+<section class="libro" aria-label="Libro del día">
+  <div class="libro-h"><h2>Libro del día</h2><p>6 operaciones · 1 borrador · R reversa la fila seleccionada</p></div>
+  <table class="num">
+    <thead><tr><th>Hora</th><th>Tipo</th><th>Divisa</th><th class="r">Monto</th><th class="r">Tasa</th><th class="r">Pesos</th><th>Folio</th><th>Estado</th></tr></thead>
+    <tbody>
+      <tr><td>10:42</td><td>Venta</td><td><span class="dv"><i style="background:var(--usd)"></i>USD</span></td><td class="r m">300,00</td><td class="r">952,00</td><td class="r m">285.600</td><td>18233</td><td><span class="est ok">CONFIRMADA</span></td></tr>
+      <tr><td>10:31</td><td>Compra</td><td><span class="dv"><i style="background:var(--ars)"></i>ARS</span></td><td class="r m">150.000</td><td class="r">0,6200</td><td class="r m">93.000</td><td>18232</td><td><span class="est ok">CONFIRMADA</span></td></tr>
+      <tr><td>10:15</td><td>Compra</td><td><span class="dv"><i style="background:var(--usd)"></i>USD</span></td><td class="r m">1.200,00</td><td class="r">935,00</td><td class="r m">1.122.000</td><td>18231</td><td><span class="est ok">CONFIRMADA</span></td></tr>
+      <tr class="rev"><td>09:58</td><td>Venta</td><td><span class="dv"><i style="background:var(--eur)"></i>EUR</span></td><td class="r m">500,00</td><td class="r">1.046,00</td><td class="r m">523.000</td><td>—</td><td><span class="est re">REVERSADA · MONTO MAL DIGITADO</span></td></tr>
+      <tr><td>09:57</td><td>Venta</td><td><span class="dv"><i style="background:var(--eur)"></i>EUR</span></td><td class="r m">50,00</td><td class="r">1.046,00</td><td class="r m">52.300</td><td>18230</td><td><span class="est ok">CONFIRMADA</span></td></tr>
+      <tr class="bor"><td>09:40</td><td>Compra</td><td><span class="dv"><i style="background:var(--usd)"></i>USD</span></td><td class="r m">80,00</td><td class="r">935,00</td><td class="r m">74.800</td><td>—</td><td><span class="est bo">BORRADOR</span></td></tr>
+    </tbody>
+  </table>
+  <div class="pie"><span>Compras<b>$1.215.000</b></span><span>Ventas<b>$337.900</b></span><span>Margen del día<b>$24.310</b></span><span>Caja en pesos<b>$3.482.150</b></span></div>
+</section>
+<script>
+document.querySelectorAll('.flap').forEach(f=>{for(const c of f.dataset.t){const s=document.createElement('span');s.textContent=c;f.appendChild(s)}});
+document.querySelectorAll('.tablero .fila .flap').forEach((f,i)=>{if(i%3===0)f.classList.add('chica')});
+</script>
+</body>
+</html>

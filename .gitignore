@@ -29,3 +29,4 @@ dist/
 # Front: capturas de revisión y registros locales de impeccable (no van al repo)
 .impeccable/review/
 .impeccable/questions/
+.playwright-cli/

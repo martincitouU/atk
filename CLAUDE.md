@@ -56,7 +56,7 @@ La app debe:
 - **TypeScript** en todo, **Node 24 LTS**. Monorepo con npm workspaces:
   `apps/api`, `apps/web`, `packages/shared`.
 - **API**: Fastify. **BD**: SQLite con better-sqlite3 + Drizzle ORM.
-  Existen `apps/api` y `packages/shared`; `apps/web` se crea con el front.
+  Existen los tres: `apps/api`, `apps/web` (el front) y `packages/shared`.
   Node corre el TypeScript de `@atk/shared` directo (el workspace es un
   enlace, no está dentro de `node_modules`).
 - **Login**: Better Auth (sesiones en cookie httpOnly, roles). No escribir
@@ -111,8 +111,10 @@ La app debe:
 - En JSON los montos viajan como string (`JSON.stringify` falla con `bigint`).
 - Tasas, precios, costos y márgenes: enteros con **escala única ×10^6**
   (sufijo `_e6`/`E6`), igual para todas las monedas.
-- Todo cálculo con dinero vive en `apps/api/src/dominio/dinero.ts` (puro,
-  `bigint`, redondeo explícito) y tiene tablas de casos en sus tests.
+- Todo cálculo con dinero vive en `packages/shared/src/dinero.ts` (puro,
+  `bigint`, redondeo explícito) y tiene tablas de casos en sus tests. Se
+  importa como `@atk/shared/dinero`; `apps/api/src/dominio/dinero.ts` lo
+  reexporta, así los servicios no cambian sus imports.
 - Redondeo a favor de la casa: lo que paga, hacia abajo; lo que cobra,
   hacia arriba; márgenes y costos, al más cercano.
 - La tabla de auditoría tiene triggers que abortan `UPDATE` y `DELETE`.
@@ -134,6 +136,27 @@ La app debe:
 - Los tests de servicios se nombran por RF (`RF-07: ...`) y usan
   `test/servicios/escenario.ts` (semilla + reloj + usuarios).
 
+### Front (`apps/web`)
+- **Contrato**: `docs/api.md`. Las entradas se validan con los esquemas de
+  `@atk/shared`; las respuestas, con `apps/web/src/api/esquemas.ts` (cada
+  una lee lo que manda la API y, si la pantalla necesita otra forma, la arma
+  con un transform: así una diferencia vive en un solo lugar).
+- **En desarrollo**: `npm run dev:api` levanta la API real con una base de
+  demo (`app/.dev/demo.db`, la crea `apps/api/src/cli/demo.ts`, solo
+  desarrollo) y `npm run dev` levanta Vite, que reenvía `/api` a la API
+  (mismo origen: cookie y `Origin` calzan). Login de demo:
+  `rolando@atk.cl` / `ventanilla`. Para empezar de cero, borrar `app/.dev/`.
+- **Mocks**: MSW en `apps/web/src/mocks/`, con la forma de `docs/api.md`.
+  Solo para los tests y con `VITE_MOCKS=1` (datos de ejemplo sin API).
+- **Diseño**: dirección «Carretera Austral» (señalética vial chilena),
+  CSS propio con tokens (`src/estilos/tokens.css`, claro y oscuro), sin
+  librería de componentes. El sistema está en `DESIGN.md`; el producto, en
+  `PRODUCT.md`; el contrato de dirección, en `.impeccable/`.
+- **Teclado** (Ventanilla): `C`/`V` tipo, el dígito siguiente elige la
+  divisa, `↑/↓` la cambian, dígitos y coma al monto, `Enter` confirma,
+  `B` deja borrador, `R` reversa la fila elegida, `Esc` limpia y `F1`–`F4`
+  cambian de sección.
+
 ## Estructura
 
 - `infra/terraform/`: VPC, subred, IGW, rutas, SG, EC2, EIP, EBS, IAM y el
@@ -144,7 +167,8 @@ La app debe:
 - `deploy/`: compose y nginx; se copian a `/srv/atk` en la VM. El código de
   `app/` se copia a `/srv/atk/codigo` y la imagen se construye en la VM.
 - `app/`: la aplicación (npm workspaces). `app/db/` tiene migraciones,
-  semillas y `probar.sh`; `app/apps/api/` el backend.
+  semillas y `probar.sh`; `app/apps/api/` el backend; `app/apps/web/` el
+  front; `app/packages/shared/` los esquemas de entrada y el dinero.
 - `docs/api.md`: contrato de la API para el front. Si una ruta cambia, se
   actualiza en el mismo PR.
 - `docs/casa_cambio_schema_postgres.sql`: diseño original del modelo, solo
@@ -162,6 +186,10 @@ cd infra/ansible && ANSIBLE_INVENTORY_ENABLED=host_list ansible-playbook -i loca
 
 # App: tests, tipos y pruebas SQL del esquema
 cd app && npm test && npm run typecheck && npm run db:probar
+
+# Front contra la API real en local (dos terminales); http://localhost:5173
+cd app && npm run dev:api
+cd app && npm run dev
 
 # Prueba local del stack (imagen real de app/)
 cd deploy && CODIGO=../app HTTP_PORT=8080 docker compose up -d --build --wait

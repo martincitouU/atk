@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="es-CL">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ATK — Ventanilla (comp A)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;700;800;900&family=Overpass+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --vial:#005C45; --vial-hi:#0B7A5D; --lamina:#F4F4EF; --asfalto:#1D2226; --asfalto-2:#2A3035;
+  --amarillo:#F2B705; --faena:#E06A1B; --servicios:#1E4FA0; --turismo:#7A4A2A; --pare:#C8102E;
+  --tinta:#1D2226; --suave:#5D666C; --linea:#D9DBD3; --fondo:#ECEDE6;
+  --usd:#2F7D4F; --ars:#3E8FC9; --eur:#2D3F9E;
+}
+*{box-sizing:border-box;margin:0}
+body{font-family:Overpass,system-ui,sans-serif;background:var(--fondo);color:var(--tinta);width:1440px;height:900px;display:grid;grid-template-columns:208px 1fr;font-size:14px}
+::selection{background:var(--amarillo);color:var(--asfalto)}
+.num{font-family:"Overpass Mono",monospace;font-variant-numeric:tabular-nums}
+/* riel */
+nav{background:var(--asfalto);color:#E9EAE4;display:flex;flex-direction:column;padding:20px 0}
+.marca{font-weight:900;font-size:22px;letter-spacing:.04em;padding:0 22px 22px;border-bottom:1px solid #3A4146}
+.marca small{display:block;font-weight:600;font-size:11px;letter-spacing:.08em;color:#9AA3A8;margin-top:2px;text-transform:uppercase}
+nav ul{list-style:none;padding:14px 0;display:flex;flex-direction:column;gap:2px}
+nav a{display:flex;align-items:center;gap:12px;padding:11px 22px;color:inherit;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:.02em}
+nav a .f{width:14px;height:14px;border-radius:3px;border:2px solid #E9EAE4}
+nav a[aria-current]{background:var(--asfalto-2);box-shadow:inset 4px 0 0 var(--vial-hi)}
+nav a kbd{margin-left:auto;font:600 11px "Overpass Mono";color:#8D969B}
+.turno{margin-top:auto;padding:16px 22px;border-top:1px solid #3A4146;font-size:12px;color:#B5BCC0;line-height:1.6}
+.turno b{color:#fff;display:block;font-size:13px}
+main{display:grid;grid-template-rows:auto 1fr;gap:18px;padding:20px 24px 20px}
+/* letrero */
+.letrero{background:var(--vial);color:#fff;border-radius:14px;padding:6px;box-shadow:0 2px 0 rgba(0,0,0,.08),0 10px 24px -14px rgba(0,40,30,.55)}
+.letrero-in{border:3px solid #fff;border-radius:10px;padding:14px 22px 12px;display:grid;grid-template-columns:1fr auto;gap:6px 0}
+.letrero h2{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;opacity:.85}
+.vig{font-size:12px;font-weight:600;opacity:.85;text-align:right}
+.filas{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 14px;margin-top:6px}
+.dest{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:baseline;gap:0 12px;padding:8px 10px;border-radius:8px}
+.dest .cod{font-weight:900;font-size:26px;letter-spacing:.02em;line-height:1}
+.dest .nom{font-weight:600;font-size:13px;opacity:.85}
+.dest .t{text-align:right}
+.dest .t span{display:block;font-size:10px;font-weight:800;letter-spacing:.14em;opacity:.8}
+.dest .t b{font:700 21px/1.05 "Overpass Mono";font-variant-numeric:tabular-nums}
+.dest.cambio{outline:3px solid var(--amarillo);outline-offset:-1px;background:rgba(242,183,5,.12)}
+.dest.cambio .aviso{grid-column:1/-1;font-size:11px;font-weight:800;color:var(--amarillo);letter-spacing:.06em;margin-top:4px}
+/* trabajo */
+.trabajo{display:grid;grid-template-columns:420px 1fr;gap:18px;min-height:0}
+.panel{background:#fff;border:1px solid var(--linea);border-radius:10px;display:flex;flex-direction:column;min-height:0}
+.panel>header{display:flex;align-items:baseline;justify-content:space-between;padding:14px 18px 10px;border-bottom:1px solid var(--linea)}
+.panel h3{font-size:15px;font-weight:800;letter-spacing:.01em}
+.hint{font-size:12px;color:var(--suave)}
+kbd{font:700 11px "Overpass Mono";border:1px solid #C7CAC1;border-bottom-width:2px;border-radius:4px;padding:1px 5px;background:#F7F7F3;color:var(--tinta)}
+form{padding:14px 18px 18px;display:flex;flex-direction:column;gap:12px}
+.seg{display:grid;grid-template-columns:1fr 1fr;border:2px solid var(--asfalto);border-radius:8px;overflow:hidden}
+.seg button{font:800 15px Overpass;padding:9px;border:0;background:#fff;color:var(--tinta);display:flex;justify-content:center;gap:8px;align-items:center}
+.seg button[aria-pressed=true]{background:var(--asfalto);color:#fff}
+.seg button[aria-pressed=true] kbd{background:var(--asfalto-2);color:#fff;border-color:#555}
+label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:700;color:var(--suave);letter-spacing:.02em}
+.divisas{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.div{border:2px solid var(--linea);border-radius:8px;padding:7px 10px;display:flex;align-items:center;gap:8px;font-weight:800;background:#fff}
+.div i{width:10px;height:10px;border-radius:50%}
+.div[aria-checked=true]{border-color:var(--asfalto);box-shadow:inset 0 0 0 1px var(--asfalto)}
+.div kbd{margin-left:auto}
+input,select{font:600 15px Overpass;border:2px solid var(--linea);border-radius:8px;padding:9px 12px;background:#fff;color:var(--tinta);width:100%}
+input.monto{font:700 28px "Overpass Mono";padding:8px 12px;border-color:var(--asfalto);text-align:right}
+input:focus{outline:3px solid var(--amarillo);outline-offset:1px}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.placa{background:var(--asfalto);color:#fff;border-radius:10px;padding:14px 16px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.placa span{font-size:10px;font-weight:800;letter-spacing:.14em;color:#AEB6BA;text-transform:uppercase}
+.placa b{display:block;font:700 19px "Overpass Mono";font-variant-numeric:tabular-nums}
+.placa .total b{font-size:24px;color:#fff}
+.acciones{display:flex;gap:10px}
+.btn{font:800 15px Overpass;border-radius:8px;padding:11px 16px;border:2px solid var(--asfalto);background:#fff;color:var(--tinta);display:flex;align-items:center;gap:8px}
+.btn.prim{background:var(--vial);border-color:var(--vial);color:#fff;flex:1;justify-content:center}
+.btn.prim kbd{background:var(--vial-hi);color:#fff;border-color:#3C9A7F}
+/* libro */
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--suave);text-align:left;padding:9px 12px;border-bottom:2px solid var(--asfalto);background:#FAFAF7;position:sticky;top:0}
+td{padding:9px 12px;border-bottom:1px solid #ECEDE7;vertical-align:middle}
+th.r,td.r{text-align:right}
+.chip{display:inline-flex;align-items:center;gap:6px;font-weight:800;font-size:12px}
+.chip i{width:9px;height:9px;border-radius:50%}
+.est{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:4px}
+.ok{color:var(--vial);background:#E1EFE9}
+.obra{color:#8A3D0B;background:#FCE9DA}
+.rev{color:var(--pare);background:#FBE3E6}
+tr.reversada td.m{text-decoration:line-through;text-decoration-color:var(--pare);color:#8E979C}
+tr.borrador td{color:var(--suave)}
+.motivo{display:block;font-size:11px;color:var(--pare);font-weight:600;text-decoration:none}
+.pie{margin-top:auto;display:flex;gap:28px;padding:12px 18px;border-top:2px solid var(--asfalto);font-size:12px;color:var(--suave);font-weight:700}
+.pie b{display:block;font:700 17px "Overpass Mono";color:var(--tinta)}
+.sint{font-size:11px;color:inherit;font-weight:600}
+</style>
+</head>
+<body>
+<nav aria-label="Secciones">
+  <div class="marca">ATK<small>Casa de cambio · Coyhaique</small></div>
+  <ul>
+    <li><a href="#" aria-current="page"><span class="f" style="background:var(--vial)"></span>Ventanilla<kbd>F1</kbd></a></li>
+    <li><a href="#"><span class="f" style="background:var(--amarillo)"></span>Cierre del día<kbd>F2</kbd></a></li>
+    <li><a href="#"><span class="f" style="background:var(--turismo)"></span>Jornada<kbd>F3</kbd></a></li>
+    <li><a href="#"><span class="f" style="background:var(--servicios)"></span>Clientes<kbd>F4</kbd></a></li>
+    <li><a href="#"><span class="f" style="background:#6B7378"></span>Configuración</a></li>
+  </ul>
+  <div class="turno"><b>Turno abierto · Caja 1</b>Desde 09:02 · Rolando del Río<br>Domingo 8 de noviembre</div>
+</nav>
+<main>
+  <section class="letrero" aria-label="Pizarra">
+    <div class="letrero-in">
+      <h2>Pizarra · pesos por unidad</h2>
+      <p class="vig">Vigente desde 09:30 · <span class="sint">datos de ejemplo</span></p>
+      <div class="filas">
+        <div class="dest cambio"><span class="cod">USD</span><span class="nom">Dólar</span><span class="t"><span>COMPRA</span><b>935,00</b></span><span class="t"><span>VENTA</span><b>952,00</b></span><span class="aviso">CAMBIÓ HACE 2 MIN · ANTES 949,00</span></div>
+        <div class="dest"><span class="cod">ARS</span><span class="nom">Peso argentino</span><span class="t"><span>COMPRA</span><b>0,6200</b></span><span class="t"><span>VENTA</span><b>0,7100</b></span></div>
+        <div class="dest"><span class="cod">EUR</span><span class="nom">Euro</span><span class="t"><span>COMPRA</span><b>1.018,00</b></span><span class="t"><span>VENTA</span><b>1.046,00</b></span></div>
+      </div>
+    </div>
+  </section>
+  <div class="trabajo">
+    <section class="panel" aria-label="Registrar operación">
+      <header><h3>Nueva operación</h3><span class="hint"><kbd>C</kbd> compra · <kbd>V</kbd> venta</span></header>
+      <form>
+        <div class="seg" role="group" aria-label="Tipo"><button type="button" aria-pressed="false">Compra <kbd>C</kbd></button><button type="button" aria-pressed="true">Venta <kbd>V</kbd></button></div>
+        <label>Divisa
+          <div class="divisas" role="radiogroup">
+            <span class="div" role="radio" aria-checked="true"><i style="background:var(--usd)"></i>USD<kbd>1</kbd></span>
+            <span class="div" role="radio" aria-checked="false"><i style="background:var(--ars)"></i>ARS<kbd>2</kbd></span>
+            <span class="div" role="radio" aria-checked="false"><i style="background:var(--eur)"></i>EUR<kbd>3</kbd></span>
+          </div>
+        </label>
+        <label>Monto en dólares<input class="monto num" value="450,00" aria-label="Monto"></label>
+        <div class="duo">
+          <label>Medio de pago<select><option>Efectivo</option></select></label>
+          <label>Folio boleta (41)<input class="num" value="18234"></label>
+        </div>
+        <div class="placa" aria-label="Vista previa">
+          <div><span>Tasa</span><b>952,00</b></div>
+          <div class="total"><span>Cliente paga</span><b>$428.400</b></div>
+          <div><span>Margen</span><b>$7.650</b></div>
+        </div>
+        <div class="acciones"><button type="button" class="btn prim">Confirmar <kbd>Enter</kbd></button><button type="button" class="btn">Borrador <kbd>B</kbd></button></div>
+      </form>
+    </section>
+    <section class="panel" aria-label="Libro del día">
+      <header><h3>Libro del día</h3><span class="hint">6 operaciones · 1 borrador · <kbd>R</kbd> reversar la seleccionada</span></header>
+      <table>
+        <thead><tr><th>Hora</th><th>Tipo</th><th>Divisa</th><th class="r">Monto</th><th class="r">Tasa</th><th class="r">Pesos</th><th>Folio</th><th>Estado</th></tr></thead>
+        <tbody>
+          <tr><td class="num">10:42</td><td>Venta</td><td><span class="chip"><i style="background:var(--usd)"></i>USD</span></td><td class="r num m">300,00</td><td class="r num">952,00</td><td class="r num m">285.600</td><td class="num">18233</td><td><span class="est ok">Confirmada</span></td></tr>
+          <tr><td class="num">10:31</td><td>Compra</td><td><span class="chip"><i style="background:var(--ars)"></i>ARS</span></td><td class="r num m">150.000</td><td class="r num">0,6200</td><td class="r num m">93.000</td><td class="num">18232</td><td><span class="est ok">Confirmada</span></td></tr>
+          <tr><td class="num">10:15</td><td>Compra</td><td><span class="chip"><i style="background:var(--usd)"></i>USD</span></td><td class="r num m">1.200,00</td><td class="r num">935,00</td><td class="r num m">1.122.000</td><td class="num">18231</td><td><span class="est ok">Confirmada</span></td></tr>
+          <tr class="reversada"><td class="num">09:58</td><td>Venta</td><td><span class="chip"><i style="background:var(--eur)"></i>EUR</span></td><td class="r num m">500,00</td><td class="r num">1.046,00</td><td class="r num m">523.000<span class="motivo">Monto mal digitado</span></td><td class="num">—</td><td><span class="est rev">Reversada</span></td></tr>
+          <tr><td class="num">09:57</td><td>Venta</td><td><span class="chip"><i style="background:var(--eur)"></i>EUR</span></td><td class="r num m">50,00</td><td class="r num">1.046,00</td><td class="r num m">52.300</td><td class="num">18230</td><td><span class="est ok">Confirmada</span></td></tr>
+          <tr class="borrador"><td class="num">09:40</td><td>Compra</td><td><span class="chip"><i style="background:var(--usd)"></i>USD</span></td><td class="r num m">80,00</td><td class="r num">935,00</td><td class="r num m">74.800</td><td class="num">—</td><td><span class="est obra">Borrador</span></td></tr>
+        </tbody>
+      </table>
+      <div class="pie"><span>Compras<b>$1.215.000</b></span><span>Ventas<b>$337.900</b></span><span>Margen del día<b>$24.310</b></span><span>Caja en pesos<b>$3.482.150</b></span></div>
+    </section>
+  </div>
+</main>
+</body>
+</html>
