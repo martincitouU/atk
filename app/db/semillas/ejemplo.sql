@@ -58,6 +58,9 @@ INSERT INTO cotizacion (moneda_codigo, tasa_referencia_id, regla_spread_id,
     ('BRL', 3, 4,  164900000,  175100000, 1),   --  164,90 /  175,10
     ('ARS', 4, 5,     712500,     787500, 1);   --  0,7125 /  0,7875
 
+-- Categoría de fidelización de ejemplo: reduce el margen un 30 %
+INSERT INTO categoria_cliente (nombre, descuento_margen_pct_e6) VALUES ('Frecuente', 30000000);
+
 -- Clientes ficticios: uno con la ficha UAF completa y otro incompleto
 INSERT INTO cliente (tipo_documento, numero_documento, nombre, nacionalidad, oficio,
                      pais_residencia, domicilio, telefono, email) VALUES

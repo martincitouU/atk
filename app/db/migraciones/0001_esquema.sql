@@ -40,7 +40,8 @@
 --    1. Catálogo y configuración     5. Gastos y libro de caja
 --    2. Usuarios y autenticación     6. Auditoría
 --    3. Precios y spread             7. Triggers de protección
---    4. Clientes, turnos y operación 8. Datos de referencia
+--    4. Clientes, fidelización, turnos, operación, histórico y ROE
+--    8. Datos de referencia
 -- =====================================================================
 
 
@@ -205,6 +206,17 @@ CREATE INDEX ix_cotizacion_historial ON cotizacion (moneda_codigo, vigente_desde
 -- 4. CLIENTES, TURNOS Y OPERACIÓN
 -- =====================================================================
 
+-- Categorías de fidelización (RF-18). Un cliente con categoría recibe
+-- automáticamente una tasa preferente: el margen de la regla de spread se
+-- reduce en descuento_margen_pct_e6 (30 % → 30000000), en todas las divisas.
+-- No requiere autorización, a diferencia de la tasa preferencial manual.
+CREATE TABLE categoria_cliente (
+    id                       INTEGER NOT NULL PRIMARY KEY,
+    nombre                   TEXT    NOT NULL UNIQUE CHECK (trim(nombre) <> ''),
+    descuento_margen_pct_e6  INTEGER NOT NULL CHECK (descuento_margen_pct_e6 > 0 AND descuento_margen_pct_e6 <= 100000000),
+    activa                   INTEGER NOT NULL DEFAULT 1 CHECK (activa IN (0, 1))
+) STRICT;
+
 -- Ficha de cliente con los datos que exige la UAF (RF-17). Las columnas
 -- opcionales se exigen en la app cuando la operación requiere la ficha.
 CREATE TABLE cliente (
@@ -219,6 +231,7 @@ CREATE TABLE cliente (
     telefono             TEXT,
     email                TEXT,
     relacion_permanente  INTEGER NOT NULL DEFAULT 0 CHECK (relacion_permanente IN (0, 1)),
+    categoria_id         INTEGER REFERENCES categoria_cliente(id),        -- fidelización (RF-18)
     creado_en            INTEGER NOT NULL DEFAULT (CAST(unixepoch('subsec') * 1000 AS INTEGER)),
     actualizado_en       INTEGER NOT NULL DEFAULT (CAST(unixepoch('subsec') * 1000 AS INTEGER)),
     UNIQUE (tipo_documento, numero_documento)
@@ -262,16 +275,28 @@ CREATE TABLE arqueo (
     UNIQUE (turno_id, moneda_codigo)
 ) STRICT;
 
--- Importación de historial (papel / Excel, RF-13)
+-- Importación de historial (papel / Excel, RF-13). Quien importa elige la
+-- caja a la que se asignan las operaciones del lote (el papel no la dice).
 CREATE TABLE lote_migracion (
     id                INTEGER NOT NULL PRIMARY KEY,
     archivo_origen    TEXT    NOT NULL,
+    caja_id           INTEGER NOT NULL REFERENCES caja(id),
     filas_leidas      INTEGER NOT NULL DEFAULT 0,
     filas_importadas  INTEGER NOT NULL DEFAULT 0,
     filas_rechazadas  INTEGER NOT NULL DEFAULT 0,
     importado_por     INTEGER NOT NULL REFERENCES usuario(id),
     importado_en      INTEGER NOT NULL DEFAULT (CAST(unixepoch('subsec') * 1000 AS INTEGER)),
     observaciones     TEXT
+) STRICT;
+
+-- Cada fila rechazada de un lote, con su causa (RF-13). Solo inserción.
+CREATE TABLE lote_migracion_rechazo (
+    id                 INTEGER NOT NULL PRIMARY KEY,
+    lote_migracion_id  INTEGER NOT NULL REFERENCES lote_migracion(id),
+    fila               INTEGER NOT NULL CHECK (fila > 0),      -- número de fila en el archivo
+    causa              TEXT    NOT NULL CHECK (trim(causa) <> ''),
+    datos              TEXT    CHECK (datos IS NULL OR json_valid(datos)),  -- la fila original
+    UNIQUE (lote_migracion_id, fila)
 ) STRICT;
 
 -- Compra o venta de divisa (RF-01, RF-02). Ver el ciclo de estados arriba.
@@ -292,7 +317,8 @@ CREATE TABLE operacion (
     tasa_referencia_e6  INTEGER,                                     -- snapshot al momento de operar
     cotizacion_id       INTEGER REFERENCES cotizacion(id),
     regla_spread_id     INTEGER REFERENCES regla_spread(id),
-    es_preferencial     INTEGER NOT NULL DEFAULT 0 CHECK (es_preferencial IN (0, 1)),
+    es_preferencial     INTEGER NOT NULL DEFAULT 0 CHECK (es_preferencial IN (0, 1)),  -- tasa manual autorizada
+    categoria_cliente_id INTEGER REFERENCES categoria_cliente(id),   -- tasa preferente de fidelización (RF-18)
     autorizado_por      INTEGER REFERENCES usuario(id),
     autorizado_en       INTEGER,
     margen_bruto        INTEGER,   -- moneda base, vs. tasa de referencia (RF-03)
@@ -323,6 +349,7 @@ CREATE TABLE operacion (
     CHECK ((origen = 'SISTEMA'   AND turno_id IS NOT NULL AND lote_migracion_id IS NULL) OR
            (origen = 'MIGRACION' AND lote_migracion_id IS NOT NULL)),
     CHECK (estado = 'BORRADOR' OR es_preferencial = 0 OR autorizado_por IS NOT NULL),
+    CHECK (es_preferencial = 0 OR categoria_cliente_id IS NULL),  -- la tasa manual reemplaza a la de categoría
     CHECK ((autorizado_por IS NULL) = (autorizado_en IS NULL)),
     CHECK ((tipo_dte IS NULL) = (folio_dte IS NULL)),
     CHECK (registro_diferido = 0 OR realizada_en <= registrada_en),
@@ -333,6 +360,30 @@ CREATE INDEX ix_operacion_moneda_fecha ON operacion (moneda_codigo, realizada_en
 CREATE INDEX ix_operacion_fecha        ON operacion (realizada_en);
 CREATE INDEX ix_operacion_cliente      ON operacion (cliente_id) WHERE cliente_id IS NOT NULL;
 CREATE INDEX ix_operacion_turno        ON operacion (turno_id);
+
+-- Reporte de Operaciones en Efectivo a la UAF (RF-19), uno por trimestre.
+-- Queda registro de cada generación (puede regenerarse si hubo un error),
+-- de qué operaciones incluyó y de cuándo se envió. Sin operaciones es un
+-- reporte negativo, que también se envía.
+CREATE TABLE reporte_roe (
+    id                    INTEGER NOT NULL PRIMARY KEY,
+    anio                  INTEGER NOT NULL CHECK (anio BETWEEN 2000 AND 2100),
+    trimestre             INTEGER NOT NULL CHECK (trimestre BETWEEN 1 AND 4),
+    umbral_usd            INTEGER NOT NULL CHECK (umbral_usd > 0),            -- umbral con que se generó
+    cantidad_operaciones  INTEGER NOT NULL CHECK (cantidad_operaciones >= 0),
+    es_negativo           INTEGER GENERATED ALWAYS AS (cantidad_operaciones = 0) STORED,
+    generado_por          INTEGER NOT NULL REFERENCES usuario(id),
+    generado_en           INTEGER NOT NULL DEFAULT (CAST(unixepoch('subsec') * 1000 AS INTEGER)),
+    enviado_por           INTEGER REFERENCES usuario(id),
+    enviado_en            INTEGER,
+    CHECK ((enviado_por IS NULL) = (enviado_en IS NULL))
+) STRICT;
+
+CREATE TABLE reporte_roe_operacion (
+    reporte_roe_id  INTEGER NOT NULL REFERENCES reporte_roe(id),
+    operacion_id    INTEGER NOT NULL REFERENCES operacion(id),
+    PRIMARY KEY (reporte_roe_id, operacion_id)
+) STRICT;
 
 
 -- =====================================================================
@@ -408,7 +459,8 @@ CREATE TABLE auditoria (
     tabla          TEXT    NOT NULL,
     registro_id    TEXT    NOT NULL,
     accion         TEXT    NOT NULL CHECK (accion IN ('CREAR', 'EDITAR', 'ELIMINAR', 'CONFIRMAR', 'REVERSAR',
-                                                      'AUTORIZAR', 'PUBLICAR', 'ABRIR', 'CERRAR')),
+                                                      'AUTORIZAR', 'PUBLICAR', 'ABRIR', 'CERRAR',
+                                                      'GENERAR', 'EXPORTAR', 'IMPORTAR')),
     motivo         TEXT,
     datos_antes    TEXT    CHECK (datos_antes   IS NULL OR json_valid(datos_antes)),
     datos_despues  TEXT    CHECK (datos_despues IS NULL OR json_valid(datos_despues)),
@@ -500,7 +552,7 @@ CREATE TRIGGER operacion_confirmada_inmutable BEFORE UPDATE OF
     cliente_id, tipo, moneda_codigo, monto_divisa, medio_pago, tasa_aplicada_e6,
     monto_base, tasa_referencia_e6, cotizacion_id, regla_spread_id, es_preferencial,
     autorizado_por, autorizado_en, margen_bruto, margen_realizado, equivalente_usd,
-    proposito, tipo_dte, folio_dte, confirmada_por, confirmada_en, registro_diferido,
+    categoria_cliente_id, proposito, tipo_dte, folio_dte, confirmada_por, confirmada_en, registro_diferido,
     realizada_en, observacion
 ON operacion
 WHEN OLD.estado = 'CONFIRMADA'
@@ -624,7 +676,45 @@ BEGIN
     SELECT RAISE(ABORT, 'Un movimiento de reverso requiere la operación o el gasto ya reversado');
 END;
 
+-- --- reporte_roe: generado no cambia; solo se registra su envío, una vez
+
+CREATE TRIGGER reporte_roe_no_borrar BEFORE DELETE ON reporte_roe
+BEGIN
+    SELECT RAISE(ABORT, 'Los reportes ROE generados no se eliminan');
+END;
+
+CREATE TRIGGER reporte_roe_campos_inmutables BEFORE UPDATE OF
+    id, anio, trimestre, umbral_usd, cantidad_operaciones, generado_por, generado_en
+ON reporte_roe
+BEGIN
+    SELECT RAISE(ABORT, 'Un reporte ROE generado no se modifica: se genera uno nuevo');
+END;
+
+CREATE TRIGGER reporte_roe_enviado_una_vez BEFORE UPDATE ON reporte_roe
+WHEN OLD.enviado_en IS NOT NULL
+BEGIN
+    SELECT RAISE(ABORT, 'El reporte ROE ya está marcado como enviado');
+END;
+
 -- --- tablas de solo inserción --------------------------------------
+
+CREATE TRIGGER reporte_roe_operacion_no_modificar BEFORE UPDATE ON reporte_roe_operacion
+BEGIN
+    SELECT RAISE(ABORT, 'reporte_roe_operacion es de solo inserción');
+END;
+CREATE TRIGGER reporte_roe_operacion_no_borrar BEFORE DELETE ON reporte_roe_operacion
+BEGIN
+    SELECT RAISE(ABORT, 'reporte_roe_operacion es de solo inserción');
+END;
+
+CREATE TRIGGER lote_migracion_rechazo_no_modificar BEFORE UPDATE ON lote_migracion_rechazo
+BEGIN
+    SELECT RAISE(ABORT, 'lote_migracion_rechazo es de solo inserción');
+END;
+CREATE TRIGGER lote_migracion_rechazo_no_borrar BEFORE DELETE ON lote_migracion_rechazo
+BEGIN
+    SELECT RAISE(ABORT, 'lote_migracion_rechazo es de solo inserción');
+END;
 
 CREATE TRIGGER movimiento_caja_no_modificar BEFORE UPDATE ON movimiento_caja
 BEGIN

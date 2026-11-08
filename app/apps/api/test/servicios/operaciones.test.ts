@@ -410,3 +410,43 @@ describe("RF-21: registro diferido", () => {
     ).toBe("DIFERIDO_FUERA_DE_TURNO");
   });
 });
+
+describe("RF-18: fidelización", () => {
+  const FRECUENTE = 1; // categoría de la semilla: 30 % menos de margen
+
+  it("un cliente frecuente recibe su tasa preferente sola, sin autorización", () => {
+    const { ctx, folio } = escenario();
+    abrirConFondos(ctx, CAJERO, 1, FONDOS);
+    editarCliente(ctx, CAJERO, 1, { categoriaId: FRECUENTE });
+
+    const venta = crearBorrador(ctx, CAJERO, { ...VENTA_USD_100, clienteId: 1, ...folio() });
+    // margen de venta 1,5 % × 0,7 = 1,05 % → 940 × 1,0105 = 949,87 (en vez de 954,10)
+    expect(venta).toMatchObject({ tasaAplicadaE6: 949_870_000n, montoBase: 94_987n, categoriaClienteId: FRECUENTE, esPreferencial: false });
+    expect(confirmarOperacion(ctx, CAJERO, venta.id)).toMatchObject({ estado: "CONFIRMADA", autorizadoPor: null });
+
+    const compra = crearBorrador(ctx, CAJERO, { tipo: "COMPRA", monedaCodigo: "USD", montoDivisa: 10_000n, clienteId: 1 });
+    // 940 × 0,9895 = 930,13 (en vez de 925,90)
+    expect(compra.tasaAplicadaE6).toBe(930_130_000n);
+  });
+
+  it("una tasa manual reemplaza a la de la categoría y sigue pidiendo autorización", () => {
+    const { ctx } = escenario();
+    abrirConFondos(ctx, CAJERO, 1, FONDOS);
+    editarCliente(ctx, CAJERO, 1, { categoriaId: FRECUENTE });
+
+    const op = crearBorrador(ctx, CAJERO, { ...VENTA_USD_100, clienteId: 1, tasaSolicitadaE6: 945_000_000n });
+    expect(op).toMatchObject({ esPreferencial: true, categoriaClienteId: null, autorizadoPor: null });
+  });
+
+  it("una categoría inactiva no aplica", () => {
+    const { ctx, sqlite } = escenario();
+    abrirConFondos(ctx, CAJERO, 1, FONDOS);
+    editarCliente(ctx, CAJERO, 1, { categoriaId: FRECUENTE });
+    sqlite.prepare("UPDATE categoria_cliente SET activa = 0").run();
+
+    expect(crearBorrador(ctx, CAJERO, { ...VENTA_USD_100, clienteId: 1 })).toMatchObject({
+      tasaAplicadaE6: 954_100_000n,
+      categoriaClienteId: null,
+    });
+  });
+});

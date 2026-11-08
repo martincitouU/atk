@@ -192,6 +192,9 @@ docker compose down && rm -rf data
 - Reverso: solo supervisor o admin, y solo con el turno de la operación abierto.
 - Las diferencias del arqueo no se ajustan solas: el supervisor registra un AJUSTE.
 - Registro diferido: hora real del mismo día en que se abrió el turno.
+- Fidelización (RF-18): la categoría reduce el margen en un % igual para
+  todas las divisas, sin autorización; una tasa manual la reemplaza.
+- Histórico (RF-13): quien importa elige la caja del lote (`lote_migracion.caja_id`).
 - ROE: ¿se suman las operaciones fraccionadas de un cliente en el día?
 - ¿Se aplica el redondeo del efectivo a $10?
 

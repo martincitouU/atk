@@ -8,7 +8,17 @@
 // la caja (RF-04). Una confirmada solo se anula con un reverso con motivo.
 
 import { and, desc, eq, gte, lt, type SQL } from "drizzle-orm";
-import { operacion, saldoCaja, tasaReferencia, turno, type MedioPago, type Operacion, type Turno } from "../db/esquema.ts";
+import {
+  categoriaCliente,
+  cliente,
+  operacion,
+  saldoCaja,
+  tasaReferencia,
+  turno,
+  type MedioPago,
+  type Operacion,
+  type Turno,
+} from "../db/esquema.ts";
 import {
   dentroDeDesviacion,
   equivalenteUsd,
@@ -68,11 +78,25 @@ type Calculo = {
   cotizacionId: number;
   reglaSpreadId: number;
   esPreferencial: boolean;
+  categoriaClienteId: number | null;
   margenBruto: bigint;
   equivalenteUsd: bigint;
   realizadaEn: Date;
   registroDiferido: boolean;
 };
+
+/** Categoría de fidelización activa del cliente (RF-18), si tiene. */
+function categoriaDe(datos: Datos, clienteId: number | null | undefined) {
+  if (clienteId == null) return null;
+  return (
+    datos
+      .select({ id: categoriaCliente.id, descuentoMargenPctE6: categoriaCliente.descuentoMargenPctE6 })
+      .from(cliente)
+      .innerJoin(categoriaCliente, eq(categoriaCliente.id, cliente.categoriaId))
+      .where(and(eq(cliente.id, clienteId), eq(categoriaCliente.activa, true)))
+      .get() ?? null
+  );
+}
 
 /** Equivalente en USD con la referencia del dólar en ese instante (RF-17, RF-19). */
 function equivalenteEnUsd(
@@ -122,6 +146,8 @@ function calcular(datos: Datos, ctx: Contexto, parametros: Parametros, e: Entrad
     realizadaEn = e.realizadaEn;
   }
 
+  // RF-18: la categoría del cliente baja el margen sola; una tasa manual la reemplaza
+  const categoria = e.tasaSolicitadaE6 == null ? categoriaDe(datos, e.clienteId) : null;
   const precio = precioPara(datos, {
     monedaCodigo: e.monedaCodigo,
     sucursalId,
@@ -129,6 +155,7 @@ function calcular(datos: Datos, ctx: Contexto, parametros: Parametros, e: Entrad
     montoDivisa: e.montoDivisa,
     instante: realizadaEn,
     vigenciaMinutos: registroDiferido ? null : parametros.vigenciaCotizacionMinutos,
+    descuentoMargenPctE6: categoria?.descuentoMargenPctE6 ?? null,
   });
 
   let tasaAplicadaE6 = precio.tasaE6;
@@ -161,6 +188,7 @@ function calcular(datos: Datos, ctx: Contexto, parametros: Parametros, e: Entrad
     cotizacionId: precio.cotizacionId,
     reglaSpreadId: precio.reglaSpreadId,
     esPreferencial,
+    categoriaClienteId: categoria?.id ?? null,
     margenBruto: margenBruto({
       tipo: e.tipo,
       montoDivisa: e.montoDivisa,
@@ -409,6 +437,7 @@ export function confirmarOperacion(ctx: Contexto, actor: Actor, id: number): Ope
     const realizadaEn = op.registroDiferido ? op.realizadaEn : ahora;
     const sucursalId = sucursalDeCaja(tx, op.cajaId);
     const { decimalesTasa } = divisaHabilitada(tx, op.monedaCodigo);
+    const categoria = op.esPreferencial ? null : categoriaDe(tx, op.clienteId);
 
     const precio = precioPara(tx, {
       monedaCodigo: op.monedaCodigo,
@@ -417,6 +446,7 @@ export function confirmarOperacion(ctx: Contexto, actor: Actor, id: number): Ope
       montoDivisa: op.montoDivisa,
       instante: realizadaEn,
       vigenciaMinutos: op.registroDiferido ? null : parametros.vigenciaCotizacionMinutos,
+      descuentoMargenPctE6: categoria?.descuentoMargenPctE6 ?? null,
     });
     if (op.esPreferencial) {
       exigir(op.autorizadoPor !== null, "FALTA_AUTORIZACION", "La tasa preferencial necesita la autorización de un supervisor");
@@ -473,6 +503,7 @@ export function confirmarOperacion(ctx: Contexto, actor: Actor, id: number): Ope
         tasaReferenciaE6: precio.tasaReferenciaE6,
         cotizacionId: precio.cotizacionId,
         reglaSpreadId: precio.reglaSpreadId,
+        categoriaClienteId: categoria?.id ?? null,
         margenBruto: margenBruto({
           tipo: op.tipo,
           montoDivisa: op.montoDivisa,

@@ -1,9 +1,10 @@
-// Ficha de cliente con los datos que exige la UAF (RF-17).
+// Ficha de cliente con los datos que exige la UAF (RF-17) y su categoría de
+// fidelización (RF-18).
 
 import { and, asc, eq, like, or } from "drizzle-orm";
-import { cliente, type Cliente, type TIPOS_DOCUMENTO } from "../db/esquema.ts";
+import { categoriaCliente, cliente, type Cliente, type TIPOS_DOCUMENTO } from "../db/esquema.ts";
 import { auditar } from "./auditoria.ts";
-import { enTransaccion, ErrorNegocio, exigir, limpiar, type Actor, type Contexto, type Datos } from "./contexto.ts";
+import { enTransaccion, ErrorNegocio, exigir, exigirRol, limpiar, type Actor, type Contexto, type Datos } from "./contexto.ts";
 
 export type EntradaCliente = {
   tipoDocumento: (typeof TIPOS_DOCUMENTO)[number];
@@ -16,6 +17,8 @@ export type EntradaCliente = {
   telefono?: string | null;
   email?: string | null;
   relacionPermanente?: boolean;
+  /** Categoría de fidelización (RF-18); null sin categoría */
+  categoriaId?: number | null;
 };
 
 /** RUT chileno con dígito verificador correcto ("12.345.678-5" o "12345678-5"). */
@@ -73,7 +76,14 @@ function normalizar(entrada: EntradaCliente) {
     telefono: limpiar(entrada.telefono),
     email: limpiar(entrada.email),
     relacionPermanente: entrada.relacionPermanente ?? false,
+    categoriaId: entrada.categoriaId ?? null,
   };
+}
+
+function exigirCategoriaActiva(tx: Datos, categoriaId: number | null): void {
+  if (categoriaId === null) return;
+  const categoria = tx.select().from(categoriaCliente).where(eq(categoriaCliente.id, categoriaId)).get();
+  exigir(categoria?.activa, "CATEGORIA_INVALIDA", "La categoría de cliente no existe o está inactiva");
 }
 
 function exigirDocumentoLibre(tx: Datos, tipo: Cliente["tipoDocumento"], numero: string, salvoId?: number) {
@@ -91,6 +101,7 @@ export function crearCliente(ctx: Contexto, actor: Actor, entrada: EntradaClient
   return enTransaccion(ctx, (tx) => {
     const datos = normalizar(entrada);
     exigirDocumentoLibre(tx, datos.tipoDocumento, datos.numeroDocumento);
+    exigirCategoriaActiva(tx, datos.categoriaId);
     const ahora = ctx.ahora();
     const nuevo = tx.insert(cliente).values({ ...datos, creadoEn: ahora, actualizadoEn: ahora }).returning().get();
     auditar(tx, ctx, { tabla: "cliente", registroId: nuevo.id, accion: "CREAR", usuarioId: actor.id, despues: nuevo });
@@ -104,6 +115,7 @@ export function editarCliente(ctx: Contexto, actor: Actor, id: number, cambios: 
     exigir(actual, "CLIENTE_NO_EXISTE", `El cliente ${id} no existe`);
     const datos = normalizar({ ...actual, ...cambios });
     exigirDocumentoLibre(tx, datos.tipoDocumento, datos.numeroDocumento, id);
+    if (datos.categoriaId !== actual.categoriaId) exigirCategoriaActiva(tx, datos.categoriaId);
     const editado = tx
       .update(cliente)
       .set({ ...datos, actualizadoEn: ctx.ahora() })
@@ -129,4 +141,28 @@ export function buscarClientes(datos: Datos, texto: string, limite = 20): Client
     .orderBy(asc(cliente.nombre))
     .limit(limite)
     .all();
+}
+
+/** Categorías de fidelización activas (RF-18). */
+export function categoriasDeCliente(datos: Datos) {
+  return datos.select().from(categoriaCliente).where(eq(categoriaCliente.activa, true)).orderBy(asc(categoriaCliente.nombre)).all();
+}
+
+/** Crea una categoría de fidelización: cuánto se reduce el margen a sus clientes. */
+export function crearCategoriaCliente(ctx: Contexto, actor: Actor, entrada: { nombre: string; descuentoMargenPctE6: bigint }) {
+  exigirRol(actor, ["ADMIN"], "Crear categorías de cliente");
+  return enTransaccion(ctx, (tx) => {
+    const nombre = limpiar(entrada.nombre);
+    exigir(nombre, "DATO_FALTANTE", "Indique el nombre de la categoría");
+    exigir(
+      entrada.descuentoMargenPctE6 > 0n && entrada.descuentoMargenPctE6 <= 100_000_000n,
+      "DESCUENTO_INVALIDO",
+      "El descuento del margen debe estar entre 0 % y 100 %",
+    );
+    const existente = tx.select({ id: categoriaCliente.id }).from(categoriaCliente).where(eq(categoriaCliente.nombre, nombre)).get();
+    exigir(!existente, "CATEGORIA_DUPLICADA", `Ya existe la categoría ${nombre}`);
+    const nueva = tx.insert(categoriaCliente).values({ nombre, descuentoMargenPctE6: entrada.descuentoMargenPctE6 }).returning().get();
+    auditar(tx, ctx, { tabla: "categoria_cliente", registroId: nueva.id, accion: "CREAR", usuarioId: actor.id, despues: nueva });
+    return nueva;
+  });
 }

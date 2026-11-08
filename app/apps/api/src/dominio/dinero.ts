@@ -73,6 +73,20 @@ export function calcularPrecios(
 }
 
 /**
+ * Regla con el margen reducido por la categoría del cliente (RF-18):
+ * margen × (1 − descuento). Con 30 %, un margen de 1,5 % queda en 1,05 %.
+ * El margen reducido se redondea hacia arriba: a favor de la casa.
+ */
+export function reglaConDescuento(regla: ReglaPrecio, descuentoPctE6: bigint): ReglaPrecio {
+  const queda = CIEN_POR_CIENTO_E6 - descuentoPctE6;
+  return {
+    tipoMargen: regla.tipoMargen,
+    margenCompraE6: dividir(regla.margenCompraE6 * queda, CIEN_POR_CIENTO_E6, "ARRIBA"),
+    margenVentaE6: dividir(regla.margenVentaE6 * queda, CIEN_POR_CIENTO_E6, "ARRIBA"),
+  };
+}
+
+/**
  * Valor de un monto de divisa en moneda base, en la unidad mínima de la base.
  *   base = montoDivisa / 10^decDivisa × tasa  →  × 10^decBase
  */

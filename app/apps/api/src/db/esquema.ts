@@ -21,6 +21,7 @@ export const ESTADOS_OPERACION = ["BORRADOR", "CONFIRMADA", "REVERSADA"] as cons
 export const TIPOS_MOVIMIENTO = ["OPERACION", "REVERSO", "INGRESO", "RETIRO", "GASTO", "AJUSTE"] as const;
 export const ACCIONES_AUDITORIA = [
   "CREAR", "EDITAR", "ELIMINAR", "CONFIRMAR", "REVERSAR", "AUTORIZAR", "PUBLICAR", "ABRIR", "CERRAR",
+  "GENERAR", "EXPORTAR", "IMPORTAR",
 ] as const;
 export const TIPOS_DOCUMENTO = ["RUT", "PASAPORTE", "DNI", "OTRO"] as const;
 
@@ -137,6 +138,13 @@ export const cotizacion = sqliteTable("cotizacion", {
 // 4. Clientes, turnos y operación
 // ---------------------------------------------------------------------
 
+export const categoriaCliente = sqliteTable("categoria_cliente", {
+  id: idAutomatico(),
+  nombre: text("nombre").notNull(),
+  descuentoMargenPctE6: dinero("descuento_margen_pct_e6").notNull(),
+  activa: booleano("activa").notNull().default(true),
+});
+
 export const cliente = sqliteTable("cliente", {
   id: idAutomatico(),
   tipoDocumento: text("tipo_documento", { enum: TIPOS_DOCUMENTO }).notNull(),
@@ -149,6 +157,7 @@ export const cliente = sqliteTable("cliente", {
   telefono: text("telefono"),
   email: text("email"),
   relacionPermanente: booleano("relacion_permanente").notNull().default(false),
+  categoriaId: entero("categoria_id").references(() => categoriaCliente.id),
   creadoEn: fecha("creado_en").notNull().default(AHORA_MS),
   actualizadoEn: fecha("actualizado_en").notNull().default(AHORA_MS),
 });
@@ -190,12 +199,21 @@ export const arqueo = sqliteTable("arqueo", {
 export const loteMigracion = sqliteTable("lote_migracion", {
   id: idAutomatico(),
   archivoOrigen: text("archivo_origen").notNull(),
+  cajaId: entero("caja_id").notNull().references(() => caja.id),
   filasLeidas: entero("filas_leidas").notNull().default(0),
   filasImportadas: entero("filas_importadas").notNull().default(0),
   filasRechazadas: entero("filas_rechazadas").notNull().default(0),
   importadoPor: entero("importado_por").notNull().references(() => usuario.id),
   importadoEn: fecha("importado_en").notNull().default(AHORA_MS),
   observaciones: text("observaciones"),
+});
+
+export const loteMigracionRechazo = sqliteTable("lote_migracion_rechazo", {
+  id: idAutomatico(),
+  loteMigracionId: entero("lote_migracion_id").notNull().references(() => loteMigracion.id),
+  fila: entero("fila").notNull(),
+  causa: text("causa").notNull(),
+  datos: text("datos", { mode: "json" }),
 });
 
 export const operacion = sqliteTable("operacion", {
@@ -214,6 +232,7 @@ export const operacion = sqliteTable("operacion", {
   cotizacionId: entero("cotizacion_id").references(() => cotizacion.id),
   reglaSpreadId: entero("regla_spread_id").references(() => reglaSpread.id),
   esPreferencial: booleano("es_preferencial").notNull().default(false),
+  categoriaClienteId: entero("categoria_cliente_id").references(() => categoriaCliente.id),
   autorizadoPor: entero("autorizado_por").references(() => usuario.id),
   autorizadoEn: fecha("autorizado_en"),
   margenBruto: dinero("margen_bruto"),
@@ -235,6 +254,29 @@ export const operacion = sqliteTable("operacion", {
   registradaEn: fecha("registrada_en").notNull().default(AHORA_MS),
   observacion: text("observacion"),
 });
+
+export const reporteRoe = sqliteTable("reporte_roe", {
+  id: idAutomatico(),
+  anio: entero("anio").notNull(),
+  trimestre: entero("trimestre").notNull(),
+  umbralUsd: dinero("umbral_usd").notNull(),
+  cantidadOperaciones: entero("cantidad_operaciones").notNull(),
+  // Columna generada en el SQL: sin operaciones es un reporte negativo
+  esNegativo: booleano("es_negativo").generatedAlwaysAs(sql`cantidad_operaciones = 0`, { mode: "stored" }),
+  generadoPor: entero("generado_por").notNull().references(() => usuario.id),
+  generadoEn: fecha("generado_en").notNull().default(AHORA_MS),
+  enviadoPor: entero("enviado_por").references(() => usuario.id),
+  enviadoEn: fecha("enviado_en"),
+});
+
+export const reporteRoeOperacion = sqliteTable(
+  "reporte_roe_operacion",
+  {
+    reporteRoeId: entero("reporte_roe_id").notNull().references(() => reporteRoe.id),
+    operacionId: entero("operacion_id").notNull().references(() => operacion.id),
+  },
+  (t) => [primaryKey({ columns: [t.reporteRoeId, t.operacionId] })],
+);
 
 // ---------------------------------------------------------------------
 // 5. Gastos y libro de caja

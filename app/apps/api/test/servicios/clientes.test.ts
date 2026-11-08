@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { buscarClientes, crearCliente, editarCliente, faltantesFicha, rutValido } from "../../src/servicios/clientes.ts";
-import { CAJERO, codigoDeError, escenario, mensajeDeError } from "./escenario.ts";
+import {
+  buscarClientes,
+  categoriasDeCliente,
+  crearCategoriaCliente,
+  crearCliente,
+  editarCliente,
+  faltantesFicha,
+  rutValido,
+} from "../../src/servicios/clientes.ts";
+import { ADMIN, CAJERO, codigoDeError, escenario, mensajeDeError } from "./escenario.ts";
 
 const COMPLETO = {
   tipoDocumento: "PASAPORTE",
@@ -80,5 +88,25 @@ describe("RF-17: ficha de cliente", () => {
     expect(editarCliente(ctx, CAJERO, ana.id, { telefono: "+55 51 0000 0000" }).telefono).toBe("+55 51 0000 0000");
     expect(buscarClientes(ctx.db, "souza").map((c) => c.id)).toEqual([ana.id]);
     expect(buscarClientes(ctx.db, "9876").map((c) => c.id)).toEqual([ana.id]);
+  });
+});
+
+describe("RF-18: categorías de cliente", () => {
+  it("el admin crea categorías y se asignan a los clientes", () => {
+    const { ctx } = escenario();
+
+    expect(codigoDeError(() => crearCategoriaCliente(ctx, CAJERO, { nombre: "Oro", descuentoMargenPctE6: 50_000_000n }))).toBe("SIN_PERMISO");
+    const oro = crearCategoriaCliente(ctx, ADMIN, { nombre: "Oro", descuentoMargenPctE6: 50_000_000n });
+    expect(codigoDeError(() => crearCategoriaCliente(ctx, ADMIN, { nombre: "Oro", descuentoMargenPctE6: 1n }))).toBe("CATEGORIA_DUPLICADA");
+    expect(codigoDeError(() => crearCategoriaCliente(ctx, ADMIN, { nombre: "Gratis", descuentoMargenPctE6: 0n }))).toBe("DESCUENTO_INVALIDO");
+
+    expect(crearCliente(ctx, CAJERO, { ...COMPLETO, categoriaId: oro.id }).categoriaId).toBe(oro.id);
+    expect(categoriasDeCliente(ctx.db).map((c) => c.nombre)).toEqual(["Frecuente", "Oro"]);
+  });
+
+  it("no asigna una categoría inexistente", () => {
+    const { ctx } = escenario();
+
+    expect(codigoDeError(() => crearCliente(ctx, CAJERO, { ...COMPLETO, categoriaId: 99 }))).toBe("CATEGORIA_INVALIDA");
   });
 });
