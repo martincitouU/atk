@@ -10,7 +10,12 @@ ansible_aws_ssm_bucket_endpoint_url: https://s3.us-east-2.amazonaws.com
 atk_root: /srv/atk
 atk_data_dir: "{{ atk_root }}/data"
 
-# Usuario "node" de la imagen de la app (deploy/app/Dockerfile).
+# Dirección pública de la app (para validar el Origin del navegador).
+# public_ip_address la entrega el inventario aws_ec2: es la IP elástica.
+# Cuando haya dominio y HTTPS: "https://dominio.cl".
+atk_url_publica: "http://{{ public_ip_address }}"
+
+# Usuario "node" de la imagen de la app (app/Dockerfile).
 # Es el dueño de la carpeta de datos, para que el contenedor no corra como root.
 atk_app_uid: 1000
 atk_app_gid: 1000

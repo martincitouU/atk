@@ -185,6 +185,11 @@ sudo docker compose -f /srv/atk/compose.yaml exec app node apps/api/src/cli/inic
   lee junto al inventario o al playbook.
 - El disco se ubica por `/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_vol…`,
   no por `/dev/nvme1n1`, que puede cambiar.
+- El secreto del login vive en `/etc/atk/secreto.env` de la VM: lo genera
+  Ansible dentro de la VM, solo si no existe. Va fuera de `/srv/atk` porque
+  esa carpeta se rellena con `deploy/` en cada despliegue. La URL pública
+  va en `/etc/atk/url.env` (`atk_url_publica`). Compose los lee con
+  `required: false`: en local no existen y la app arranca cerrada.
 - `community.general.filesystem` **sin** `force`: nunca formatea un disco con
   datos. No agregar `force: true`.
 - `/srv/atk/data` es de root mientras el EBS no está montado: si el montaje

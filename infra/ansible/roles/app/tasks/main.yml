@@ -40,6 +40,42 @@
     owner: root
     group: root
 
+# --- Configuración privada del login (fuera del repo y de /srv/atk) ---
+# /srv/atk se rellena con deploy/ en cada despliegue; /etc/atk no se toca
+# desde el repo, así que nada local puede pisar el secreto.
+- name: Crear la carpeta de configuración privada
+  ansible.builtin.file:
+    path: /etc/atk
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+# El secreto firma las cookies de sesión. Se genera DENTRO de la VM y solo
+# la primera vez (creates): nunca pasa por el equipo que corre Ansible ni
+# por su salida. Si se regenerara, se cerrarían todas las sesiones.
+# 32 bytes de /dev/urandom en hexadecimal (64 caracteres). Si no salen
+# 64, falla en vez de dejar un secreto débil.
+- name: Generar el secreto de las sesiones (solo si no existe)
+  ansible.builtin.shell:
+    cmd: |
+      set -eu
+      secreto=$(head -c 32 /dev/urandom | od -An -vtx1 | tr -d ' \n')
+      [ ${#secreto} -eq 64 ]
+      umask 077
+      printf 'BETTER_AUTH_SECRET=%s\n' "$secreto" > /etc/atk/secreto.env
+    creates: /etc/atk/secreto.env
+
+# La dirección con que el navegador entra a la app: la API rechaza
+# escrituras con otro Origin. No es secreta; se reescribe en cada despliegue.
+- name: Escribir la dirección pública de la app
+  ansible.builtin.copy:
+    content: "BETTER_AUTH_URL={{ atk_url_publica }}\n"
+    dest: /etc/atk/url.env
+    owner: root
+    group: root
+    mode: "0600"
+
 # La app de prueba vivía en /srv/atk/app; la real se construye desde codigo/
 - name: Quitar la app de prueba anterior
   ansible.builtin.file:
@@ -71,3 +107,10 @@
 - name: Mostrar el estado de la base
   ansible.builtin.debug:
     msg: "{{ atk_health.json }}"
+
+# Sin secreto o sin URL la app arranca cerrada y /api/auth responde 503.
+# Si eso pasa aquí, el despliegue quedó sin login: mejor fallar ahora.
+- name: Comprobar que el login está activo
+  ansible.builtin.uri:
+    url: http://localhost/api/auth/get-session
+    status_code: 200
