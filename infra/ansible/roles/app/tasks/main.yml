@@ -55,13 +55,15 @@
 # la primera vez (creates): nunca pasa por el equipo que corre Ansible ni
 # por su salida. Si se regenerara, se cerrarían todas las sesiones.
 # 32 bytes de /dev/urandom en hexadecimal (64 caracteres). Si no salen
-# 64, falla en vez de dejar un secreto débil.
+# 64, falla en vez de dejar un secreto débil. Ojo: Ansible procesa cmd
+# como plantilla Jinja, donde "{#" abre un comentario; por eso el largo se
+# mide con wc y no con la sintaxis de shell del largo de una variable.
 - name: Generar el secreto de las sesiones (solo si no existe)
   ansible.builtin.shell:
     cmd: |
       set -eu
       secreto=$(head -c 32 /dev/urandom | od -An -vtx1 | tr -d ' \n')
-      [ ${#secreto} -eq 64 ]
+      [ "$(printf %s "$secreto" | wc -c)" -eq 64 ]
       umask 077
       printf 'BETTER_AUTH_SECRET=%s\n' "$secreto" > /etc/atk/secreto.env
     creates: /etc/atk/secreto.env
