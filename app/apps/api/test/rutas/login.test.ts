@@ -2,53 +2,23 @@
 
 import { eq } from "drizzle-orm";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { crearAuth, crearCuenta } from "../../src/auth/auth.ts";
-import { actorDesdeSesion } from "../../src/auth/sesion.ts";
+import { crearCuenta } from "../../src/auth/auth.ts";
 import { usuario } from "../../src/db/esquema.ts";
 import { construirServidor } from "../../src/servidor.ts";
 import { escenario, MINUTO } from "../servicios/escenario.ts";
-
-process.env.LOG_LEVEL ??= "silent";
-
-const ORIGEN = "http://atk.test";
-const CONTRASENA = "una clave larga de prueba";
+import { conLogin as conLoginBase, CONTRASENA, cookieDeRespuesta as cookieDe, ORIGEN } from "./login.ts";
 
 afterEach(() => {
   vi.useRealTimers();
 });
 
-/** API con login real; el cajero de la semilla (cajero@demo.cl) tiene cuenta. */
-async function conLogin({ limitarIntentos = false } = {}) {
-  const esc = escenario();
-  const auth = crearAuth({ rutaBase: esc.sqlite.name, secreto: "s".repeat(40), urlPublica: ORIGEN, inactividadMinutos: 15, limitarIntentos });
-  const app = construirServidor(esc, { auth, urlPublica: ORIGEN, obtenerActor: actorDesdeSesion(auth, esc.db), ahora: esc.reloj.ahora });
-
-  const authUserId = await crearCuenta(auth, { email: "cajero@demo.cl", nombre: "Cajero", contrasena: CONTRASENA });
-  esc.db.update(usuario).set({ authUserId }).where(eq(usuario.email, "cajero@demo.cl")).run();
-
-  async function iniciarSesion(email = "cajero@demo.cl", password = CONTRASENA, ip = "10.0.0.1") {
-    return app.inject({
-      method: "POST",
-      url: "/api/auth/sign-in/email",
-      headers: { origin: ORIGEN, "x-real-ip": ip },
-      payload: { email, password },
-    });
-  }
-
-  /** Inicia sesión y devuelve la cookie para las siguientes peticiones. */
-  async function cookieDeSesion() {
-    const respuesta = await iniciarSesion();
-    expect(respuesta.statusCode).toBe(200);
-    return cookieDe(respuesta.headers["set-cookie"]);
-  }
-
-  return { ...esc, app, auth, iniciarSesion, cookieDeSesion };
-}
-
-/** "atk.session_token=abc; Path=/; HttpOnly..." → "atk.session_token=abc" (lo que el navegador reenvía). */
-function cookieDe(setCookie: string | string[] | undefined): string {
-  const lista = Array.isArray(setCookie) ? setCookie : setCookie ? [setCookie] : [];
-  return lista.map((c) => c.split(";")[0]).join("; ");
+/** El cajero de la semilla tiene cuenta; las llamadas sin IP usan la misma (para el límite de intentos). */
+async function conLogin(opciones: { limitarIntentos?: boolean } = {}) {
+  const base = await conLoginBase(opciones);
+  await base.darCuenta("cajero@demo.cl");
+  const iniciarSesion = (email = "cajero@demo.cl", password = CONTRASENA, ip = "10.0.0.1") => base.iniciarSesion(email, password, ip);
+  const cookieDeSesion = () => base.cookieDe("cajero@demo.cl");
+  return { ...base, iniciarSesion, cookieDeSesion };
 }
 
 describe("RF-14: inicio de sesión", () => {
@@ -81,6 +51,7 @@ describe("RF-14: inicio de sesión", () => {
 
     expect(yo.statusCode).toBe(200);
     expect(yo.json()).toEqual({
+      tipo: "personal",
       usuario: { id: 3, nombre: "Cajero", email: "cajero@demo.cl", rol: "CAJERO", sucursalId: null },
       turnoAbierto: null,
     });
@@ -221,7 +192,7 @@ describe("Superficie expuesta y CSRF", () => {
 describe("Sin login configurado", () => {
   it("/api/auth responde 503 y no se acepta ninguna escritura", async () => {
     const esc = escenario();
-    const app = construirServidor(esc, { urlPublica: null, obtenerActor: () => null });
+    const app = construirServidor(esc, { urlPublica: null, obtenerSesion: () => null });
 
     const login = await app.inject({ method: "POST", url: "/api/auth/sign-in/email", headers: { origin: ORIGEN }, payload: {} });
     expect(login.statusCode).toBe(403); // sin dirección pública, ni siquiera el login pasa el chequeo de Origin

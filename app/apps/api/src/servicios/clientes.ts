@@ -1,6 +1,7 @@
 // Ficha de cliente con los datos que exige la UAF (RF-17) y su categoría de
 // fidelización (RF-18).
 
+import { rutValido } from "@atk/shared";
 import { and, asc, eq, like, or } from "drizzle-orm";
 import { categoriaCliente, cliente, type Cliente, type TIPOS_DOCUMENTO } from "../db/esquema.ts";
 import { auditar } from "./auditoria.ts";
@@ -21,22 +22,8 @@ export type EntradaCliente = {
   categoriaId?: number | null;
 };
 
-/** RUT chileno con dígito verificador correcto ("12.345.678-5" o "12345678-5"). */
-export function rutValido(rut: string): boolean {
-  const limpio = rut.replace(/\./g, "").trim().toUpperCase();
-  const partes = /^(\d{1,8})-([\dK])$/.exec(limpio);
-  if (!partes) return false;
-  const [, cuerpo = "", dv] = partes;
-  let suma = 0;
-  let factor = 2;
-  for (let i = cuerpo.length - 1; i >= 0; i--) {
-    suma += Number(cuerpo[i]) * factor;
-    factor = factor === 7 ? 2 : factor + 1;
-  }
-  const resto = 11 - (suma % 11);
-  const esperado = resto === 11 ? "0" : resto === 10 ? "K" : String(resto);
-  return dv === esperado;
-}
+// rutValido vive en @atk/shared: el front valida igual
+export { rutValido };
 
 /** Lo que le falta a una ficha para cumplir con la UAF; vacío si está completa. */
 export function faltantesFicha(c: Cliente): string[] {

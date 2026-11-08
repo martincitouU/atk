@@ -4,23 +4,26 @@
 // @atk/shared, toman el actor de la petición y llaman al servicio. Las
 // reglas de negocio viven en servicios/, nunca aquí.
 
+import limiteDeIntentos from "@fastify/rate-limit";
 import Fastify from "fastify";
 import type { Auth } from "./auth/auth.ts";
 import type { Conexion } from "./db/conexion.ts";
 import { casa } from "./db/esquema.ts";
-import { exigirActor, type ObtenerActor } from "./http/actor.ts";
+import { exigirSesion, type ObtenerSesion } from "./http/acceso.ts";
 import { registrarErrores } from "./http/errores.ts";
 import { aJson } from "./http/json.ts";
 import { exigirMismoOrigen } from "./http/origen.ts";
 import { rutasAuth } from "./rutas/auth.ts";
+import { rutaRegistro, rutasCuentasCliente, rutasPortal } from "./rutas/cuentas.ts";
 import { rutasCotizaciones } from "./rutas/cotizaciones.ts";
 import { rutasOperaciones } from "./rutas/operaciones.ts";
+import { rutasUsuarios } from "./rutas/usuarios.ts";
 import { rutasYo } from "./rutas/yo.ts";
 import { crearContexto } from "./servicios/contexto.ts";
 
 export type OpcionesServidor = {
-  /** Quién hace cada petición; null → 401. Ver http/actor.ts. */
-  obtenerActor: ObtenerActor;
+  /** Quién hace cada petición: personal, cliente o nadie (401). Ver http/acceso.ts. */
+  obtenerSesion: ObtenerSesion;
   /** Dirección pública de la app: solo se aceptan escrituras con ese Origin. null → ninguna. */
   urlPublica: string | null;
   /** Login. Sin él, /api/auth responde 503 y nadie obtiene sesión. */
@@ -46,27 +49,45 @@ export function construirServidor({ sqlite, db }: Conexion, opciones: OpcionesSe
     return { status: "ok", migraciones, configurada };
   });
 
+  // Límite de intentos solo donde una ruta lo pide (el registro). El login
+  // tiene el suyo, de Better Auth.
+  app.register(limiteDeIntentos, { global: false });
+
   const ctx = crearContexto(db, opciones.ahora);
   app.register(
     async (api) => {
       exigirMismoOrigen(api, opciones.urlPublica);
 
-      // Login: lo único de /api que no exige sesión
+      // Login y registro de clientes: lo único de /api que no exige sesión
       const { auth, urlPublica } = opciones;
       if (auth && urlPublica) {
         rutasAuth(api, auth, urlPublica);
+        rutaRegistro(api, ctx, auth);
       } else {
         api.all("/auth/*", (_request, reply) =>
           reply.code(503).send({ error: { codigo: "LOGIN_NO_CONFIGURADO", mensaje: "El inicio de sesión no está disponible" } }),
         );
       }
 
-      // Todo lo demás exige un usuario del personal con sesión
-      api.register(async (privada) => {
-        exigirActor(privada, opciones.obtenerActor);
-        rutasYo(privada, ctx);
-        rutasCotizaciones(privada, ctx);
-        rutasOperaciones(privada, ctx);
+      // Quién soy: cualquier sesión
+      api.register(async (conSesion) => {
+        exigirSesion(conSesion, opciones.obtenerSesion);
+        rutasYo(conSesion, ctx);
+      });
+
+      // Trabajo de la casa de cambio: solo el personal
+      api.register(async (personal) => {
+        exigirSesion(personal, opciones.obtenerSesion, "personal");
+        rutasCotizaciones(personal, ctx);
+        rutasOperaciones(personal, ctx);
+        rutasCuentasCliente(personal, ctx);
+        if (auth) rutasUsuarios(personal, ctx, auth);
+      });
+
+      // Portal de clientes: solo lectura de lo propio
+      api.register(async (clientes) => {
+        exigirSesion(clientes, opciones.obtenerSesion, "cliente");
+        rutasPortal(clientes, ctx);
       });
     },
     { prefix: "/api" },
