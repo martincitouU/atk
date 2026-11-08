@@ -11,7 +11,7 @@ import {
   margenRealizado,
   montoBaseDe,
   reglaConDescuento,
-} from "../../src/dominio/dinero.ts";
+} from "../src/dinero.ts";
 
 describe("dividir: redondeo explícito", () => {
   it.each([
