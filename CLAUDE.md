@@ -152,10 +152,17 @@ La app debe:
   CSS propio con tokens (`src/estilos/tokens.css`, claro y oscuro), sin
   librería de componentes. El sistema está en `DESIGN.md`; el producto, en
   `PRODUCT.md`; el contrato de dirección, en `.impeccable/`.
+- **Marco de escritorio** (vuelta 3, como un programa de oficina):
+  `componentes/Barras.tsx` (barra de título, pestañas de sección y barra de
+  estado) y `componentes/Cinta.tsx`. Cada pantalla declara sus comandos con
+  `useCinta([...grupos])`, y cada comando llama a la misma función que su
+  tecla (el registro expone `tecla()`, el libro `reversar()` y `enfocar()`,
+  el conteo `cerrar()`, `contar()` y `elegir()`). Bajo 900 px el marco es el
+  del teléfono: las pestañas son la barra inferior.
 - **Teclado** (Ventanilla): `C`/`V` tipo, el dígito siguiente elige la
   divisa, `↑/↓` la cambian, dígitos y coma al monto, `Enter` confirma,
-  `B` deja borrador, `R` reversa la fila elegida, `Esc` limpia y `F1`–`F4`
-  cambian de sección.
+  `B` deja borrador, `R` reversa la fila elegida, `Esc` limpia y `F1`–`F5`
+  cambian de sección (F5 es Configuración: no recarga la página).
 - **Roles**: `apps/web/src/api/permisos.ts` copia los `exigirRol` de los
   servicios para ocultar lo que la API negaría (la Jornada, el reverso, el
   gasto sin efectivo, Usuarios y Auditoría). Si cambia un rol en un

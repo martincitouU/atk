@@ -5,6 +5,10 @@
   "extensions": {
     "source": "app/apps/web/src/estilos/tokens.css (normativo); variables por pantalla en cierre.css, jornada.css, clientes.css, login.css",
     "colorMeta": {
+      "cebra": { "role": "neutral", "displayName": "Cebra", "canonical": "#f7f7f2", "oscuro": "#1f2428", "tonalRamp": null, "uso": "filas alternas de las grillas del personal (vuelta 3)" },
+      "usd-letrero": { "role": "secondary", "displayName": "Punto USD en el letrero", "canonical": "#58c47f", "oscuro": "#58c47f", "tonalRamp": null, "uso": "punto de la divisa dentro de la pizarra verde, con anillo blanco (vuelta 3)" },
+      "ars-letrero": { "role": "secondary", "displayName": "Punto ARS en el letrero", "canonical": "#6cb8ec", "oscuro": "#6cb8ec", "tonalRamp": null, "uso": "punto de la divisa dentro de la pizarra verde, con anillo blanco (vuelta 3)" },
+      "eur-letrero": { "role": "secondary", "displayName": "Punto EUR en el letrero", "canonical": "#8f9ef5", "oscuro": "#8f9ef5", "tonalRamp": null, "uso": "punto de la divisa dentro de la pizarra verde, con anillo blanco (vuelta 3)" },
       "vial": { "role": "primary", "displayName": "Verde Vial", "canonical": "#005c45", "oscuro": "#005c45", "tonalRamp": ["#00261c", "#003d2e", "#005c45", "#0b7a5d", "#3c9a7f", "#7fbfa9", "#c3e2d6", "#e1efe9"] },
       "vial-hi": { "role": "primary", "displayName": "Verde Vial Encendido", "canonical": "#0b7a5d", "oscuro": "#0b7a5d" },
       "amarillo": { "role": "secondary", "displayName": "Amarillo de Advertencia", "canonical": "#f2b705", "oscuro": "#f2b705", "tonalRamp": ["#3a2c02", "#6b5103", "#a07804", "#e3aa05", "#f2b705", "#ffd54a", "#fcf1cd", "#fff4cc"] },
