@@ -280,7 +280,8 @@ sudo docker compose -f /srv/atk/compose.yaml exec app node apps/api/src/cli/inic
   Sus errores vienen como `{ message, code }`, no con nuestro formato.
 - La app lee `BETTER_AUTH_SECRET` y `BETTER_AUTH_URL` (dirección pública,
   para validar `Origin`). Si faltan, arranca **cerrada**: sin login, toda
-  `/api` responde 401 y no se acepta ninguna escritura.
+  `/api` responde 401 y no se acepta ninguna escritura. La única excepción
+  es `GET /api/casa`: público siempre (nombre y monedas, lo de la pizarra).
 - Las cuentas se crean con `crearCuenta()` (`src/auth/auth.ts`), nunca a mano.
 
 ## Supuestos de la iteración 1 (por confirmar con el cliente)
