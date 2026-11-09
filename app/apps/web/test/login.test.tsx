@@ -64,7 +64,7 @@ describe("Login y sesión", () => {
     await u.type(clave, "ventanilla{Enter}");
     await waitFor(() => expect(router.state.location.pathname).toBe("/ventanilla"));
     expect(estadoPrueba.sesion).toMatchObject({ email: "rolando@atk.cl" });
-    expect(await screen.findByText(texto("Turno abierto · Caja 1"))).toBeInTheDocument();
+    expect(await screen.findByText(texto(/^Turno abierto · Caja 1 · desde \d\d:\d\d$/))).toBeInTheDocument();
   });
 
   it("tras los minutos de inactividad cierra la sesión y vuelve a /entrar con el aviso", async () => {

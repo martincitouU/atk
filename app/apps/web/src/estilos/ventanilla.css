@@ -10,10 +10,10 @@
   gap: 18px;
 }
 
-/* En el PC de la ventanilla, la pantalla entera sin scroll: el libro corre por dentro */
+/* En el PC, el área de trabajo entera sin scroll: el libro corre por dentro */
 @media (min-width: 1200px) and (min-height: 640px) {
   .ventanilla {
-    height: calc(100dvh - 40px);
+    height: 100%;
   }
 }
 

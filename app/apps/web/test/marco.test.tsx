@@ -18,7 +18,7 @@ function montar(entrada: string) {
 }
 
 describe("Marco", () => {
-  it("el riel tiene las cinco secciones y F2 lleva al Cierre del día", async () => {
+  it("las pestañas son las cinco secciones y F2 lleva al Cierre del día", async () => {
     const router = montar("/ventanilla");
     const riel = screen.getByRole("navigation", { name: "Secciones" });
 
@@ -35,15 +35,16 @@ describe("Marco", () => {
     expect(within(riel).getByRole("link", { name: /Cierre del día/ })).toHaveAttribute("aria-current", "page");
   });
 
-  it("el pie del riel muestra el turno de la sesión (useSesion, desde los mocks)", async () => {
+  it("la barra de estado muestra el turno de la sesión (useSesion, desde los mocks)", async () => {
     montar("/ventanilla");
-    expect(await screen.findByText(texto("Turno abierto · Caja 1"))).toBeInTheDocument();
-    expect(screen.getByText(/Rolando del Río/)).toBeInTheDocument();
+    const estado = screen.getByRole("contentinfo", { name: "Barra de estado" });
+    expect(await within(estado).findByText(texto(/^Turno abierto · Caja 1 · desde \d\d:\d\d$/))).toBeInTheDocument();
+    expect(within(estado).getByText(texto("Rolando del Río · Administrador"))).toBeInTheDocument();
   });
 
-  it("«Salir», al pie del riel, cierra la sesión y lleva a /entrar", async () => {
+  it("«Salir», junto a las pestañas, cierra la sesión y lleva a /entrar", async () => {
     const router = montar("/jornada");
-    await screen.findByText(texto("Turno abierto · Caja 1"));
+    await screen.findByText(texto(/^Turno abierto · Caja 1 · desde/));
     expect(estadoPrueba.sesion).not.toBeNull();
 
     await userEvent.setup().click(screen.getByRole("button", { name: "Salir" }));

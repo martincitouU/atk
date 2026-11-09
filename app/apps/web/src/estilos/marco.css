@@ -1,13 +1,21 @@
-/* El marco: el riel de asfalto y el área de trabajo. Medidas del comp. */
+/*
+ * El marco (vuelta 3, «profesional tipo Office»; comp B en
+ * .impeccable/mocks/office/): barra de título, pestañas de sección con su
+ * color y su tecla, la cinta de la pantalla, el área de trabajo y la barra de
+ * estado. En el PC el marco ocupa la ventana y el área de trabajo corre por
+ * dentro; bajo 900 px las pestañas bajan a la barra inferior de siempre.
+ */
 .marco {
   display: grid;
-  grid-template-columns: var(--riel-ancho) minmax(0, 1fr);
-  min-height: 100dvh;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  height: 100dvh;
 }
 
 .marco-principal {
   min-width: 0;
-  padding: 20px 24px;
+  min-height: 0;
+  padding: 14px 18px;
+  overflow: auto;
 }
 
 .saltar {
@@ -28,152 +36,334 @@
   outline-color: var(--asfalto);
 }
 
-/* El riel */
-.riel {
-  position: sticky;
-  top: 0;
+/* ------------------------------------------------------------------ */
+/* La barra de título (asfalto, en los dos modos) */
+
+.titulo {
   display: flex;
-  flex-direction: column;
-  height: 100dvh;
-  padding: 20px 0;
-  overflow-y: auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 32px;
+  padding: 4px 16px;
   background: var(--riel);
-  box-shadow: inset -1px 0 0 var(--riel-borde);
   color: var(--riel-tinta);
+  font-size: 12.5px;
+  font-weight: 600;
 }
 
-.riel-marca {
-  padding: 0 22px 22px;
-  border-bottom: 1px solid var(--riel-linea);
-  font-size: 22px;
+.titulo-marca {
+  color: #fff;
+  font-size: 17px;
   font-weight: 900;
-  letter-spacing: 0.04em;
-  line-height: 1.1;
+  letter-spacing: 0.05em;
 }
 
-.riel-marca small {
-  display: block;
-  margin-top: 2px;
+.titulo-casa {
   color: var(--riel-suave);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.08em;
-  line-height: 1.35;
   text-transform: uppercase;
 }
 
-.riel ul {
+.titulo-doc {
+  margin: 0 auto;
+  color: #fff;
+  font-weight: 700;
+}
+
+.titulo-quien {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+}
+
+.titulo-quien svg {
+  color: var(--riel-suave);
+}
+
+/* ------------------------------------------------------------------ */
+/* Las pestañas de sección: sobre el asfalto; la activa se funde con la cinta */
+
+.pestanas {
+  display: flex;
+  align-items: flex-end;
+  padding: 0 10px;
+  background: var(--riel);
+  box-shadow: inset 0 -1px 0 var(--linea);
+  color: var(--riel-tinta);
+}
+
+.pestanas nav {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pestanas ul {
+  display: flex;
+  align-items: flex-end;
   gap: 2px;
-  padding: 14px 0;
   list-style: none;
 }
 
-.riel a {
+.pestanas a {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 11px 22px;
+  gap: 9px;
+  min-height: 32px;
+  padding: 5px 16px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: var(--radio-panel) var(--radio-panel) 0 0;
   color: inherit;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 700;
-  letter-spacing: 0.02em;
   text-decoration: none;
   transition: background-color 0.15s ease-out;
 }
 
-.riel a:hover {
+.pestanas a:hover {
   background: var(--riel-activo);
 }
 
-/* En el riel el anillo va por dentro del tramo (amarillo sobre asfalto, 8,8:1) */
-.riel a:focus-visible {
-  outline-offset: -5px;
-  box-shadow: inset 0 0 0 2px var(--foco-canto);
+.pestanas a:focus-visible {
+  outline-offset: -4px;
 }
 
-/* La sección activa: el tramo iluminado y su cuadro con el anillo reflectante */
-.riel a[aria-current="page"] {
-  background: var(--riel-activo);
-  color: #fff;
+.pestanas a[aria-current="page"] {
+  position: relative;
+  min-height: 34px;
+  border-color: var(--linea);
+  background: var(--cabecera);
+  color: var(--tinta);
 }
 
-.riel-cuadro {
+.pestana-cuadro {
   flex: none;
-  width: 14px;
-  height: 14px;
-  border: 2px solid var(--riel-tinta);
+  width: 12px;
+  height: 12px;
   border-radius: 3px;
 }
 
-.riel a[aria-current="page"] .riel-cuadro {
-  outline: 2px solid var(--riel-tinta);
-  outline-offset: 2px;
-}
-
-.riel a kbd {
-  margin-left: auto;
+.pestanas a kbd {
   border-color: var(--riel-kbd-borde);
   background: var(--riel-kbd-fondo);
   color: var(--riel-kbd-tinta);
   font-weight: 600;
 }
 
-.riel .corto {
+.pestanas a[aria-current="page"] kbd {
+  border-color: var(--kbd-borde);
+  background: var(--kbd-fondo);
+  color: var(--kbd-tinta);
+}
+
+.pestanas .corto {
   display: none;
 }
 
-/* El pie del riel: el turno y «Salir» */
-.riel-pie {
-  margin-top: auto;
-  border-top: 1px solid var(--riel-linea);
-}
-
-.riel-turno {
-  padding: 16px 22px 6px;
-  color: var(--riel-turno);
-  font-size: 12px;
-  line-height: 1.6;
-}
-
-.riel-turno b {
-  display: block;
-  color: #fff;
-  font-size: 13px;
-}
-
-.riel-salir {
+.pestanas-salir {
   display: flex;
+  flex: none;
   align-items: center;
-  gap: 10px;
-  width: 100%;
-  min-height: 40px;
-  padding: 8px 22px;
+  gap: 8px;
+  align-self: center;
+  min-height: 30px;
+  padding: 4px 12px;
   border: 0;
+  border-radius: var(--radio-control);
   background: transparent;
   color: var(--riel-tinta);
   font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.02em;
-  text-align: left;
   transition: background-color 0.15s ease-out;
 }
 
-.riel-salir:hover:not(:disabled) {
+.pestanas-salir:hover:not(:disabled) {
   background: var(--riel-activo);
 }
 
-.riel-salir:focus-visible {
-  outline-offset: -5px;
-  box-shadow: inset 0 0 0 2px var(--foco-canto);
+.pestanas-salir:focus-visible {
+  outline-offset: -4px;
 }
 
+/* ------------------------------------------------------------------ */
+/* La cinta: los comandos de la pantalla, en grupos rotulados */
+
+.cinta {
+  display: flex;
+  align-items: stretch;
+  min-height: 86px;
+  padding: 6px 8px 3px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--linea);
+  background: var(--cabecera);
+}
+
+.cinta.vacia {
+  min-height: 0;
+  padding: 0;
+}
+
+.cinta-grupo {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  padding: 0 8px;
+  border-right: 1px solid var(--linea);
+}
+
+.cinta-grupo:last-child {
+  border-right: 0;
+}
+
+.cinta-botones {
+  display: flex;
+  flex: 1;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.cinta-grandes {
+  display: flex;
+  gap: 2px;
+}
+
+.cinta-pila {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 2px;
+}
+
+.cinta-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 28px;
+  padding: 3px 8px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--tinta);
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: background-color 0.15s ease-out;
+}
+
+.cinta-btn svg {
+  flex: none;
+  color: var(--suave);
+}
+
+.cinta-btn:hover:not(:disabled) {
+  background: var(--lamina);
+  border-color: var(--linea);
+}
+
+.cinta-btn.grande {
+  flex-direction: column;
+  gap: 4px;
+  min-width: 72px;
+  padding: 5px 8px;
+}
+
+.cinta-btn.verde svg {
+  color: var(--vial-hi);
+}
+
+.cinta-btn.peligro svg {
+  color: var(--pare);
+}
+
+.cinta-etiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cinta-nota {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 6px 0;
+  color: var(--suave);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.cinta-rotulo {
+  padding: 3px 0 2px;
+  color: var(--suave);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* ------------------------------------------------------------------ */
+/* La barra de estado */
+
+.estado {
+  display: flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 6px;
+  overflow: hidden;
+  background: var(--riel);
+  color: var(--riel-tinta);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.estado > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border-right: 1px solid var(--riel-linea);
+}
+
+.estado > span:last-child {
+  border-right: 0;
+}
+
+.estado svg {
+  color: var(--riel-suave);
+}
+
+.estado b {
+  color: #fff;
+  font-weight: 800;
+}
+
+.estado-der {
+  margin-left: auto;
+  border-left: 1px solid var(--riel-linea);
+}
+
+.estado-punto {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4fb477;
+}
+
+.estado-punto.caido {
+  background: var(--amarillo);
+}
+
+/* ------------------------------------------------------------------ */
 /* Mientras llega el código de una pantalla: su forma en gris, sin spinner */
+
 .esqueleto-pantalla {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
 }
 
 .esqueleto-pantalla .esqueleto-letrero {
@@ -183,8 +373,8 @@
 
 .esqueleto-paneles {
   display: grid;
-  grid-template-columns: 420px minmax(0, 1fr);
-  gap: 18px;
+  grid-template-columns: 400px minmax(0, 1fr);
+  gap: 14px;
 }
 
 .esqueleto-paneles .esqueleto {
@@ -221,85 +411,103 @@
   }
 }
 
-/* Bajo 900 px el riel baja y se vuelve una barra de cinco pestañas */
+/* ------------------------------------------------------------------ */
+/* Bajo 900 px (el teléfono): igual que antes. Las pestañas son la barra
+   inferior; la barra de título, la cinta y la barra de estado no van. */
 @media (max-width: 899.98px) {
   .marco {
-    grid-template-columns: minmax(0, 1fr);
+    display: block;
+    height: auto;
+    min-height: 100dvh;
+  }
+
+  .titulo,
+  .cinta,
+  .estado {
+    display: none;
   }
 
   .marco-principal {
     padding: 16px 16px calc(var(--barra-alto) + env(safe-area-inset-bottom, 0px) + 16px);
+    overflow: visible;
   }
 
-  .riel {
+  .pestanas {
     position: fixed;
     inset: auto 0 0;
     z-index: 10;
-    flex-direction: row;
-    height: auto;
+    align-items: stretch;
     padding: 0 0 env(safe-area-inset-bottom, 0px);
-    overflow: visible;
     border-top: 1px solid var(--riel-linea);
     box-shadow: none;
   }
 
-  .riel-marca,
-  .riel-turno,
-  .riel a kbd,
-  .riel .largo {
+  .pestanas a kbd,
+  .pestanas .largo {
     display: none;
   }
 
-  .riel .corto {
+  .pestanas .corto {
     display: inline;
   }
 
-  .riel nav {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-
-  .riel ul {
-    flex-direction: row;
+  .pestanas ul {
     gap: 0;
-    padding: 0;
+    align-items: stretch;
   }
 
-  /* «Salir», la última pestaña: más angosta y separada de las secciones */
-  .riel-pie {
-    flex: none;
-    margin-top: 0;
-    border-top: 0;
-    border-left: 1px solid var(--riel-linea);
-  }
-
-  .riel-salir {
-    flex-direction: column;
-    justify-content: center;
-    gap: 6px;
-    min-height: var(--barra-alto);
-    padding: 10px 10px 8px;
-    font-size: 11.5px;
-    letter-spacing: 0;
-    text-align: center;
-  }
-
-  .riel li {
+  .pestanas li {
     flex: 1 1 0;
     min-width: 0;
   }
 
   /* Usuarios y Auditoría son trabajo de escritorio: no caben en la barra */
-  .riel li.riel-admin {
+  .pestanas li.pestana-admin {
     display: none;
   }
 
-  .riel a {
+  .pestanas a,
+  .pestanas a[aria-current="page"] {
+    position: static;
     flex-direction: column;
     justify-content: center;
     gap: 6px;
     min-height: var(--barra-alto);
     padding: 10px 2px 8px;
+    border: 0;
+    border-radius: 0;
+    font-size: 11.5px;
+    letter-spacing: 0;
+    text-align: center;
+  }
+
+  .pestanas a[aria-current="page"] {
+    background: var(--riel-activo);
+    color: #fff;
+  }
+
+  /* La sección activa: su cuadro con el anillo reflectante */
+  .pestanas a[aria-current="page"] .pestana-cuadro {
+    outline: 2px solid var(--riel-tinta);
+    outline-offset: 2px;
+  }
+
+  .pestana-cuadro {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--riel-tinta);
+  }
+
+  /* «Salir», la última pestaña: más angosta y separada de las secciones */
+  .pestanas-salir {
+    flex-direction: column;
+    justify-content: center;
+    align-self: stretch;
+    gap: 6px;
+    min-height: var(--barra-alto);
+    padding: 10px 10px 8px;
+    border-left: 1px solid var(--riel-linea);
+    border-radius: 0;
     font-size: 11.5px;
     letter-spacing: 0;
     text-align: center;

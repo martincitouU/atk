@@ -34,6 +34,7 @@
   --suave: #5d666c;
   --linea: #d9dbd3;
   --linea-fila: #ecede7;
+  --cebra: #f7f7f2;          /* filas alternas de las grillas (vuelta 3) */
   --trazo: #1d2226;          /* bordes fuertes: segmentado, botones, monto, cabecera de tabla */
   --borde-control: #8a9296;  /* contorno de input y select: 3:1 sobre el panel */
   --cursor: var(--vial-hi);
@@ -109,7 +110,7 @@
   --riel-ancho: 208px;
   --barra-alto: 60px;
   --radio-letrero: 14px;
-  --radio-panel: 10px;
+  --radio-panel: 6px;      /* vuelta 3: más de escritorio (era 10 px) */
   --radio-control: 8px;
   --sombra-letrero: 0 2px 0 rgb(0 0 0 / 0.08), 0 10px 24px -14px rgb(0 40 30 / 0.55);
 
@@ -139,6 +140,7 @@
     --suave: #9aa3a8;
     --linea: #2c3338;
     --linea-fila: #262c30;
+    --cebra: #1f2428;
     --trazo: #c8cdc6;
     --borde-control: #6b7479;
     --cursor: var(--amarillo);

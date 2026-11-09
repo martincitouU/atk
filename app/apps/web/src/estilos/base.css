@@ -153,6 +153,35 @@ td.r {
   text-align: right;
 }
 
+/* Las grillas del personal, compactas como una planilla (vuelta 3): filas de
+   32 px, líneas verticales y cebra. Con :where() no pesan: la fila elegida,
+   el hover y los estados de cada pantalla mandan sobre la cebra. El portal
+   del cliente queda fuera del marco y no cambia. */
+:where(.marco) table {
+  font-size: 13px;
+}
+
+:where(.marco) th {
+  height: 30px;
+  padding: 4px 10px;
+  border-right: 1px solid var(--linea);
+}
+
+:where(.marco) td {
+  height: 32px;
+  padding: 4px 10px;
+  border-right: 1px solid var(--linea-fila);
+}
+
+:where(.marco) th:last-child,
+:where(.marco) td:last-child {
+  border-right: 0;
+}
+
+:where(.marco tbody tr:nth-child(even)) > td {
+  background: var(--cebra);
+}
+
 /* Controles nativos */
 label {
   display: flex;
@@ -334,17 +363,38 @@ textarea {
 .panel > header {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 4px 12px;
-  padding: 14px 18px 10px;
+  min-height: 40px;
+  padding: 8px 14px;
   border-bottom: 1px solid var(--linea);
+  border-radius: var(--radio-panel) var(--radio-panel) 0 0;
+  background: var(--cabecera);
 }
 
 .panel h2 {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 800;
   letter-spacing: 0.01em;
+}
+
+/* Un grupo rotulado, como en un cuadro de diálogo (vuelta 3) */
+fieldset.grupo {
+  min-width: 0;
+  padding: 8px 12px 12px;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-panel);
+}
+
+fieldset.grupo > legend {
+  margin-left: -4px;
+  padding: 0 6px;
+  color: var(--suave);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 /* Texto de apoyo junto a un título */
