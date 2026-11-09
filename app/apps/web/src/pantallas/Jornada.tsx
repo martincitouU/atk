@@ -1,10 +1,19 @@
 import { aBigint, type FilaPizarra, type Moneda, type Operacion } from "../api/esquemas.ts";
 import { convertirABase, formatearMonto } from "@atk/shared/dinero";
-import { ArrowRightIcon } from "@phosphor-icons/react";
-import { Link, useSearchParams } from "react-router";
+import {
+  ArrowRightIcon,
+  ArrowsClockwiseIcon,
+  CalendarBlankIcon,
+  CalendarCheckIcon,
+  CashRegisterIcon,
+  CurrencyCircleDollarIcon,
+} from "@phosphor-icons/react";
+import { useRef } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { ErrorNegocio } from "../api/cliente.ts";
 import { useCatalogo, useLibroDelDia, useParametros, usePizarra, useResumen } from "../api/consultas.ts";
 import { Aviso } from "../componentes/Aviso.tsx";
+import { useCinta, type GrupoCinta } from "../componentes/Cinta.tsx";
 import { Divisa } from "../componentes/Divisa.tsx";
 import { Sep } from "../componentes/Sep.tsx";
 import { conSimbolo, DATOS_DE_EJEMPLO, diaLargo, fechaEn, hora, pesos, TIPO, useAhora, ZONA_CASA } from "../comun.ts";
@@ -23,7 +32,8 @@ const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 /**
  * La Jornada, pensada para el teléfono: el día elegido, los saldos de la caja
  * por moneda, el margen y los gastos, y las operaciones. Su color de función
- * es el café de los letreros de turismo.
+ * es el café de los letreros de turismo. En el PC lleva la estructura de
+ * escritorio (vuelta 3): cinta, paneles con barra de título y filas compactas.
  */
 export function Jornada() {
   const { data: parametros } = useParametros();
@@ -47,6 +57,44 @@ export function Jornada() {
   const monedas: MonedaInfo[] = catalogo ? [...catalogo.divisas, catalogo.monedaBase] : [];
   const base = catalogo?.monedaBase ?? { codigo: "CLP", decimales: 0 };
   const borradores = resumen.data?.borradoresPendientes;
+  const campoFecha = useRef<HTMLInputElement>(null);
+  const navegar = useNavigate();
+
+  // La cinta (en el PC): lo mismo que el letrero y los enlaces de la pantalla
+  const grupos: GrupoCinta[] = [
+    {
+      nombre: "Día",
+      comandos: [
+        { id: "hoy", etiqueta: "Hoy", Icono: CalendarCheckIcon, grande: true, deshabilitado: esHoy, alPulsar: () => cambiarDia(hoy) },
+        { id: "otro", etiqueta: "Otro día", Icono: CalendarBlankIcon, alPulsar: () => campoFecha.current?.focus() },
+        {
+          id: "actualizar",
+          etiqueta: "Actualizar",
+          Icono: ArrowsClockwiseIcon,
+          alPulsar: () => {
+            void resumen.refetch();
+            void libro.refetch();
+          },
+        },
+      ],
+      nota: [esHoy ? "Hoy" : diaLargo(fecha)],
+    },
+    {
+      nombre: "Ir a",
+      comandos: [
+        {
+          id: "ventanilla",
+          etiqueta: "Ventanilla",
+          Icono: CurrencyCircleDollarIcon,
+          tecla: "F1",
+          grande: true,
+          alPulsar: () => void navegar("/ventanilla"),
+        },
+        { id: "cierre", etiqueta: "Cierre del día", Icono: CashRegisterIcon, tecla: "F2", grande: true, alPulsar: () => void navegar("/cierre") },
+      ],
+    },
+  ];
+  useCinta(grupos);
 
   return (
     <div className="jornada">
@@ -75,7 +123,7 @@ export function Jornada() {
           <div className="jornada-fecha">
             <label>
               Ver otro día
-              <input type="date" value={fecha} max={hoy} onChange={(e) => cambiarDia(e.target.value)} />
+              <input ref={campoFecha} type="date" value={fecha} max={hoy} onChange={(e) => cambiarDia(e.target.value)} />
             </label>
             {!esHoy && (
               <button type="button" className="btn-letrero" onClick={() => cambiarDia(hoy)}>
@@ -109,13 +157,7 @@ export function Jornada() {
             </span>
           </Link>
 
-          <Saldos
-            saldos={resumen.data?.saldos}
-            monedas={monedas}
-            pizarra={pizarra}
-            base={catalogo?.monedaBase}
-            esHoy={esHoy}
-          />
+          <Saldos saldos={resumen.data?.saldos} monedas={monedas} pizarra={pizarra} base={catalogo?.monedaBase} esHoy={esHoy} />
 
           <section className="jornada-bloque" aria-labelledby="dia-titulo">
             <h2 id="dia-titulo">{esHoy ? "El día" : "Ese día"}</h2>
@@ -187,7 +229,13 @@ function Saldos({
     if (ref == null || !base) continue;
     enPesos.set(
       moneda.codigo,
-      convertirABase({ montoDivisa: saldo, decimalesDivisa: moneda.decimales, tasaE6: aBigint(ref), decimalesBase: base.decimales, redondeo: "CERCANO" }),
+      convertirABase({
+        montoDivisa: saldo,
+        decimalesDivisa: moneda.decimales,
+        tasaE6: aBigint(ref),
+        decimalesBase: base.decimales,
+        redondeo: "CERCANO",
+      }),
     );
   }
   const positivos = filas.filter((f) => f.saldo > 0n);
@@ -242,7 +290,9 @@ function Saldos({
           })}
         </ul>
       )}
-      {saldos !== undefined && conBarra && <p className="saldos-nota">El % es la parte de la caja valorizada en pesos, a la referencia de la pizarra.</p>}
+      {saldos !== undefined && conBarra && (
+        <p className="saldos-nota">El % es la parte de la caja valorizada en pesos, a la referencia de la pizarra.</p>
+      )}
     </section>
   );
 }

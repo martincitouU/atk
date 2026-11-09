@@ -393,3 +393,64 @@
     align-items: start;
   }
 }
+
+/* En el PC, la estructura de escritorio (vuelta 3): el ancho del área de
+   trabajo, el letrero más bajo, los bloques como paneles con barra de título
+   y las filas compactas, con cebra. El teléfono no cambia. */
+@media (min-width: 900px) {
+  .jornada {
+    max-width: none;
+  }
+
+  .jornada-letrero-in {
+    align-items: center;
+    padding: 8px 16px 9px;
+  }
+
+  .jornada-letrero h1 {
+    font-size: 20px;
+  }
+
+  .jornada-bloque > h2 {
+    align-items: center;
+    min-height: 40px;
+    padding: 8px 14px;
+    border-radius: var(--radio-panel) var(--radio-panel) 0 0;
+    background: var(--cabecera);
+    font-size: 14px;
+  }
+
+  .saldos li,
+  .ops li {
+    padding: 7px 14px;
+  }
+
+  .saldos li:nth-child(even),
+  .ops li:nth-child(even) {
+    background: var(--cebra);
+  }
+
+  .saldos li:last-child,
+  .ops li:last-child {
+    border-radius: 0 0 var(--radio-panel) var(--radio-panel);
+  }
+
+  /* Cada operación en una línea, en columnas: divisa y monto, la hora, el
+     tipo y los pesos, y el estado al final */
+  .ops li {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 2px 14px;
+  }
+
+  .op-pie {
+    grid-column: auto;
+    grid-row: 1;
+    grid-column-start: 2;
+    text-align: right;
+  }
+
+  .ops li .est {
+    grid-row: 1;
+    grid-column-start: 3;
+  }
+}
