@@ -199,8 +199,9 @@ cd infra/ansible && ANSIBLE_INVENTORY_ENABLED=host_list ansible-playbook -i loca
 cd app && npm test && npm run typecheck && npm run db:probar
 
 # Desarrollo: API (127.0.0.1:3000) + front (Vite) → http://localhost:5173
-# La primera vez crea app/.dev con la semilla y cuentas de prueba (ver
-# apps/api/src/cli/desarrollo.ts). Para partir de cero: rm -rf app/.dev
+# La primera vez crea app/.dev con la semilla, cuentas de prueba y una
+# jornada de ejemplo (ver apps/api/src/cli/desarrollo.ts). Para partir de
+# cero, o para tener la jornada con fecha de hoy: rm -rf app/.dev
 cd app && npm run dev
 
 # Prueba local del stack (imagen real de app/)
