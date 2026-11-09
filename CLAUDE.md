@@ -156,6 +156,14 @@ La app debe:
   divisa, `↑/↓` la cambian, dígitos y coma al monto, `Enter` confirma,
   `B` deja borrador, `R` reversa la fila elegida, `Esc` limpia y `F1`–`F4`
   cambian de sección.
+- **Roles**: `apps/web/src/api/permisos.ts` copia los `exigirRol` de los
+  servicios para ocultar lo que la API negaría (la Jornada, el reverso, el
+  gasto sin efectivo, Usuarios y Auditoría). Si cambia un rol en un
+  servicio, se cambia también ahí (tiene su test).
+- **Portal de clientes** (`/mi`, `apps/web/src/pantallas/Portal/`): registro,
+  ingreso, cuenta por activar o rechazada, mis operaciones (desde el lado del
+  cliente: una VENTA de la casa es «Compró») y mi ficha. Fuera del marco del
+  personal y en su propio chunk.
 
 ## Estructura
 
