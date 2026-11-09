@@ -6,20 +6,21 @@
 //   CONFIRMADA  reversar con motivo (supervisor o admin)
 //   REVERSADA   nada: se muestra el motivo
 //
-// ESQUELETO (F1): los botones abren sus diálogos, pero no llaman a la API.
+// Los botones abren sus diálogos; las acciones se conectan con la API en F3.
 
 import { ArrowDown } from "lucide-react";
 import { useState } from "react";
 import { Link, useParams } from "react-router";
-import { nombreUsuario, useCatalogo, useCliente, useOperacion } from "../../api/consultas.ts";
-import type { Operacion } from "../../api/tipos.ts";
+import { esNoExiste } from "../../api/cliente.ts";
+import { useCatalogo, useDecimalesTasa, useMonedaBase, useNombres, useOperacion } from "../../api/consultas.ts";
+import type { OperacionListada } from "../../api/tipos.ts";
 import { Aviso } from "../../componentes/Aviso.tsx";
 import { Boton } from "../../componentes/Boton.tsx";
 import { AreaTexto } from "../../componentes/Campo.tsx";
 import { Dialogo } from "../../componentes/Dialogo.tsx";
 import { PastillaDivisa } from "../../componentes/Divisa.tsx";
 import { EncabezadoPagina } from "../../componentes/EncabezadoPagina.tsx";
-import { Cargando } from "../../componentes/Estados.tsx";
+import { Cargando, ErrorDeCarga } from "../../componentes/Estados.tsx";
 import { Etiqueta } from "../../componentes/Etiqueta.tsx";
 import { Monto, Tasa } from "../../componentes/Monto.tsx";
 import { Columnas, Datos, Pagina } from "../../componentes/Pagina.tsx";
@@ -32,10 +33,13 @@ import css from "./DetalleOperacion.module.css";
 
 export function DetalleOperacion() {
   const id = Number(useParams().id);
-  const { data: op, isPending } = useOperacion(id);
+  const consulta = useOperacion(id);
+  const nombre = useNombres();
 
-  if (isPending) return <Cargando texto="Cargando la operación…" />;
-  if (!op) return <NoEncontrada />;
+  if (!Number.isInteger(id) || id <= 0 || esNoExiste(consulta.error)) return <NoEncontrada />;
+  if (consulta.isError) return <ErrorDeCarga error={consulta.error} alReintentar={() => void consulta.refetch()} />;
+  if (consulta.isPending) return <Cargando texto="Cargando la operación…" />;
+  const op = consulta.data;
 
   const estado = ESTADO_OPERACION[op.estado];
   return (
@@ -53,7 +57,7 @@ export function DetalleOperacion() {
       />
 
       {op.estado === "REVERSADA" && (
-        <Aviso tono="error" titulo={`Reversada por ${nombreUsuario(op.reversadaPor)}${op.reversadaEn ? ` el ${formatearFechaHora(op.reversadaEn)}` : ""}`}>
+        <Aviso tono="error" titulo={`Reversada por ${nombre(op.reversadaPor)}${op.reversadaEn ? ` el ${formatearFechaHora(op.reversadaEn)}` : ""}`}>
           Motivo: {op.motivoReverso}
         </Aviso>
       )}
@@ -69,9 +73,10 @@ export function DetalleOperacion() {
 }
 
 /** Lo que entregó y recibió el cliente, como en el widget de operar. */
-function Resumen({ op }: { op: Operacion }) {
+function Resumen({ op }: { op: OperacionListada }) {
+  const monedaBase = useMonedaBase();
   const divisa = { etiqueta: op.tipo === "VENTA" ? "El cliente recibió" : "El cliente entregó", monto: op.montoDivisa, moneda: op.monedaCodigo };
-  const pesos = { etiqueta: op.tipo === "VENTA" ? "El cliente pagó" : "El cliente recibió", monto: op.montoBase, moneda: "CLP" };
+  const pesos = { etiqueta: op.tipo === "VENTA" ? "El cliente pagó" : "El cliente recibió", monto: op.montoBase, moneda: monedaBase };
   return (
     <Tarjeta elevada>
       <div className={css.resumen}>
@@ -94,29 +99,38 @@ function Resumen({ op }: { op: Operacion }) {
   );
 }
 
-function DatosOperacion({ op }: { op: Operacion }) {
+function DatosOperacion({ op }: { op: OperacionListada }) {
   const catalogo = useCatalogo();
-  const cliente = useCliente(op.clienteId ?? 0);
-  const decimalesTasa = catalogo.data?.divisas.find((d) => d.codigo === op.monedaCodigo)?.decimalesTasa ?? 2;
+  const nombre = useNombres();
+  const monedaBase = useMonedaBase();
+  const decimalesTasa = useDecimalesTasa()(op.monedaCodigo);
   const caja = catalogo.data?.cajas.find((c) => c.id === op.cajaId);
 
   return (
     <Datos
       filas={[
-        { etiqueta: "Tasa aplicada", valor: <><Tasa valorE6={op.tasaAplicadaE6} decimales={decimalesTasa} />{op.esPreferencial && " (preferencial)"}</> },
+        {
+          etiqueta: "Tasa aplicada",
+          valor: (
+            <>
+              <Tasa valorE6={op.tasaAplicadaE6} decimales={decimalesTasa} />
+              {op.esPreferencial && " (preferencial)"}
+            </>
+          ),
+        },
         { etiqueta: "Tasa de referencia", valor: <Tasa valorE6={op.tasaReferenciaE6} decimales={decimalesTasa} /> },
-        { etiqueta: "Margen bruto", valor: op.margenBruto ? <Monto valor={op.margenBruto} moneda="CLP" /> : "—" },
+        { etiqueta: "Margen bruto", valor: op.margenBruto ? <Monto valor={op.margenBruto} moneda={monedaBase} /> : "—" },
         { etiqueta: "Equivalente en USD", valor: op.equivalenteUsd ? <Monto valor={op.equivalenteUsd} moneda="USD" /> : "—" },
         { etiqueta: "Pago de los pesos", valor: MEDIO_PAGO[op.medioPago] },
         { etiqueta: "Documento", valor: op.tipoDte ? `${TIPO_DTE[op.tipoDte]} N° ${op.folioDte}` : "Sin documento" },
         {
           etiqueta: "Cliente",
-          valor: op.clienteId && cliente.data ? <Link to={`/clientes/${op.clienteId}`}>{cliente.data.nombre}</Link> : "Sin identificar",
+          valor: op.clienteId ? <Link to={`/clientes/${op.clienteId}`}>{op.clienteNombre ?? `Cliente ${op.clienteId}`}</Link> : "Sin identificar",
         },
         { etiqueta: "Propósito", valor: op.proposito ?? "—" },
         { etiqueta: "Caja", valor: caja?.nombre ?? `Caja ${op.cajaId}` },
-        { etiqueta: "Registró", valor: `${nombreUsuario(op.usuarioId)}, ${formatearFechaHora(op.registradaEn)}` },
-        { etiqueta: "Confirmó", valor: op.confirmadaEn ? `${nombreUsuario(op.confirmadaPor)}, ${formatearFechaHora(op.confirmadaEn)}` : "—" },
+        { etiqueta: "Registró", valor: `${nombre(op.usuarioId)}, ${formatearFechaHora(op.registradaEn)}` },
+        { etiqueta: "Confirmó", valor: op.confirmadaEn ? `${nombre(op.confirmadaPor)}, ${formatearFechaHora(op.confirmadaEn)}` : "—" },
         { etiqueta: "Observación", valor: op.observacion ?? "—" },
       ]}
     />
@@ -124,8 +138,9 @@ function DatosOperacion({ op }: { op: Operacion }) {
 }
 
 /** Acciones según el estado y el rol. Una sola acción magenta: la que sigue. */
-function Acciones({ op }: { op: Operacion }) {
+function Acciones({ op }: { op: OperacionListada }) {
   const { usuario } = usePersonal();
+  const nombre = useNombres();
   const [reversando, setReversando] = useState(false);
   const [eliminando, setEliminando] = useState(false);
   const esSupervisor = usuario.rol !== "CAJERO";
@@ -136,7 +151,10 @@ function Acciones({ op }: { op: Operacion }) {
 
   if (op.estado === "BORRADOR") {
     return (
-      <Tarjeta titulo="Borrador" descripcion="Al confirmar se recalcula con la pizarra vigente: si cambió desde el borrador, no se confirma y hay que revisarlo.">
+      <Tarjeta
+        titulo="Borrador"
+        descripcion="Al confirmar se recalcula con la pizarra vigente: si cambió desde el borrador, no se confirma y hay que revisarlo."
+      >
         <div className={css.botones}>
           {faltaAutorizar && esSupervisor && <Boton variante="suave">Autorizar tasa preferencial</Boton>}
           {esPropia ? (
@@ -150,7 +168,7 @@ function Acciones({ op }: { op: Operacion }) {
               </Boton>
             </>
           ) : (
-            <p className={css.nota}>Solo quien registró el borrador ({nombreUsuario(op.usuarioId)}) puede confirmarlo, editarlo o eliminarlo.</p>
+            <p className={css.nota}>Solo quien registró el borrador ({nombre(op.usuarioId)}) puede confirmarlo, editarlo o eliminarlo.</p>
           )}
         </div>
         <Dialogo

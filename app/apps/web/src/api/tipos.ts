@@ -5,17 +5,7 @@
 //   - Date → texto ISO 8601: "2026-11-08T18:30:00.000Z". Tipo Instante.
 // Los nombres de campos son los de la API: no se traducen ni se renombran.
 
-import type {
-  AccionAuditoria,
-  EstadoCuentaCliente,
-  EstadoGasto,
-  EstadoOperacion,
-  MedioPago,
-  Rol,
-  TipoDocumento,
-  TipoMargen,
-  TipoOperacion,
-} from "@atk/shared";
+import type { AccionAuditoria, EstadoCuentaCliente, EstadoGasto, EstadoOperacion, MedioPago, Rol, TipoDocumento, TipoMargen, TipoOperacion } from "@atk/shared";
 
 export type { AccionAuditoria, EstadoCuentaCliente, EstadoGasto, EstadoOperacion, MedioPago, Rol, TipoDocumento, TipoMargen, TipoOperacion };
 
@@ -51,6 +41,22 @@ export type CuentaYo = {
 
 /** GET /api/yo */
 export type Yo = { tipo: "personal"; usuario: UsuarioYo; turnoAbierto: Turno | null } | { tipo: "cliente"; cuenta: CuentaYo };
+
+// ---- Datos públicos ---------------------------------------------------------
+
+/** Lo necesario para mostrar los montos de una moneda. */
+export type Moneda = { codigo: string; nombre: string; simbolo: string; decimales: number };
+
+/** GET /api/casa (sin sesión). Antes de configurar la casa, todo viene vacío. */
+export type CasaPublica = {
+  nombre: string | null;
+  monedaBase: Moneda | null;
+  /** En el orden de la pizarra; incluye las que ya no se operan (activa: false) */
+  divisas: (Moneda & { decimalesTasa: number; activa: boolean })[];
+};
+
+/** Una fila de GET /api/personal */
+export type Persona = { id: number; nombre: string };
 
 // ---- Catálogo y pizarra ---------------------------------------------------
 
@@ -162,6 +168,9 @@ export type Operacion = {
   observacion: string | null;
 };
 
+/** GET /api/operaciones y /api/operaciones/:id: con el nombre del cliente */
+export type OperacionListada = Operacion & { clienteNombre: string | null };
+
 /** POST /api/operaciones/previsualizar */
 export type Previsualizacion = {
   tasaAplicadaE6: Monto;
@@ -240,7 +249,7 @@ export type Cliente = {
   actualizadoEn: Instante;
 };
 
-/** GET /api/clientes/:id */
+/** GET /api/clientes/:id, y cada fila de GET /api/clientes?q= */
 export type FichaCliente = Cliente & { faltantesUaf: string[] };
 
 /** Una fila de GET /api/cuentas-cliente */

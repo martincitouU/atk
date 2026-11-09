@@ -42,6 +42,43 @@ export function sucursalDeCaja(datos: Datos, cajaId: number): number {
 }
 
 /**
+ * Lo público de la casa: su nombre y las monedas con que se muestran los
+ * montos. Es lo que exhibe la pizarra del local, nada privado (ni RUT ni
+ * razón social). Lo piden el login, que todavía no tiene sesión, y el
+ * portal de clientes, que no lee el catálogo del personal.
+ *
+ * Las divisas incluyen las que la casa ya no opera (`activa: false`): sus
+ * operaciones antiguas se siguen mostrando y necesitan sus decimales.
+ * Antes de configurar la casa, todo viene vacío.
+ */
+export function datosPublicos(datos: Datos) {
+  const laCasa = datos
+    .select({ nombreFantasia: casa.nombreFantasia, razonSocial: casa.razonSocial, monedaBase: casa.monedaBase })
+    .from(casa)
+    .where(eq(casa.id, 1))
+    .get();
+  const divisas = datos
+    .select({
+      codigo: moneda.codigo,
+      nombre: moneda.nombre,
+      simbolo: moneda.simbolo,
+      decimales: moneda.decimales,
+      decimalesTasa: casaMoneda.decimalesTasa,
+      activa: casaMoneda.activa,
+    })
+    .from(casaMoneda)
+    .innerJoin(moneda, eq(moneda.codigo, casaMoneda.monedaCodigo))
+    .orderBy(asc(casaMoneda.ordenPizarra), asc(moneda.codigo))
+    .all();
+  const base = laCasa ? datos.select().from(moneda).where(eq(moneda.codigo, laCasa.monedaBase)).get() : undefined;
+  return {
+    nombre: laCasa ? (laCasa.nombreFantasia ?? laCasa.razonSocial) : null,
+    monedaBase: base ?? null,
+    divisas,
+  };
+}
+
+/**
  * Todo lo fijo que el front necesita al cargar: la casa, sus divisas, las
  * sucursales y cajas, las categorías y los parámetros. Una sola consulta.
  */

@@ -1,37 +1,39 @@
-// Login del personal y de los clientes: correo y contraseña.
-//
-// ESQUELETO (F1): todavía no llama a la API. El selector "Entrar como"
-// abre una sesión de ejemplo para recorrer las vistas de cada rol; en F2 se
-// borra y el formulario llama a POST /api/auth/sign-in/email.
+// Login del personal y de los clientes: correo y contraseña
+// (POST /api/auth/sign-in/email). Con la sesión abierta, MarcoPublico lleva
+// a la vista que se pidió o al inicio de cada uno.
 
-import { type FormEvent, useState } from "react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { Link } from "react-router";
+import { mensajeDe } from "../../api/cliente.ts";
+import { Aviso } from "../../componentes/Aviso.tsx";
 import { Boton } from "../../componentes/Boton.tsx";
-import { Entrada, Seleccion } from "../../componentes/Campo.tsx";
+import { Entrada } from "../../componentes/Campo.tsx";
 import { useTituloPestana } from "../../componentes/EncabezadoPagina.tsx";
 import { Tarjeta } from "../../componentes/Tarjeta.tsx";
-import type { SesionEjemplo } from "../../ejemplo/datos.ts";
 import { useSesion } from "../../sesion/Sesion.tsx";
 import css from "./Publico.module.css";
 
-const OPCIONES_EJEMPLO: { valor: SesionEjemplo; texto: string }[] = [
-  { valor: "cajero", texto: "Cajero (con turno abierto)" },
-  { valor: "supervisor", texto: "Supervisor (sin turno)" },
-  { valor: "admin", texto: "Admin" },
-  { valor: "clientePendiente", texto: "Cliente con cuenta pendiente" },
-  { valor: "clienteVerificado", texto: "Cliente verificado" },
-];
+type Formulario = { email: string; contrasena: string };
 
 export function Ingresar() {
   useTituloPestana("Ingresar");
-  const { entrarComoEjemplo } = useSesion();
-  const [como, setComo] = useState<SesionEjemplo>("cajero");
+  const { ingresar, cierre } = useSesion();
+  const [error, setError] = useState<string | null>(null);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<Formulario>();
 
-  // Con la sesión abierta, MarcoPublico lleva a la vista que se pidió
-  function alEnviar(evento: FormEvent) {
-    evento.preventDefault();
-    entrarComoEjemplo(como);
-  }
+  const alEnviar = handleSubmit(async ({ email, contrasena }) => {
+    setError(null);
+    try {
+      await ingresar(email.trim(), contrasena);
+    } catch (e) {
+      setError(mensajeDe(e));
+    }
+  });
 
   return (
     <Tarjeta elevada className={css.tarjeta}>
@@ -40,21 +42,34 @@ export function Ingresar() {
         <p className={css.bajada}>Con el correo y la contraseña de tu cuenta.</p>
       </div>
 
-      <form className={css.formulario} onSubmit={alEnviar}>
-        <Entrada etiqueta="Correo" type="email" name="email" autoComplete="username" placeholder="nombre@correo.cl" />
-        <Entrada etiqueta="Contraseña" type="password" name="password" autoComplete="current-password" />
+      {error ? (
+        <Aviso tono="error">{error}</Aviso>
+      ) : (
+        cierre === "inactividad" && (
+          <Aviso tono="atencion" titulo="Tu sesión se cerró por inactividad">
+            Ingresa de nuevo para seguir donde estabas.
+          </Aviso>
+        )
+      )}
 
-        <div className={css.ejemplo}>
-          <Seleccion etiqueta="Entrar como (solo en el esqueleto)" value={como} onChange={(e) => setComo(e.target.value as SesionEjemplo)}>
-            {OPCIONES_EJEMPLO.map((o) => (
-              <option key={o.valor} value={o.valor}>
-                {o.texto}
-              </option>
-            ))}
-          </Seleccion>
-        </div>
-
-        <Boton type="submit" variante="primario" anchoCompleto>
+      {/* noValidate: los mensajes son los nuestros, en español y junto al campo */}
+      <form className={css.formulario} onSubmit={alEnviar} noValidate>
+        <Entrada
+          etiqueta="Correo"
+          type="email"
+          autoComplete="username"
+          placeholder="nombre@correo.cl"
+          error={errors.email?.message}
+          {...register("email", { required: "Escribe tu correo" })}
+        />
+        <Entrada
+          etiqueta="Contraseña"
+          type="password"
+          autoComplete="current-password"
+          error={errors.contrasena?.message}
+          {...register("contrasena", { required: "Escribe tu contraseña" })}
+        />
+        <Boton type="submit" variante="primario" anchoCompleto cargando={isSubmitting}>
           Ingresar
         </Boton>
       </form>

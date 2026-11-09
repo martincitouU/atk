@@ -14,5 +14,6 @@ apps/web/test
 apps/web/dist
 # Base y secreto del entorno de desarrollo (npm run dev)
 .dev
-# Solo para desarrollo: crea una base con la semilla (que tampoco entra)
+# Solo para desarrollo: crean una base con la semilla (que tampoco entra)
 apps/api/src/cli/desarrollo.ts
+apps/api/src/cli/base-desarrollo.ts

@@ -163,9 +163,30 @@ La app debe:
   pantalla), `api/` (`tipos.ts` = forma del JSON, `consultas.ts` = hooks de
   TanStack Query), `lib/` (montos, fechas en la zona de la casa, RUT,
   textos y tonos de cada estado), `sesion/`.
-- Esqueleto (F1): `src/ejemplo/datos.ts`, la sesión de ejemplo y
-  `AvisoEsqueleto` existen solo hasta conectar la API (F2).
-- Tests en `apps/web/test/` (Vitest + Testing Library, jsdom).
+- **Toda petición pasa por `src/api/cliente.ts`**: envía JSON (`{}` en una
+  escritura sin datos) y convierte cualquier falla en un `ErrorApi`
+  (`estado`, `codigo`, `mensaje` para mostrar, `detalles` por campo). Ahí se
+  traducen los errores de Better Auth y los 429. Ninguna vista llama a
+  `fetch`.
+- Sesión (`src/sesion/Sesion.tsx`): lo que dice `GET /api/yo` (401 = sin
+  sesión); `ingresar` y `salir` usan Better Auth. El proveedor crea la caché
+  (`src/api/cache.ts`): un 401 en pleno uso borra los datos de la sesión y
+  lleva al login con el aviso de inactividad; al entrar de nuevo, vuelve a la
+  vista. Al cerrar sesión no se vuelve a la vista (puede entrar otra persona).
+- Fechas en los filtros: la API pide instantes en operaciones y auditoría;
+  un día "hasta" se envía como el inicio del día siguiente en la zona de la
+  casa (`inicioDelDia`, `diaSiguiente` en `lib/fechas.ts`).
+- Lecturas con `<ConDatos consulta={...}>` (cargando, error con "Reintentar"
+  o los datos). Un 404 se muestra como "Esta página no existe".
+- Formularios: react-hook-form con los esquemas zod de `@atk/shared` (los
+  mismos que valida la API); lo que la API rechaza va junto a su campo.
+- Fases: F1 esqueleto y F2 lectura con la API están hechas. **F3 pendiente**:
+  los formularios que guardan (turnos, movimientos, operaciones con
+  `previsualizar`, clientes, cuentas, gastos, pizarra, usuarios, contraseña),
+  la prueba de punta a punta y el despliegue. Hasta F3 esos botones no hacen
+  nada: no desplegar antes.
+- Tests en `apps/web/test/` (Vitest + Testing Library, jsdom). La API se
+  simula con `test/apiFalsa.tsx` (`usarApi`, `rutasDe(sesion)`, `abrir(ruta)`).
 
 ## Estructura
 
@@ -199,8 +220,9 @@ cd infra/ansible && ANSIBLE_INVENTORY_ENABLED=host_list ansible-playbook -i loca
 cd app && npm test && npm run typecheck && npm run db:probar
 
 # Desarrollo: API (127.0.0.1:3000) + front (Vite) → http://localhost:5173
-# La primera vez crea app/.dev con la semilla y cuentas de prueba (ver
-# apps/api/src/cli/desarrollo.ts). Para partir de cero: rm -rf app/.dev
+# La primera vez crea app/.dev con la semilla, cuentas de prueba y una
+# jornada de ejemplo (ver apps/api/src/cli/desarrollo.ts). Para partir de
+# cero, o para tener la jornada con fecha de hoy: rm -rf app/.dev
 cd app && npm run dev
 
 # Prueba local del stack (imagen real de app/)
@@ -280,7 +302,8 @@ sudo docker compose -f /srv/atk/compose.yaml exec app node apps/api/src/cli/inic
   Sus errores vienen como `{ message, code }`, no con nuestro formato.
 - La app lee `BETTER_AUTH_SECRET` y `BETTER_AUTH_URL` (dirección pública,
   para validar `Origin`). Si faltan, arranca **cerrada**: sin login, toda
-  `/api` responde 401 y no se acepta ninguna escritura.
+  `/api` responde 401 y no se acepta ninguna escritura. La única excepción
+  es `GET /api/casa`: público siempre (nombre y monedas, lo de la pizarra).
 - Las cuentas se crean con `crearCuenta()` (`src/auth/auth.ts`), nunca a mano.
 
 ## Supuestos de la iteración 1 (por confirmar con el cliente)

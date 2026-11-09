@@ -31,12 +31,6 @@
   gap: var(--spacing-16);
 }
 
-.ejemplo {
-  padding: var(--spacing-12);
-  border: 1px dashed var(--color-fog);
-  border-radius: var(--radius-campo);
-}
-
 .pie {
   font-size: var(--text-body-sm);
   color: var(--color-texto-secundario);

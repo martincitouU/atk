@@ -2,21 +2,33 @@
 // cierre con arqueo) y los gastos. Supervisores y admin ven además los
 // turnos abiertos y pueden registrar ajustes.
 //
-// ESQUELETO (F1): los formularios no guardan; el cierre muestra un arqueo
-// de ejemplo.
+// Lee de la API: saldos, libro de caja, turnos abiertos y gastos. Los
+// formularios (abrir y cerrar el turno, movimientos, ajustes y gastos) se
+// conectan en F3.
 
 import { Lock } from "lucide-react";
 import { useState } from "react";
 import { Outlet } from "react-router";
-import { nombreUsuario, useCatalogo, useGastos, useMovimientos, useOrdenMonedas, useSaldos, useTurnosAbiertos } from "../../api/consultas.ts";
-import type { MedioPago, Turno } from "../../api/tipos.ts";
+import {
+  useCasa,
+  useCatalogo,
+  useGastos,
+  useMonedaBase,
+  useMovimientos,
+  useNombres,
+  useOrdenMonedas,
+  useSaldos,
+  useTurnosAbiertos,
+  type FiltrosGastos,
+} from "../../api/consultas.ts";
+import type { EstadoGasto, MedioPago, Turno } from "../../api/tipos.ts";
 import { Aviso } from "../../componentes/Aviso.tsx";
 import { Boton } from "../../componentes/Boton.tsx";
 import { AreaTexto, Entrada, FilaCampos, Seleccion } from "../../componentes/Campo.tsx";
 import { Dialogo } from "../../componentes/Dialogo.tsx";
 import { DivisaCompacta } from "../../componentes/Divisa.tsx";
 import { EncabezadoPagina } from "../../componentes/EncabezadoPagina.tsx";
-import { Cargando, Vacio } from "../../componentes/Estados.tsx";
+import { ConDatos, Vacio } from "../../componentes/Estados.tsx";
 import { Etiqueta } from "../../componentes/Etiqueta.tsx";
 import { GrillaIndicadores, Indicador } from "../../componentes/Indicador.tsx";
 import { Monto } from "../../componentes/Monto.tsx";
@@ -25,11 +37,16 @@ import { Pestanas } from "../../componentes/Pestanas.tsx";
 import { Segmentado } from "../../componentes/Segmentado.tsx";
 import { Tabla } from "../../componentes/Tabla.tsx";
 import { Tarjeta } from "../../componentes/Tarjeta.tsx";
-import * as ejemplo from "../../ejemplo/datos.ts";
-import { formatearDia, formatearHora, hoy } from "../../lib/fechas.ts";
+import { formatearDia, formatearHora, hoy, inicioDelMes } from "../../lib/fechas.ts";
 import { ESTADO_GASTO, MEDIO_PAGO, TIPO_MOVIMIENTO } from "../../lib/textos.ts";
 import { usePersonal } from "../../sesion/Sesion.tsx";
 import css from "./Personal.module.css";
+
+/** Monedas para elegir en un formulario: la base y las divisas que se operan. */
+function useMonedasDeCaja(): string[] {
+  const { data } = useCasa();
+  return [data?.monedaBase?.codigo ?? "CLP", ...(data?.divisas.filter((d) => d.activa).map((d) => d.codigo) ?? [])];
+}
 
 export function Caja() {
   return (
@@ -109,53 +126,59 @@ function TurnoAbierto({ turno }: { turno: Turno }) {
         <h2 id="titulo-saldos" className={css.seccionTitulo}>
           Saldos de la caja
         </h2>
-        {saldos.isPending ? (
-          <Cargando />
-        ) : (
-          <GrillaIndicadores>
-            {ordenar(saldos.data ?? []).map((s) => (
-              <Indicador key={s.monedaCodigo} etiqueta={s.monedaCodigo} valor={<Monto valor={s.saldo} moneda={s.monedaCodigo} />} />
-            ))}
-          </GrillaIndicadores>
-        )}
+        <ConDatos consulta={saldos}>
+          {(lista) =>
+            lista.length === 0 ? (
+              <Vacio titulo="La caja está vacía">Registra el fondo inicial de cada moneda como un ingreso.</Vacio>
+            ) : (
+              <GrillaIndicadores>
+                {ordenar(lista).map((s) => (
+                  <Indicador key={s.monedaCodigo} etiqueta={s.monedaCodigo} valor={<Monto valor={s.saldo} moneda={s.monedaCodigo} />} />
+                ))}
+              </GrillaIndicadores>
+            )
+          }
+        </ConDatos>
       </section>
 
       <Columnas lateral={<IngresoORetiro />}>
         <Tarjeta titulo="Libro de caja del turno" sinRelleno>
-          {movimientos.isPending ? (
-            <Cargando />
-          ) : !movimientos.data?.length ? (
-            <Vacio titulo="Sin movimientos todavía">Registra el fondo inicial para empezar.</Vacio>
-          ) : (
-            <Tabla etiqueta="Libro de caja">
-              <thead>
-                <tr>
-                  <th>Hora</th>
-                  <th>Tipo</th>
-                  <th>Moneda</th>
-                  <th className="num">Monto</th>
-                  <th className="num">Saldo</th>
-                  <th>Descripción</th>
-                </tr>
-              </thead>
-              <tbody>
-                {movimientos.data.map((m) => (
-                  <tr key={m.id}>
-                    <td>{formatearHora(m.creadoEn)}</td>
-                    <td>{TIPO_MOVIMIENTO[m.tipo]}</td>
-                    <td>{m.monedaCodigo}</td>
-                    <td className="num">
-                      <Monto valor={m.monto} moneda={m.monedaCodigo} sinSimbolo />
-                    </td>
-                    <td className="num">
-                      <Monto valor={m.saldoPost} moneda={m.monedaCodigo} sinSimbolo />
-                    </td>
-                    <td className="ajustable">{m.descripcion ?? "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </Tabla>
-          )}
+          <ConDatos consulta={movimientos}>
+            {(lista) =>
+              lista.length === 0 ? (
+                <Vacio titulo="Sin movimientos todavía">Registra el fondo inicial para empezar.</Vacio>
+              ) : (
+                <Tabla etiqueta="Libro de caja">
+                  <thead>
+                    <tr>
+                      <th>Hora</th>
+                      <th>Tipo</th>
+                      <th>Moneda</th>
+                      <th className="num">Monto</th>
+                      <th className="num">Saldo</th>
+                      <th>Descripción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lista.map((m) => (
+                      <tr key={m.id}>
+                        <td>{formatearHora(m.creadoEn)}</td>
+                        <td>{TIPO_MOVIMIENTO[m.tipo]}</td>
+                        <td>{m.monedaCodigo}</td>
+                        <td className="num">
+                          <Monto valor={m.monto} moneda={m.monedaCodigo} sinSimbolo />
+                        </td>
+                        <td className="num">
+                          <Monto valor={m.saldoPost} moneda={m.monedaCodigo} sinSimbolo />
+                        </td>
+                        <td className="ajustable">{m.descripcion ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Tabla>
+              )
+            }
+          </ConDatos>
         </Tarjeta>
       </Columnas>
 
@@ -165,9 +188,8 @@ function TurnoAbierto({ turno }: { turno: Turno }) {
 }
 
 function IngresoORetiro() {
-  const { data: catalogo } = useCatalogo();
   const [tipo, setTipo] = useState<"INGRESO" | "RETIRO">("INGRESO");
-  const monedas = ["CLP", ...(catalogo?.divisas.map((d) => d.codigo) ?? [])];
+  const monedas = useMonedasDeCaja();
 
   return (
     <Tarjeta titulo="Ingreso o retiro" descripcion="Fondo inicial, reposición o retiro de dinero, con su motivo.">
@@ -183,7 +205,7 @@ function IngresoORetiro() {
           anchoCompleto
         />
         <FilaCampos>
-          <Seleccion etiqueta="Moneda" defaultValue="CLP">
+          <Seleccion etiqueta="Moneda">
             {monedas.map((m) => (
               <option key={m}>{m}</option>
             ))}
@@ -191,7 +213,9 @@ function IngresoORetiro() {
           <Entrada etiqueta="Monto" inputMode="decimal" placeholder="0" />
         </FilaCampos>
         <Entrada etiqueta="Motivo" placeholder="Fondo inicial" />
-        {tipo === "INGRESO" && <Entrada etiqueta="Costo por unidad (opcional)" inputMode="decimal" ayuda="Para divisas. Si se deja vacío, se usa la tasa de referencia vigente." />}
+        {tipo === "INGRESO" && (
+          <Entrada etiqueta="Costo por unidad (opcional)" inputMode="decimal" ayuda="Para divisas. Si se deja vacío, se usa la tasa de referencia vigente." />
+        )}
         <Boton type="submit" anchoCompleto>
           Registrar {tipo === "INGRESO" ? "ingreso" : "retiro"}
         </Boton>
@@ -200,57 +224,22 @@ function IngresoORetiro() {
   );
 }
 
-/** Cierre: se cuenta el dinero de cada moneda y el sistema muestra las diferencias. */
+/**
+ * Cierre: se cuenta el dinero de cada moneda. La API compara con el sistema
+ * y responde el arqueo con las diferencias (se muestra al conectar el
+ * cierre, en F3).
+ */
 function CerrarTurno({ abierto, alCerrar, monedas }: { abierto: boolean; alCerrar: () => void; monedas: string[] }) {
-  const [cerrado, setCerrado] = useState(false);
-  const salir = () => {
-    setCerrado(false);
-    alCerrar();
-  };
-
-  if (cerrado) {
-    return (
-      <Dialogo abierto={abierto} alCerrar={salir} titulo="Arqueo del turno" descripcion="Las diferencias no se corrigen solas: un supervisor registra el ajuste." acciones={<Boton onClick={salir}>Listo</Boton>}>
-        <Tabla etiqueta="Arqueo">
-          <thead>
-            <tr>
-              <th>Moneda</th>
-              <th className="num">Sistema</th>
-              <th className="num">Contado</th>
-              <th className="num">Diferencia</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ejemplo.arqueo.map((a) => (
-              <tr key={a.monedaCodigo}>
-                <td>{a.monedaCodigo}</td>
-                <td className="num">
-                  <Monto valor={a.saldoSistema} moneda={a.monedaCodigo} sinSimbolo />
-                </td>
-                <td className="num">
-                  <Monto valor={a.saldoContado} moneda={a.monedaCodigo} sinSimbolo />
-                </td>
-                <td className="num">{a.diferencia === "0" ? "—" : <Monto valor={a.diferencia} moneda={a.monedaCodigo} sinSimbolo />}</td>
-              </tr>
-            ))}
-          </tbody>
-        </Tabla>
-      </Dialogo>
-    );
-  }
-
   return (
     <Dialogo
       abierto={abierto}
-      alCerrar={salir}
+      alCerrar={alCerrar}
       titulo="Cerrar turno"
       descripcion="Cuenta el dinero de cada moneda y escribe el total. No se puede cerrar con borradores pendientes."
       acciones={
         <>
-          <Boton onClick={salir}>Cancelar</Boton>
-          <Boton variante="primario" onClick={() => setCerrado(true)}>
-            Cerrar turno
-          </Boton>
+          <Boton onClick={alCerrar}>Cancelar</Boton>
+          <Boton variante="primario">Cerrar turno</Boton>
         </>
       }
     >
@@ -267,6 +256,8 @@ function VistaSupervisor() {
   const turnos = useTurnosAbiertos();
   const saldos = useSaldos();
   const { data: catalogo } = useCatalogo();
+  const monedas = useMonedasDeCaja();
+  const ordenar = useOrdenMonedas();
 
   return (
     <section className={css.seccion} aria-labelledby="titulo-casa">
@@ -285,8 +276,8 @@ function VistaSupervisor() {
                     </option>
                   ))}
                 </Seleccion>
-                <Seleccion etiqueta="Moneda" defaultValue="CLP">
-                  {["CLP", ...(catalogo?.divisas.map((d) => d.codigo) ?? [])].map((m) => (
+                <Seleccion etiqueta="Moneda">
+                  {monedas.map((m) => (
                     <option key={m}>{m}</option>
                   ))}
                 </Seleccion>
@@ -299,58 +290,67 @@ function VistaSupervisor() {
         }
       >
         <Tarjeta titulo="Turnos abiertos" sinRelleno>
-          {turnos.isPending ? (
-            <Cargando />
-          ) : !turnos.data?.length ? (
-            <Vacio titulo="No hay turnos abiertos" />
-          ) : (
-            <Tabla etiqueta="Turnos abiertos">
-              <thead>
-                <tr>
-                  <th>Caja</th>
-                  <th>Cajero</th>
-                  <th>Desde</th>
-                </tr>
-              </thead>
-              <tbody>
-                {turnos.data.map((t) => (
-                  <tr key={t.turno.id}>
-                    <td>{t.cajaNombre}</td>
-                    <td>{t.usuarioNombre}</td>
-                    <td>{formatearHora(t.turno.abiertoEn)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </Tabla>
-          )}
+          <ConDatos consulta={turnos}>
+            {(lista) =>
+              lista.length === 0 ? (
+                <Vacio titulo="No hay turnos abiertos" />
+              ) : (
+                <Tabla etiqueta="Turnos abiertos">
+                  <thead>
+                    <tr>
+                      <th>Caja</th>
+                      <th>Cajero</th>
+                      <th>Desde</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lista.map((t) => (
+                      <tr key={t.turno.id}>
+                        <td>{t.cajaNombre}</td>
+                        <td>{t.usuarioNombre}</td>
+                        <td>{formatearHora(t.turno.abiertoEn)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Tabla>
+              )
+            }
+          </ConDatos>
         </Tarjeta>
         <Tarjeta titulo="Saldos por caja" sinRelleno>
-          {saldos.isPending ? (
-            <Cargando />
-          ) : (
-            <Tabla etiqueta="Saldos por caja">
-              <thead>
-                <tr>
-                  <th>Caja</th>
-                  <th>Moneda</th>
-                  <th className="num">Saldo</th>
-                </tr>
-              </thead>
-              <tbody>
-                {saldos.data?.map((s) => (
-                  <tr key={`${s.cajaId}-${s.monedaCodigo}`}>
-                    <td>{s.cajaNombre}</td>
-                    <td>
-                      <DivisaCompacta codigo={s.monedaCodigo} />
-                    </td>
-                    <td className="num">
-                      <Monto valor={s.saldo} moneda={s.monedaCodigo} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Tabla>
-          )}
+          <ConDatos consulta={saldos}>
+            {(lista) =>
+              lista.length === 0 ? (
+                <Vacio titulo="Todavía no hay dinero en las cajas" />
+              ) : (
+                <Tabla etiqueta="Saldos por caja">
+                  <thead>
+                    <tr>
+                      <th>Caja</th>
+                      <th>Moneda</th>
+                      <th className="num">Saldo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {/* Por caja y, dentro de cada una, en el orden de la pizarra */}
+                    {ordenar(lista)
+                      .sort((a, b) => a.cajaId - b.cajaId)
+                      .map((s) => (
+                        <tr key={`${s.cajaId}-${s.monedaCodigo}`}>
+                          <td>{s.cajaNombre}</td>
+                          <td>
+                            <DivisaCompacta codigo={s.monedaCodigo} />
+                          </td>
+                          <td className="num">
+                            <Monto valor={s.saldo} moneda={s.monedaCodigo} />
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </Tabla>
+              )
+            }
+          </ConDatos>
         </Tarjeta>
       </Columnas>
     </section>
@@ -364,7 +364,11 @@ const MEDIOS = Object.keys(MEDIO_PAGO) as MedioPago[];
 export function Gastos() {
   const { usuario, turnoAbierto } = usePersonal();
   const { data: catalogo } = useCatalogo();
-  const gastos = useGastos();
+  // Por defecto, los del mes en curso
+  const [filtros, setFiltros] = useState<FiltrosGastos>(() => ({ desde: inicioDelMes(hoy()), hasta: hoy() }));
+  const gastos = useGastos(filtros);
+  const nombre = useNombres();
+  const monedaBase = useMonedaBase();
   const esAdmin = usuario.rol === "ADMIN";
   const esSupervisor = usuario.rol !== "CAJERO";
   const categoria = new Map(catalogo?.categoriasGasto.map((c) => [c.id, c.nombre]));
@@ -384,7 +388,7 @@ export function Gastos() {
             </Seleccion>
             <Entrada etiqueta="Descripción" placeholder="Rollos de papel para boletas" />
             <FilaCampos>
-              <Entrada etiqueta="Monto" inputMode="numeric" placeholder="0" sufijo="CLP" />
+              <Entrada etiqueta="Monto" inputMode="numeric" placeholder="0" sufijo={monedaBase} />
               <Seleccion etiqueta="Medio de pago" defaultValue="EFECTIVO">
                 {MEDIOS.map((m) => (
                   <option key={m} value={m} disabled={m !== "EFECTIVO" && !esAdmin}>
@@ -404,53 +408,73 @@ export function Gastos() {
         </Tarjeta>
       }
     >
+      <Tarjeta>
+        <div className={css.filtros}>
+          <Entrada etiqueta="Desde" type="date" value={filtros.desde ?? ""} onChange={(e) => setFiltros({ ...filtros, desde: e.target.value || undefined })} />
+          <Entrada etiqueta="Hasta" type="date" value={filtros.hasta ?? ""} onChange={(e) => setFiltros({ ...filtros, hasta: e.target.value || undefined })} />
+          <Seleccion
+            etiqueta="Estado"
+            value={filtros.estado ?? ""}
+            onChange={(e) => setFiltros({ ...filtros, estado: (e.target.value || undefined) as EstadoGasto | undefined })}
+          >
+            <option value="">Todos</option>
+            {(Object.keys(ESTADO_GASTO) as EstadoGasto[]).map((estado) => (
+              <option key={estado} value={estado}>
+                {ESTADO_GASTO[estado].texto}
+              </option>
+            ))}
+          </Seleccion>
+        </div>
+      </Tarjeta>
       <Tarjeta titulo="Gastos" sinRelleno>
-        {gastos.isPending ? (
-          <Cargando />
-        ) : !gastos.data?.length ? (
-          <Vacio titulo="No hay gastos registrados" />
-        ) : (
-          <Tabla etiqueta="Gastos">
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Categoría</th>
-                <th>Descripción</th>
-                <th className="num">Monto</th>
-                <th>Pago</th>
-                <th>Registró</th>
-                <th>Estado</th>
-                {esSupervisor && <th aria-label="Acciones" />}
-              </tr>
-            </thead>
-            <tbody>
-              {gastos.data.map((g) => (
-                <tr key={g.id}>
-                  <td>{formatearDia(g.fecha)}</td>
-                  <td>{categoria.get(g.categoriaId) ?? "—"}</td>
-                  <td className="ajustable">{g.descripcion}</td>
-                  <td className="num">
-                    <Monto valor={g.monto} moneda="CLP" />
-                  </td>
-                  <td>{MEDIO_PAGO[g.medioPago]}</td>
-                  <td>{nombreUsuario(g.usuarioId)}</td>
-                  <td>
-                    <Etiqueta tono={ESTADO_GASTO[g.estado].tono}>{ESTADO_GASTO[g.estado].texto}</Etiqueta>
-                  </td>
-                  {esSupervisor && (
-                    <td>
-                      {g.estado === "VIGENTE" && (
-                        <Boton variante="texto" tamano="chico">
-                          Reversar
-                        </Boton>
+        <ConDatos consulta={gastos} cargando="Cargando gastos…">
+          {(lista) =>
+            lista.length === 0 ? (
+              <Vacio titulo="No hay gastos con estos filtros">Prueba con otro rango de fechas.</Vacio>
+            ) : (
+              <Tabla etiqueta="Gastos">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Categoría</th>
+                    <th>Descripción</th>
+                    <th className="num">Monto</th>
+                    <th>Pago</th>
+                    <th>Registró</th>
+                    <th>Estado</th>
+                    {esSupervisor && <th aria-label="Acciones" />}
+                  </tr>
+                </thead>
+                <tbody>
+                  {lista.map((g) => (
+                    <tr key={g.id}>
+                      <td>{formatearDia(g.fecha)}</td>
+                      <td>{categoria.get(g.categoriaId) ?? "—"}</td>
+                      <td className="ajustable">{g.descripcion}</td>
+                      <td className="num">
+                        <Monto valor={g.monto} moneda={monedaBase} />
+                      </td>
+                      <td>{MEDIO_PAGO[g.medioPago]}</td>
+                      <td>{nombre(g.usuarioId)}</td>
+                      <td>
+                        <Etiqueta tono={ESTADO_GASTO[g.estado].tono}>{ESTADO_GASTO[g.estado].texto}</Etiqueta>
+                      </td>
+                      {esSupervisor && (
+                        <td>
+                          {g.estado === "VIGENTE" && (
+                            <Boton variante="texto" tamano="chico">
+                              Reversar
+                            </Boton>
+                          )}
+                        </td>
                       )}
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </Tabla>
-        )}
+                    </tr>
+                  ))}
+                </tbody>
+              </Tabla>
+            )
+          }
+        </ConDatos>
       </Tarjeta>
     </Columnas>
   );

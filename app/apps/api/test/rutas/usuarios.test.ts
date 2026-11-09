@@ -1,7 +1,30 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { auditoria } from "../../src/db/esquema.ts";
+import { auditoria, usuario } from "../../src/db/esquema.ts";
+import { apiDePrueba } from "./api.ts";
 import { conLogin, CONTRASENA } from "./login.ts";
+
+describe("Nombres del personal", () => {
+  it("cualquiera del personal los ve, también los inactivos, sin correo ni RUT", async () => {
+    const { pedir, db } = apiDePrueba();
+    db.update(usuario).set({ activo: false }).where(eq(usuario.id, 4)).run();
+
+    const respuesta = await pedir("CAJERO", "GET", "/api/personal");
+
+    expect(respuesta.statusCode).toBe(200);
+    expect(respuesta.json()).toEqual([
+      { id: 1, nombre: "Administrador" },
+      { id: 4, nombre: "Cajera 2" },
+      { id: 3, nombre: "Cajero" },
+      { id: 2, nombre: "Supervisor" },
+    ]);
+  });
+
+  it("sin sesión responde 401", async () => {
+    const { pedir } = apiDePrueba();
+    expect((await pedir(null, "GET", "/api/personal")).statusCode).toBe(401);
+  });
+});
 
 const NUEVO = { rut: "15.555.567-K", nombre: "Cajera Nueva", email: "Nueva@Demo.cl", rol: "CAJERO", sucursalId: 1, contrasena: CONTRASENA };
 

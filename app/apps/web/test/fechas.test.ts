@@ -1,5 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { formatearDia, formatearFechaHora, formatearHora, hoy } from "../src/lib/fechas.ts";
+import { diaSiguiente, formatearDia, formatearFechaHora, formatearHora, hoy, inicioDelDia, inicioDelMes } from "../src/lib/fechas.ts";
+
+describe("días para los filtros de la API", () => {
+  it("un día empieza a medianoche de Coyhaique, también en invierno", () => {
+    expect(inicioDelDia("2026-11-08")).toBe("2026-11-08T00:00:00-03:00");
+    expect(inicioDelDia("2026-07-08")).toBe("2026-07-08T00:00:00-03:00");
+    // Santiago sí cambia de hora: el mismo cálculo da su desfase de cada época
+    expect(inicioDelDia("2026-07-08", "America/Santiago")).toBe("2026-07-08T00:00:00-04:00");
+  });
+
+  it("el día siguiente cruza meses y años", () => {
+    expect(diaSiguiente("2026-11-08")).toBe("2026-11-09");
+    expect(diaSiguiente("2026-11-30")).toBe("2026-12-01");
+    expect(diaSiguiente("2026-12-31")).toBe("2027-01-01");
+    expect(diaSiguiente("2028-02-28")).toBe("2028-02-29");
+  });
+
+  it("el inicio del mes", () => {
+    expect(inicioDelMes("2026-11-08")).toBe("2026-11-01");
+  });
+});
 
 describe("fechas en la zona de la casa (UTC−3 todo el año)", () => {
   it("muestra la hora de Coyhaique, en formato de 24 horas", () => {

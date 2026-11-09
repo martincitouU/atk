@@ -1,8 +1,7 @@
 // Pizarra: las tasas vigentes de cada divisa (GET /api/pizarra). Compra y
 // venta se leen desde la casa: "Compra" es lo que paga la casa por la divisa.
-// El admin publica tasas nuevas (POST /api/cotizaciones).
-//
-// ESQUELETO (F1): el formulario de publicar no guarda.
+// El admin publica tasas nuevas (POST /api/cotizaciones; el formulario se
+// conecta en F3).
 
 import { useState } from "react";
 import { useCatalogo, usePizarra } from "../../api/consultas.ts";
@@ -11,7 +10,7 @@ import { Boton } from "../../componentes/Boton.tsx";
 import { Entrada, FilaCampos, Seleccion } from "../../componentes/Campo.tsx";
 import { IconoDivisa } from "../../componentes/Divisa.tsx";
 import { EncabezadoPagina } from "../../componentes/EncabezadoPagina.tsx";
-import { Cargando } from "../../componentes/Estados.tsx";
+import { ConDatos, Vacio } from "../../componentes/Estados.tsx";
 import { Etiqueta } from "../../componentes/Etiqueta.tsx";
 import { Grilla, Pagina } from "../../componentes/Pagina.tsx";
 import { Segmentado } from "../../componentes/Segmentado.tsx";
@@ -23,20 +22,24 @@ import css from "./Pizarra.module.css";
 
 export function Pizarra() {
   const { usuario } = usePersonal();
-  const { data: pizarra, isPending } = usePizarra();
+  const pizarra = usePizarra();
 
   return (
     <Pagina>
       <EncabezadoPagina titulo="Pizarra" descripcion="Tasas vigentes en pesos por unidad. Compra y venta, desde la casa." />
-      {isPending || !pizarra ? (
-        <Cargando texto="Cargando la pizarra…" />
-      ) : (
-        <Grilla minimo={260}>
-          {pizarra.map((fila) => (
-            <TarjetaDivisa key={fila.monedaCodigo} fila={fila} />
-          ))}
-        </Grilla>
-      )}
+      <ConDatos consulta={pizarra} cargando="Cargando la pizarra…">
+        {(filas) =>
+          filas.length === 0 ? (
+            <Vacio titulo="La casa todavía no tiene divisas">Se configuran al inicializar la casa de cambio.</Vacio>
+          ) : (
+            <Grilla minimo={260}>
+              {filas.map((fila) => (
+                <TarjetaDivisa key={fila.monedaCodigo} fila={fila} />
+              ))}
+            </Grilla>
+          )
+        }
+      </ConDatos>
       {usuario.rol === "ADMIN" && <Publicar />}
     </Pagina>
   );
@@ -70,7 +73,8 @@ function TarjetaDivisa({ fila }: { fila: FilaPizarra }) {
       </dl>
 
       <p className={css.pie}>
-        Referencia {fila.referenciaE6 ? formatearTasa(fila.referenciaE6, fila.decimalesTasa) : "—"} · Margen {margen(fila.margenCompraE6)} / {margen(fila.margenVentaE6)}
+        Referencia {fila.referenciaE6 ? formatearTasa(fila.referenciaE6, fila.decimalesTasa) : "—"} · Margen {margen(fila.margenCompraE6)} /{" "}
+        {margen(fila.margenVentaE6)}
       </p>
       {fila.vigenteDesde && <p className={css.pie}>Publicada el {formatearFechaHora(fila.vigenteDesde)}</p>}
     </article>
@@ -83,7 +87,10 @@ function Publicar() {
   const sufijo = tipoMargen === "PORCENTAJE" ? "%" : "CLP";
 
   return (
-    <Tarjeta titulo="Publicar una tasa" descripcion="La pizarra se calcula con la referencia y los márgenes. Cambiar un margen crea una regla nueva: las operaciones conservan la suya.">
+    <Tarjeta
+      titulo="Publicar una tasa"
+      descripcion="La pizarra se calcula con la referencia y los márgenes. Cambiar un margen crea una regla nueva: las operaciones conservan la suya."
+    >
       <form className={css.formulario} onSubmit={(e) => e.preventDefault()}>
         <FilaCampos>
           <Seleccion etiqueta="Divisa">

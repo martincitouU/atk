@@ -36,6 +36,16 @@ export function listarUsuarios(ctx: Contexto, actor: Actor) {
   return ctx.db.select().from(usuario).orderBy(asc(usuario.nombre)).all().map(vista);
 }
 
+/**
+ * Solo el nombre de cada persona del personal, para que las pantallas
+ * muestren quién registró, confirmó o reversó algo. Incluye a los
+ * inactivos: lo que hicieron se sigue mostrando. Sin correo ni RUT, así que
+ * lo puede ver cualquiera del personal.
+ */
+export function nombresDelPersonal(datos: Datos) {
+  return datos.select({ id: usuario.id, nombre: usuario.nombre }).from(usuario).orderBy(asc(usuario.nombre), asc(usuario.id)).all();
+}
+
 /** El RUT y el correo llegan validados y normalizados por @atk/shared. */
 export async function crearUsuario(ctx: Contexto, actor: Actor, auth: Auth, entrada: EntradaUsuario) {
   exigirRol(actor, ["ADMIN"], "Crear usuarios");

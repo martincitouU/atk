@@ -1,0 +1,12 @@
+/* Mientras se sabe quién usa la app, o si eso falló: al centro de la pantalla */
+.pantalla {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--spacing-16);
+  background: var(--color-fondo);
+}
+
+.error {
+  width: min(480px, 100%);
+}

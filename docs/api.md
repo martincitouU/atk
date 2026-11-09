@@ -15,7 +15,7 @@ para validar sus formularios igual que la API: por ejemplo,
 | Sesión | Cookie `atk.session_token` (httpOnly, SameSite=Lax). El navegador la envía sola en `fetch` al mismo origen; no hay token que guardar. |
 | Inactividad | La sesión vence tras 15 minutos sin peticiones (parámetro `sesion_inactividad_minutos`). Cada petición la renueva. |
 | Escrituras | Toda petición `POST`, `PATCH` o `DELETE` debe llevar cuerpo JSON (`Content-Type: application/json`), aunque sea `{}`. El navegador agrega el `Origin` solo. Sin él → 403 `ORIGEN_NO_PERMITIDO`. |
-| Montos | Siempre **texto de dígitos** en la unidad mínima de su moneda: US$ 150,25 → `"15025"`; $ 95.410 → `"95410"`. Nunca `number`: se perdería precisión. Para mostrarlos, usar los `decimales` de la moneda (vienen en `/api/catalogo`). |
+| Montos | Siempre **texto de dígitos** en la unidad mínima de su moneda: US$ 150,25 → `"15025"`; $ 95.410 → `"95410"`. Nunca `number`: se perdería precisión. Para mostrarlos, usar los `decimales` de la moneda (vienen en `/api/casa`). |
 | Tasas, precios y márgenes | Texto con escala ×10^6 y sufijo `E6`: 954,10 → `"954100000"`; 1,5 % → `"1500000"`. |
 | Fechas con hora | ISO 8601: `"2026-11-08T15:30:00.000Z"`. Al enviarlas se acepta cualquier zona (`"2026-11-08T12:30:00-03:00"`). |
 | Fechas sin hora | `"AAAA-MM-DD"`, en la zona de la casa (America/Coyhaique). |
@@ -45,16 +45,32 @@ para decidir qué hacer en el front.
 **Excepción:** las 4 rutas de `/api/auth/*` son de Better Auth y sus
 errores vienen como `{ "message": "...", "code": "INVALID_EMAIL_OR_PASSWORD" }`.
 
-## 2. Sesión
+## 2. Sesión y datos públicos
 
 | Método y ruta | Quién | Cuerpo | Respuesta |
 |---|---|---|---|
+| `GET /api/casa` | Público | — | Nombre de la casa y sus monedas. Ver abajo |
 | `POST /api/auth/sign-in/email` | Público | `{ email, password }` | 200 y la cookie; 401 si no coincide |
 | `POST /api/auth/sign-out` | Con sesión | `{}` | 200; la cookie deja de valer |
 | `POST /api/auth/change-password` | Con sesión | `{ currentPassword, newPassword, revokeOtherSessions? }` | 200 |
 | `GET /api/auth/get-session` | Con sesión | — | Sesión de Better Auth (mejor usar `/api/yo`) |
 | `GET /api/yo` | Con sesión | — | Ver abajo |
 | `POST /api/registro` | Público (5 por hora por IP) | `{ nombre, rut, email, contrasena }` | 201 `{ nombre, rut, estado: "PENDIENTE", mensaje }` |
+
+`/api/casa` es lo que muestra la pizarra del local, sin nada privado. Lo
+necesitan el login (el nombre) y todas las vistas (los decimales y el símbolo
+para mostrar montos y tasas), también las del portal de clientes:
+
+```json
+{ "nombre": "Cambios Demo",
+  "monedaBase": { "codigo": "CLP", "nombre": "Peso chileno", "simbolo": "$", "decimales": 0 },
+  "divisas": [
+    { "codigo": "USD", "nombre": "Dólar estadounidense", "simbolo": "US$", "decimales": 2, "decimalesTasa": 2, "activa": true } ] }
+```
+
+Las divisas vienen en el orden de la pizarra e incluyen las que la casa ya no
+opera (`activa: false`), porque sus operaciones antiguas se siguen mostrando.
+Antes de configurar la casa: `{ "nombre": null, "monedaBase": null, "divisas": [] }`.
 
 `/api/yo` es lo primero que el front pide al cargar. Según quién sea:
 
@@ -92,6 +108,7 @@ editarlo).
 | Método y ruta | Roles | Entrada | Notas |
 |---|---|---|---|
 | `GET /api/catalogo` | C S A | — | Casa, moneda base, divisas (con `decimales` y `decimalesTasa`), sucursales, cajas, categorías de gasto y de cliente, parámetros. Pedirlo una vez al entrar. |
+| `GET /api/personal` | C S A | — | `[{ id, nombre }]` de todo el personal, también el inactivo. Para mostrar el nombre donde llega un id (`usuarioId`, `confirmadaPor`, `reversadaPor`...). Sin correo ni RUT. |
 | `GET /api/pizarra` | C S A | `?sucursalId=` | Por divisa: `compraE6`, `ventaE6`, `referenciaE6`, márgenes, `vigenteDesde`, `vencida`. |
 | `POST /api/cotizaciones` | A | `{ monedaCodigo, referenciaE6, margenCompraE6, margenVentaE6, tipoMargen? }` | Publica una tasa nueva. `tipoMargen`: `PORCENTAJE` (por defecto) o `MONTO_FIJO`. |
 
@@ -106,8 +123,8 @@ editarlo).
 | `POST /api/operaciones/:id/autorizar` | S A | `{}` | Autoriza una tasa preferencial. |
 | `POST /api/operaciones/:id/confirmar` | C S A | `{}` | Recalcula con la pizarra vigente, valida folio y ficha, y mueve la caja. Si la pizarra cambió desde el borrador, falla. |
 | `POST /api/operaciones/:id/reversar` | S A | `{ motivo }` | Movimientos inversos; la operación queda REVERSADA. |
-| `GET /api/operaciones` | C S A | `?estado=&monedaCodigo=&turnoId=&cajaId=&usuarioId=&desde=&hasta=&limite=` | De la más reciente a la más antigua. |
-| `GET /api/operaciones/:id` | C S A | — | |
+| `GET /api/operaciones` | C S A | `?estado=&monedaCodigo=&turnoId=&cajaId=&usuarioId=&desde=&hasta=&limite=` | De la más reciente a la más antigua. Cada una con `clienteNombre` (null si es anónima). |
+| `GET /api/operaciones/:id` | C S A | — | Con `clienteNombre`. |
 
 Entrada para crear una operación:
 
@@ -141,7 +158,7 @@ Entrada para crear una operación:
 
 | Método y ruta | Roles | Entrada | Notas |
 |---|---|---|---|
-| `GET /api/clientes` | C S A | `?q=texto&limite=` | Busca en nombre y documento. `q` es obligatorio. |
+| `GET /api/clientes` | C S A | `?q=texto&limite=` | Busca en nombre y documento. `q` es obligatorio. Cada ficha trae `faltantesUaf`. |
 | `GET /api/clientes/:id` | C S A | — | Ficha y `faltantesUaf` (lo que falta para cumplir con la UAF). |
 | `POST /api/clientes` | C S A | `{ tipoDocumento, numeroDocumento, nombre, nacionalidad?, oficio?, paisResidencia?, domicilio?, telefono?, email?, relacionPermanente?, categoriaId? }` | `tipoDocumento`: RUT, PASAPORTE, DNI u OTRO. Países en ISO de 2 letras. |
 | `PATCH /api/clientes/:id` | C S A | Los campos que cambian | |

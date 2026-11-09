@@ -17,14 +17,14 @@ import { aJson } from "./http/json.ts";
 import { exigirMismoOrigen } from "./http/origen.ts";
 import { rutasAuth } from "./rutas/auth.ts";
 import { rutasCaja } from "./rutas/caja.ts";
-import { rutasCatalogo } from "./rutas/catalogo.ts";
+import { rutaCasa, rutasCatalogo } from "./rutas/catalogo.ts";
 import { rutasClientes } from "./rutas/clientes.ts";
 import { rutasConsultas } from "./rutas/consultas.ts";
 import { rutaRegistro, rutasCuentasCliente, rutasPortal } from "./rutas/cuentas.ts";
 import { rutasGastos } from "./rutas/gastos.ts";
 import { rutasCotizaciones } from "./rutas/cotizaciones.ts";
 import { rutasOperaciones } from "./rutas/operaciones.ts";
-import { rutasUsuarios } from "./rutas/usuarios.ts";
+import { rutaPersonal, rutasUsuarios } from "./rutas/usuarios.ts";
 import { rutasYo } from "./rutas/yo.ts";
 import { crearContexto } from "./servicios/contexto.ts";
 
@@ -73,7 +73,11 @@ export function construirServidor({ sqlite, db }: Conexion, opciones: OpcionesSe
       api.setNotFoundHandler(rutaNoExiste);
       exigirMismoOrigen(api, opciones.urlPublica);
 
-      // Login y registro de clientes: lo único de /api que no exige sesión
+      // Sin sesión: el nombre de la casa y sus monedas (lo que muestra la
+      // pizarra del local). Responde aunque el login no esté configurado.
+      rutaCasa(api, ctx);
+
+      // Login y registro de clientes: tampoco exigen sesión
       const { auth, urlPublica } = opciones;
       if (auth && urlPublica) {
         rutasAuth(api, auth, urlPublica);
@@ -101,6 +105,7 @@ export function construirServidor({ sqlite, db }: Conexion, opciones: OpcionesSe
         rutasGastos(personal, ctx);
         rutasConsultas(personal, ctx);
         rutasCuentasCliente(personal, ctx);
+        rutaPersonal(personal, ctx);
         if (auth) rutasUsuarios(personal, ctx, auth);
       });
 

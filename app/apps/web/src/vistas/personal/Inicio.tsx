@@ -4,13 +4,13 @@
 
 import { ArrowRight, Plus, Wallet } from "lucide-react";
 import { Link } from "react-router";
-import { useCatalogo, useOperaciones, useOrdenMonedas, usePizarra, useResumen } from "../../api/consultas.ts";
+import { useCatalogo, useMonedaBase, useOperaciones, useOrdenMonedas, usePizarra, useResumen } from "../../api/consultas.ts";
 import type { Turno } from "../../api/tipos.ts";
 import { Boton, EnlaceBoton } from "../../componentes/Boton.tsx";
 import { Seleccion } from "../../componentes/Campo.tsx";
 import { DivisaCompacta } from "../../componentes/Divisa.tsx";
 import { EncabezadoPagina } from "../../componentes/EncabezadoPagina.tsx";
-import { Cargando } from "../../componentes/Estados.tsx";
+import { ConDatos, Vacio } from "../../componentes/Estados.tsx";
 import { Etiqueta } from "../../componentes/Etiqueta.tsx";
 import { GrillaIndicadores, Indicador } from "../../componentes/Indicador.tsx";
 import { Monto, Tasa } from "../../componentes/Monto.tsx";
@@ -18,7 +18,6 @@ import { Columnas, Grilla, Pagina } from "../../componentes/Pagina.tsx";
 import { Tabla } from "../../componentes/Tabla.tsx";
 import { Tarjeta } from "../../componentes/Tarjeta.tsx";
 import { formatearDia, formatearHora, hoy } from "../../lib/fechas.ts";
-import { formatearConSimbolo } from "../../lib/montos.ts";
 import { ESTADO_OPERACION, TIPO_OPERACION } from "../../lib/textos.ts";
 import { usePersonal } from "../../sesion/Sesion.tsx";
 import css from "./Personal.module.css";
@@ -94,9 +93,9 @@ function MiTurno({ turno }: { turno: Turno | null }) {
 
 /** Cifras del día para supervisores y admin. */
 function ElDia() {
-  const { data: resumen, isPending } = useResumen();
+  const resumen = useResumen();
   const ordenar = useOrdenMonedas();
-  if (isPending || !resumen) return <Cargando texto="Cargando el resumen del día…" />;
+  const monedaBase = useMonedaBase();
 
   return (
     <section className={css.seccion} aria-labelledby="titulo-dia">
@@ -108,62 +107,87 @@ function ElDia() {
           Ver operaciones <ArrowRight size={16} aria-hidden />
         </EnlaceBoton>
       </div>
-      <GrillaIndicadores>
-        <Indicador etiqueta="Margen bruto del día" valor={formatearConSimbolo(resumen.margen.bruto, 0, "$")} detalle="Se actualiza con cada operación" enVivo />
-        <Indicador
-          etiqueta="Operaciones confirmadas"
-          valor={resumen.operaciones.confirmadas}
-          detalle={resumen.operaciones.reversadas ? `${resumen.operaciones.reversadas} reversada` : "Sin reversos"}
-        />
-        <Indicador etiqueta="Gastos" valor={formatearConSimbolo(resumen.gastos.total, 0, "$")} detalle={`${resumen.gastos.cantidad} registrados`} />
-        <Indicador etiqueta="Borradores sin confirmar" valor={resumen.borradoresPendientes} detalle="Se cierran antes del arqueo" />
-      </GrillaIndicadores>
+      <ConDatos consulta={resumen} cargando="Cargando el resumen del día…">
+        {(dia) => (
+          <>
+            <GrillaIndicadores>
+              <Indicador
+                etiqueta="Margen bruto del día"
+                valor={<Monto valor={dia.margen.bruto} moneda={monedaBase} />}
+                detalle="Se actualiza con cada operación"
+                enVivo
+              />
+              <Indicador
+                etiqueta="Operaciones confirmadas"
+                valor={dia.operaciones.confirmadas}
+                detalle={
+                  dia.operaciones.reversadas ? `${dia.operaciones.reversadas} ${dia.operaciones.reversadas === 1 ? "reversada" : "reversadas"}` : "Sin reversos"
+                }
+              />
+              <Indicador
+                etiqueta="Gastos"
+                valor={<Monto valor={dia.gastos.total} moneda={monedaBase} />}
+                detalle={`${dia.gastos.cantidad} ${dia.gastos.cantidad === 1 ? "registrado" : "registrados"}`}
+              />
+              <Indicador etiqueta="Borradores sin confirmar" valor={dia.borradoresPendientes} detalle="Se cierran antes del arqueo" />
+            </GrillaIndicadores>
 
-      <Columnas
-        lateral={
-          <Tarjeta titulo="Turnos abiertos">
-            <ul className={css.lista}>
-              {resumen.turnosAbiertos.map((t) => (
-                <li key={t.turno.id} className={css.filaLista}>
-                  <span>
-                    {t.cajaNombre} · {t.usuarioNombre}
-                  </span>
-                  <span className={css.secundario}>desde {formatearHora(t.turno.abiertoEn)}</span>
-                </li>
-              ))}
-            </ul>
-          </Tarjeta>
-        }
-      >
-        <Tarjeta titulo="Saldos de la casa" descripcion="Suma de todas las cajas" sinRelleno>
-          <Tabla etiqueta="Saldos por moneda">
-            <thead>
-              <tr>
-                <th>Moneda</th>
-                <th className="num">Saldo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ordenar(resumen.saldos.totales).map((s) => (
-                <tr key={s.monedaCodigo}>
-                  <td>
-                    <DivisaCompacta codigo={s.monedaCodigo} />
-                  </td>
-                  <td className="num">
-                    <Monto valor={s.saldo} moneda={s.monedaCodigo} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Tabla>
-        </Tarjeta>
-      </Columnas>
+            <Columnas
+              lateral={
+                <Tarjeta titulo="Turnos abiertos">
+                  {dia.turnosAbiertos.length === 0 ? (
+                    <p className={css.secundario}>Ninguno por ahora.</p>
+                  ) : (
+                    <ul className={css.lista}>
+                      {dia.turnosAbiertos.map((t) => (
+                        <li key={t.turno.id} className={css.filaLista}>
+                          <span>
+                            {t.cajaNombre} · {t.usuarioNombre}
+                          </span>
+                          <span className={css.secundario}>desde {formatearHora(t.turno.abiertoEn)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </Tarjeta>
+              }
+            >
+              <Tarjeta titulo="Saldos de la casa" descripcion="Suma de todas las cajas" sinRelleno>
+                {dia.saldos.totales.length === 0 ? (
+                  <Vacio titulo="Todavía no hay dinero en las cajas">Aparece cuando se registra el fondo inicial de un turno.</Vacio>
+                ) : (
+                  <Tabla etiqueta="Saldos por moneda">
+                    <thead>
+                      <tr>
+                        <th>Moneda</th>
+                        <th className="num">Saldo</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ordenar(dia.saldos.totales).map((s) => (
+                        <tr key={s.monedaCodigo}>
+                          <td>
+                            <DivisaCompacta codigo={s.monedaCodigo} />
+                          </td>
+                          <td className="num">
+                            <Monto valor={s.saldo} moneda={s.monedaCodigo} />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Tabla>
+                )}
+              </Tarjeta>
+            </Columnas>
+          </>
+        )}
+      </ConDatos>
     </section>
   );
 }
 
 function PizarraBreve() {
-  const { data: pizarra, isPending } = usePizarra();
+  const pizarra = usePizarra();
   return (
     <Tarjeta
       titulo="Pizarra"
@@ -174,43 +198,44 @@ function PizarraBreve() {
       }
       sinRelleno
     >
-      {isPending || !pizarra ? (
-        <Cargando />
-      ) : (
-        <Tabla etiqueta="Pizarra vigente">
-          <thead>
-            <tr>
-              <th>Divisa</th>
-              <th className="num">Compra</th>
-              <th className="num">Venta</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pizarra.map((f) => (
-              <tr key={f.monedaCodigo}>
-                <td>
-                  <span className={css.divisaConEstado}>
-                    <DivisaCompacta codigo={f.monedaCodigo} />
-                    {f.vencida && <Etiqueta tono="error">Vencida</Etiqueta>}
-                  </span>
-                </td>
-                <td className="num">
-                  <Tasa valorE6={f.compraE6} decimales={f.decimalesTasa} />
-                </td>
-                <td className="num">
-                  <Tasa valorE6={f.ventaE6} decimales={f.decimalesTasa} />
-                </td>
+      <ConDatos consulta={pizarra}>
+        {(filas) => (
+          <Tabla etiqueta="Pizarra vigente">
+            <thead>
+              <tr>
+                <th>Divisa</th>
+                <th className="num">Compra</th>
+                <th className="num">Venta</th>
               </tr>
-            ))}
-          </tbody>
-        </Tabla>
-      )}
+            </thead>
+            <tbody>
+              {filas.map((f) => (
+                <tr key={f.monedaCodigo}>
+                  <td>
+                    <span className={css.divisaConEstado}>
+                      <DivisaCompacta codigo={f.monedaCodigo} />
+                      {f.vencida && <Etiqueta tono="error">Vencida</Etiqueta>}
+                    </span>
+                  </td>
+                  <td className="num">
+                    <Tasa valorE6={f.compraE6} decimales={f.decimalesTasa} />
+                  </td>
+                  <td className="num">
+                    <Tasa valorE6={f.ventaE6} decimales={f.decimalesTasa} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Tabla>
+        )}
+      </ConDatos>
     </Tarjeta>
   );
 }
 
 function UltimasDelTurno({ turnoId }: { turnoId: number }) {
-  const { data: operaciones, isPending } = useOperaciones({ turnoId });
+  const operaciones = useOperaciones({ turnoId, limite: 5 });
+  const monedaBase = useMonedaBase();
   return (
     <Tarjeta
       titulo="Últimas operaciones del turno"
@@ -221,42 +246,46 @@ function UltimasDelTurno({ turnoId }: { turnoId: number }) {
       }
       sinRelleno
     >
-      {isPending || !operaciones ? (
-        <Cargando />
-      ) : (
-        <Tabla etiqueta="Últimas operaciones del turno">
-          <thead>
-            <tr>
-              <th>N°</th>
-              <th>Hora</th>
-              <th>Tipo</th>
-              <th className="num">Divisa</th>
-              <th className="num">Pesos</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {operaciones.slice(0, 5).map((o) => (
-              <tr key={o.id}>
-                <td>
-                  <Link to={`/operaciones/${o.id}`}>{o.id}</Link>
-                </td>
-                <td>{formatearHora(o.realizadaEn)}</td>
-                <td>{TIPO_OPERACION[o.tipo]}</td>
-                <td className="num">
-                  <Monto valor={o.montoDivisa} moneda={o.monedaCodigo} />
-                </td>
-                <td className="num">
-                  <Monto valor={o.montoBase} moneda="CLP" />
-                </td>
-                <td>
-                  <Etiqueta tono={ESTADO_OPERACION[o.estado].tono}>{ESTADO_OPERACION[o.estado].texto}</Etiqueta>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </Tabla>
-      )}
+      <ConDatos consulta={operaciones}>
+        {(lista) =>
+          lista.length === 0 ? (
+            <Vacio titulo="Todavía no hay operaciones en este turno" />
+          ) : (
+            <Tabla etiqueta="Últimas operaciones del turno">
+              <thead>
+                <tr>
+                  <th>N°</th>
+                  <th>Hora</th>
+                  <th>Tipo</th>
+                  <th className="num">Divisa</th>
+                  <th className="num">Pesos</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lista.map((o) => (
+                  <tr key={o.id}>
+                    <td>
+                      <Link to={`/operaciones/${o.id}`}>{o.id}</Link>
+                    </td>
+                    <td>{formatearHora(o.realizadaEn)}</td>
+                    <td>{TIPO_OPERACION[o.tipo]}</td>
+                    <td className="num">
+                      <Monto valor={o.montoDivisa} moneda={o.monedaCodigo} />
+                    </td>
+                    <td className="num">
+                      <Monto valor={o.montoBase} moneda={monedaBase} />
+                    </td>
+                    <td>
+                      <Etiqueta tono={ESTADO_OPERACION[o.estado].tono}>{ESTADO_OPERACION[o.estado].texto}</Etiqueta>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Tabla>
+          )
+        }
+      </ConDatos>
     </Tarjeta>
   );
 }
