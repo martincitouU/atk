@@ -77,7 +77,7 @@ export function Jornada() {
           },
         },
       ],
-      nota: [esHoy ? "Hoy" : diaLargo(fecha)],
+      nota: esHoy ? undefined : [diaLargo(fecha)],
     },
     {
       nombre: "Ir a",

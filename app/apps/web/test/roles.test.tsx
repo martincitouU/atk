@@ -1,9 +1,9 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { rutas } from "../src/app.tsx";
-import { estadoPrueba } from "./preparar.ts";
+import { estadoPrueba, RELOJ_PRUEBA } from "./preparar.ts";
 import { Proveedores } from "./proveedores.tsx";
 
 function montar(entrada: string) {
@@ -17,9 +17,13 @@ function montar(entrada: string) {
 }
 
 describe("Los roles: un cajero no ve lo que la API le negaría", () => {
+  // El reloj del navegador, el mismo de la semilla: después de medianoche el libro de «hoy» quedaba vacío
   beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(RELOJ_PRUEBA);
     if (estadoPrueba.sesion) estadoPrueba.sesion = { ...estadoPrueba.sesion, rol: "CAJERO" };
   });
+  afterEach(() => vi.useRealTimers());
 
   it("la Jornada no está en el riel, F3 no lleva a ella y /jornada vuelve a la Ventanilla", async () => {
     const { router, u } = montar("/jornada");

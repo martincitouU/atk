@@ -304,6 +304,51 @@
   text-transform: uppercase;
 }
 
+/* En una pantalla baja (1366 × 768, 1280 × 800) la cinta se simplifica, como
+   la cinta simplificada de Office: una sola fila, sin rótulos de grupo, para
+   que la Ventanilla quepa entera */
+@media (min-width: 900px) and (max-height: 860px) {
+  .cinta {
+    min-height: 0;
+    padding: 3px 8px;
+  }
+
+  .cinta-grupo {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .cinta-botones,
+  .cinta-grandes,
+  .cinta-pila {
+    flex-direction: row;
+    align-items: center;
+    padding-top: 0;
+  }
+
+  .cinta-btn.grande {
+    flex-direction: row;
+    gap: 7px;
+    min-width: 0;
+    padding: 2px 8px;
+  }
+
+  .cinta-btn.grande svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .cinta-rotulo {
+    display: none;
+  }
+
+  .cinta-nota {
+    flex-direction: row;
+    gap: 8px;
+    padding: 0 6px;
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /* La barra de estado */
 

@@ -199,14 +199,22 @@
   white-space: nowrap;
 }
 
-.admin-cuando span {
-  display: block;
-}
-
 .admin-cuando span + span {
+  margin-left: 8px;
   color: var(--suave);
   font-size: 12px;
   font-weight: 600;
+}
+
+/* En el teléfono, el día baja bajo la hora */
+@media (max-width: 899.98px) {
+  .admin-cuando span {
+    display: block;
+  }
+
+  .admin-cuando span + span {
+    margin-left: 0;
+  }
 }
 
 .admin-motivo {
