@@ -1,10 +1,11 @@
 import { ACCIONES_AUDITORIA } from "@atk/shared";
-import { LockSimpleIcon } from "@phosphor-icons/react";
-import { useSearchParams } from "react-router";
+import { FunnelSimpleXIcon, GearIcon, LockSimpleIcon, UsersIcon } from "@phosphor-icons/react";
+import { useNavigate, useSearchParams } from "react-router";
 import { ErrorNegocio } from "../api/cliente.ts";
 import { rangoDelDia, useAuditoria, useParametros, useUsuarios, type FiltrosAuditoria } from "../api/consultas.ts";
 import type { RegistroAuditoria } from "../api/esquemas.ts";
 import { Aviso } from "../componentes/Aviso.tsx";
+import { useCinta } from "../componentes/Cinta.tsx";
 import { Sep } from "../componentes/Sep.tsx";
 import { diaLargo, fechaEn, hora, ZONA_CASA } from "../comun.ts";
 import "../estilos/clientes.css";
@@ -70,6 +71,31 @@ export function Auditoria() {
     else nuevos.delete(clave);
     setParams(nuevos, { replace: true });
   }
+
+  const navegar = useNavigate();
+  useCinta([
+    {
+      nombre: "Filtros",
+      comandos: [
+        {
+          id: "quitar",
+          etiqueta: "Quitar filtros",
+          Icono: FunnelSimpleXIcon,
+          grande: true,
+          deshabilitado: !hayFiltros,
+          alPulsar: () => setParams({}, { replace: true }),
+        },
+      ],
+      nota: registros.isSuccess ? [`${lista.length} ${lista.length === 1 ? "cambio" : "cambios"}`, "El más reciente arriba"] : undefined,
+    },
+    {
+      nombre: "Ir a",
+      comandos: [
+        { id: "usuarios", etiqueta: "Usuarios", Icono: UsersIcon, grande: true, alPulsar: () => void navegar("/usuarios") },
+        { id: "config", etiqueta: "Configuración", Icono: GearIcon, tecla: "F5", grande: true, alPulsar: () => void navegar("/configuracion") },
+      ],
+    },
+  ]);
 
   return (
     <div className="config admin">
@@ -168,7 +194,12 @@ export function Auditoria() {
               </thead>
               <tbody>
                 {lista.map((r) => (
-                  <Fila key={r.id} registro={r} quien={r.usuarioId === null ? "El sistema" : (nombreDe.get(r.usuarioId) ?? `Usuario ${r.usuarioId}`)} zona={zona} />
+                  <Fila
+                    key={r.id}
+                    registro={r}
+                    quien={r.usuarioId === null ? "El sistema" : (nombreDe.get(r.usuarioId) ?? `Usuario ${r.usuarioId}`)}
+                    zona={zona}
+                  />
                 ))}
               </tbody>
             </table>

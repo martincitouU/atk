@@ -1,10 +1,13 @@
 import { aBigint, type Catalogo, type FilaPizarra, type Moneda, type Parametros } from "../api/esquemas.ts";
 import { formatearMonto, potencia10 } from "@atk/shared/dinero";
-import { LockSimpleIcon } from "@phosphor-icons/react";
+import { ClockCounterClockwiseIcon, CurrencyCircleDollarIcon, LockSimpleIcon, UsersIcon } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
+import { useNavigate } from "react-router";
 import { ErrorNegocio } from "../api/cliente.ts";
 import { useCatalogo, useParametros, usePizarra } from "../api/consultas.ts";
+import { usePuede } from "../api/permisos.ts";
 import { Aviso } from "../componentes/Aviso.tsx";
+import { useCinta } from "../componentes/Cinta.tsx";
 import { Divisa } from "../componentes/Divisa.tsx";
 import { Sep } from "../componentes/Sep.tsx";
 import "../estilos/clientes.css";
@@ -34,13 +37,41 @@ function filasParametros(p: Parametros, catalogo: Catalogo | undefined): { nombr
   const usd = (monto: string) => `US$ ${formatearMonto(aBigint(monto), 0)}`;
   const cajas = catalogo?.cajas.map((c) => c.nombre).join(", ");
   return [
-    { nombre: "Ficha del cliente", valor: `desde ${usd(p.umbralFichaClienteUsd)}`, para: "Desde este equivalente en dólares, la operación exige identificar al cliente (UAF)." },
-    { nombre: "Reporte de operaciones en efectivo", valor: `sobre ${usd(p.umbralRoeUsd)}`, para: "Las operaciones sobre este monto entran al ROE de la UAF." },
-    { nombre: "Vigencia de la pizarra", valor: minutos(p.vigenciaCotizacionMinutos), para: "Pasado este tiempo, una cotización vence y no se puede operar en esa divisa." },
-    { nombre: "Folio del DTE al confirmar", valor: p.folioObligatorioAlConfirmar ? "Obligatorio" : "Opcional", para: "Si confirmar una operación exige el tipo (41 o 34) y el folio del documento tributario." },
-    { nombre: "Reverso", valor: p.reversoRequiereSupervisor ? "Solo supervisor o admin" : "Cualquier cajero", para: "Quién puede reversar una operación confirmada." },
-    { nombre: "Saldo negativo en caja", valor: p.permitirSaldoNegativo ? "Permitido" : "No permitido", para: "Si una venta puede dejar una divisa bajo cero en la caja." },
-    { nombre: "Cierre de sesión", valor: `tras ${minutos(p.sesionInactividadMinutos)} sin actividad`, para: "La sesión se cierra sola y vuelve a la pantalla de entrada." },
+    {
+      nombre: "Ficha del cliente",
+      valor: `desde ${usd(p.umbralFichaClienteUsd)}`,
+      para: "Desde este equivalente en dólares, la operación exige identificar al cliente (UAF).",
+    },
+    {
+      nombre: "Reporte de operaciones en efectivo",
+      valor: `sobre ${usd(p.umbralRoeUsd)}`,
+      para: "Las operaciones sobre este monto entran al ROE de la UAF.",
+    },
+    {
+      nombre: "Vigencia de la pizarra",
+      valor: minutos(p.vigenciaCotizacionMinutos),
+      para: "Pasado este tiempo, una cotización vence y no se puede operar en esa divisa.",
+    },
+    {
+      nombre: "Folio del DTE al confirmar",
+      valor: p.folioObligatorioAlConfirmar ? "Obligatorio" : "Opcional",
+      para: "Si confirmar una operación exige el tipo (41 o 34) y el folio del documento tributario.",
+    },
+    {
+      nombre: "Reverso",
+      valor: p.reversoRequiereSupervisor ? "Solo supervisor o admin" : "Cualquier cajero",
+      para: "Quién puede reversar una operación confirmada.",
+    },
+    {
+      nombre: "Saldo negativo en caja",
+      valor: p.permitirSaldoNegativo ? "Permitido" : "No permitido",
+      para: "Si una venta puede dejar una divisa bajo cero en la caja.",
+    },
+    {
+      nombre: "Cierre de sesión",
+      valor: `tras ${minutos(p.sesionInactividadMinutos)} sin actividad`,
+      para: "La sesión se cierra sola y vuelve a la pantalla de entrada.",
+    },
     { nombre: "Zona horaria", valor: p.zonaHoraria, para: "Define dónde empieza y termina el día de la casa." },
     ...(cajas ? [{ nombre: "Cajas", valor: cajas, para: "Las cajas habilitadas para abrir turno." }] : []),
   ];
@@ -116,8 +147,8 @@ function Divisas({ catalogo, pizarra }: { catalogo: Catalogo; pizarra: FilaPizar
             <td colSpan={6}>
               Moneda base: <b>{base.codigo}</b>
               <Sep />
-              {base.nombre} ({base.simbolo}),{" "}
-              {base.decimales === 0 ? "sin decimales" : `${base.decimales} decimales`}. Las tasas se publican en pesos por unidad.
+              {base.nombre} ({base.simbolo}), {base.decimales === 0 ? "sin decimales" : `${base.decimales} decimales`}. Las tasas se publican en pesos
+              por unidad.
             </td>
           </tr>
         </tfoot>
@@ -161,6 +192,37 @@ export function Configuracion() {
   const catalogo = useCatalogo();
   const pizarra = usePizarra();
   const parametros = useParametros();
+  const navegar = useNavigate();
+  const admin = usePuede()("administrar");
+
+  // Solo lectura: la cinta dice por qué y lleva a lo que sí se puede hacer
+  useCinta([
+    { nombre: "Configuración", comandos: [], nota: ["Solo lectura", "Se cambia con el equipo de ATK"] },
+    ...(admin
+      ? [
+          {
+            nombre: "Administración",
+            comandos: [
+              { id: "usuarios", etiqueta: "Usuarios", Icono: UsersIcon, grande: true, alPulsar: () => void navegar("/usuarios") },
+              { id: "auditoria", etiqueta: "Auditoría", Icono: ClockCounterClockwiseIcon, grande: true, alPulsar: () => void navegar("/auditoria") },
+            ],
+          },
+        ]
+      : []),
+    {
+      nombre: "Ir a",
+      comandos: [
+        {
+          id: "ventanilla",
+          etiqueta: "Ventanilla",
+          Icono: CurrencyCircleDollarIcon,
+          tecla: "F1",
+          grande: true,
+          alPulsar: () => void navegar("/ventanilla"),
+        },
+      ],
+    },
+  ]);
 
   return (
     <div className="config">

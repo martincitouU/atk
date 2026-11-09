@@ -1,10 +1,12 @@
 import { entradaUsuario, ROLES, type Rol } from "@atk/shared";
-import { CheckCircleIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
+import { CheckCircleIcon, ClockCounterClockwiseIcon, GearIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
+import { useNavigate } from "react-router";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { ErrorNegocio } from "../api/cliente.ts";
 import { useCrearUsuario, useEditarUsuario, useRestablecerContrasena, useSesion, useUsuarios } from "../api/consultas.ts";
 import type { Usuario } from "../api/esquemas.ts";
 import { Aviso } from "../componentes/Aviso.tsx";
+import { useCinta } from "../componentes/Cinta.tsx";
 import { ErrorCampo } from "../componentes/ErrorCampo.tsx";
 import { Sep } from "../componentes/Sep.tsx";
 import { rutConPuntos } from "../comun.ts";
@@ -41,6 +43,30 @@ export function Usuarios() {
     if (mensaje) setHecho(mensaje);
   }
 
+  function nuevo() {
+    setHecho(null);
+    setLado({ tipo: "nuevo" });
+  }
+
+  const navegar = useNavigate();
+  useCinta([
+    {
+      nombre: "Personal",
+      comandos: [
+        { id: "nuevo", etiqueta: "Nuevo usuario", Icono: PlusIcon, grande: true, alPulsar: nuevo },
+        { id: "cerrar", etiqueta: "Cerrar el panel", Icono: XIcon, deshabilitado: lado === null, alPulsar: () => setLado(null) },
+      ],
+      nota: [`${lista.length} ${lista.length === 1 ? "persona" : "personas"}`, `${activos} ${activos === 1 ? "activa" : "activas"}`],
+    },
+    {
+      nombre: "Ir a",
+      comandos: [
+        { id: "auditoria", etiqueta: "Auditoría", Icono: ClockCounterClockwiseIcon, grande: true, alPulsar: () => void navegar("/auditoria") },
+        { id: "config", etiqueta: "Configuración", Icono: GearIcon, tecla: "F5", grande: true, alPulsar: () => void navegar("/configuracion") },
+      ],
+    },
+  ]);
+
   let panel: ReactNode = <GuiaRoles />;
   if (lado?.tipo === "nuevo") panel = <NuevoUsuario onCerrar={terminar} />;
   else if (elegido) panel = <EditarUsuario key={elegido.id} usuario={elegido} esUsted={elegido.id === sesion?.usuario.id} onCerrar={terminar} />;
@@ -53,14 +79,7 @@ export function Usuarios() {
             <h1>Usuarios</h1>
             <p>El personal de la casa</p>
           </div>
-          <button
-            type="button"
-            className="btn-cartel"
-            onClick={() => {
-              setHecho(null);
-              setLado({ tipo: "nuevo" });
-            }}
-          >
+          <button type="button" className="btn-cartel" onClick={nuevo}>
             <PlusIcon size={16} weight="bold" aria-hidden="true" />
             Nuevo usuario
           </button>
@@ -347,7 +366,12 @@ function EditarUsuario({ usuario, esUsted, onCerrar }: { usuario: Usuario; esUst
         </label>
         <label>
           Rol
-          <select value={rol} onChange={(e) => setRol(e.target.value as Rol)} disabled={esUsted} aria-describedby={esUsted ? "usted-nota" : undefined}>
+          <select
+            value={rol}
+            onChange={(e) => setRol(e.target.value as Rol)}
+            disabled={esUsted}
+            aria-describedby={esUsted ? "usted-nota" : undefined}
+          >
             {ROLES.map((r) => (
               <option key={r} value={r}>
                 {ROL[r].nombre}

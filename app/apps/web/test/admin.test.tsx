@@ -35,7 +35,8 @@ describe("Usuarios (solo ADMIN)", () => {
   it("crea a una cajera: la contraseña corta se marca junto al campo y, corregida, aparece en la lista", async () => {
     const { u } = montar("/usuarios");
     await screen.findByRole("button", { name: "Rolando del Río" });
-    await u.click(screen.getByRole("button", { name: "Nuevo usuario" }));
+    // Desde la cinta: hace lo mismo que el botón del cartel
+    await u.click(within(screen.getByRole("toolbar", { name: "Comandos" })).getByRole("button", { name: "Nuevo usuario" }));
     const panel = screen.getByRole("region", { name: "Nuevo usuario" });
     await u.type(within(panel).getByLabelText("Nombre completo"), "Daniela Muñoz");
     await u.type(within(panel).getByLabelText("RUT"), "18.374.026-1");
