@@ -1,10 +1,9 @@
 // Perfil: los datos de la sesión, cambiar la contraseña
-// (POST /api/auth/change-password) y cerrar sesión. Sirve al personal y a
-// los clientes.
-//
-// ESQUELETO (F1): cambiar la contraseña no guarda.
+// (POST /api/auth/change-password, se conecta en F3) y cerrar sesión. Sirve
+// al personal y a los clientes.
 
 import { LogOut } from "lucide-react";
+import { Aviso } from "../componentes/Aviso.tsx";
 import { Boton } from "../componentes/Boton.tsx";
 import { Entrada } from "../componentes/Campo.tsx";
 import { EncabezadoPagina } from "../componentes/EncabezadoPagina.tsx";
@@ -12,11 +11,12 @@ import { Columnas, Datos, Pagina } from "../componentes/Pagina.tsx";
 import { Tarjeta } from "../componentes/Tarjeta.tsx";
 import { formatearRut } from "../lib/rut.ts";
 import { ROL } from "../lib/textos.ts";
-import { useSesion } from "../sesion/Sesion.tsx";
+import { useSalir, useSesion } from "../sesion/Sesion.tsx";
 import css from "./personal/Personal.module.css";
 
 export function Perfil() {
-  const { sesion, salir } = useSesion();
+  const { sesion } = useSesion();
+  const { salir, error } = useSalir();
   if (!sesion) return null;
 
   const datos =
@@ -37,6 +37,7 @@ export function Perfil() {
       <Columnas
         lateral={
           <Tarjeta titulo="Sesión" descripcion="Se cierra sola tras 15 minutos sin uso. En un computador compartido, ciérrala al terminar.">
+            {error && <Aviso tono="error">{error}</Aviso>}
             <Boton icono={<LogOut size={18} aria-hidden />} onClick={salir}>
               Cerrar sesión
             </Boton>

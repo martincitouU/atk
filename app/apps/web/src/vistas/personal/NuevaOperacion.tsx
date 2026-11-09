@@ -4,21 +4,22 @@
 // (POST /api/operaciones/previsualizar). El front no calcula ningún monto.
 // Al registrar queda como BORRADOR: se revisa y después se confirma.
 //
-// ESQUELETO (F1): la previsualización es fija (Venta de US$ 500,00) y el
-// botón no guarda. En F3 se conecta con react-hook-form y los esquemas
-// zod de @atk/shared (entradaOperacion).
+// Por ahora lee las divisas y la pizarra. En F3 se conecta el cálculo
+// (previsualizar) y el registro, con react-hook-form y los esquemas zod
+// de @atk/shared (entradaOperacion).
 
 import { ArrowDown, Search, X } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router";
-import { useCatalogo, useClientes, usePizarra, usePrevisualizacion } from "../../api/consultas.ts";
+import { mensajeDe } from "../../api/cliente.ts";
+import { MINIMO_BUSQUEDA, useCatalogo, useClientes, useMonedaBase, usePizarra } from "../../api/consultas.ts";
 import type { MedioPago, TipoOperacion } from "../../api/tipos.ts";
 import { Aviso } from "../../componentes/Aviso.tsx";
 import { Boton } from "../../componentes/Boton.tsx";
 import { AreaTexto, Entrada, FilaCampos, Seleccion } from "../../componentes/Campo.tsx";
 import { PastillaDivisa, SelectorDivisa } from "../../componentes/Divisa.tsx";
 import { EncabezadoPagina } from "../../componentes/EncabezadoPagina.tsx";
-import { Monto, Tasa } from "../../componentes/Monto.tsx";
+import { Tasa } from "../../componentes/Monto.tsx";
 import { Pagina } from "../../componentes/Pagina.tsx";
 import { Segmentado } from "../../componentes/Segmentado.tsx";
 import { Tarjeta } from "../../componentes/Tarjeta.tsx";
@@ -39,14 +40,16 @@ export function NuevaOperacion() {
   const { turnoAbierto } = usePersonal();
   const catalogo = useCatalogo();
   const pizarra = usePizarra();
-  const previa = usePrevisualizacion();
+  const monedaBase = useMonedaBase();
 
   const [tipo, setTipo] = useState<TipoOperacion>("VENTA");
-  const [moneda, setMoneda] = useState("USD");
-  const [monto, setMonto] = useState("500,00");
+  const [elegida, setMoneda] = useState<string | null>(null);
+  const [monto, setMonto] = useState("");
   const [medio, setMedio] = useState<MedioPago>("EFECTIVO");
 
   const divisas = catalogo.data?.divisas ?? [];
+  // La primera de la pizarra hasta que se elija otra
+  const moneda = elegida ?? divisas[0]?.codigo ?? "";
   const divisa = divisas.find((d) => d.codigo === moneda);
   const fila = pizarra.data?.find((f) => f.monedaCodigo === moneda);
   const umbralUsd = catalogo.data?.parametros.umbralFichaClienteUsd ?? "5000";
@@ -103,40 +106,29 @@ export function NuevaOperacion() {
           <div className={css.panelSalida}>
             <span className={css.etiquetaPanel}>{tipo === "VENTA" ? "El cliente paga" : "El cliente recibe"}</span>
             <div className={css.filaPanel}>
+              {/* Los pesos los calcula la API (previsualizar, en F3) */}
               <output className={`${css.montoGrande} num`} htmlFor="monto-divisa" aria-live="polite">
-                {previa.data ? formatearMonto(previa.data.montoBase, 0) : "—"}
+                —
               </output>
-              <PastillaDivisa codigo="CLP" />
+              <PastillaDivisa codigo={monedaBase} />
             </div>
           </div>
 
-          {previa.data && (
+          {fila && (
             <dl className={css.detalle}>
               <div>
-                <dt>Tasa</dt>
+                <dt>Pizarra</dt>
                 <dd>
-                  <Tasa valorE6={previa.data.tasaAplicadaE6} decimales={divisa?.decimalesTasa ?? 2} /> por {moneda}
+                  <Tasa valorE6={tipo === "VENTA" ? fila.ventaE6 : fila.compraE6} decimales={fila.decimalesTasa} /> por {moneda}
                 </dd>
               </div>
-              <div>
-                <dt>Equivale a</dt>
-                <dd>
-                  <Monto valor={previa.data.equivalenteUsd} moneda="USD" />
-                </dd>
-              </div>
-              {fila?.vigenteDesde && (
+              {fila.vigenteDesde && (
                 <div>
-                  <dt>Pizarra</dt>
-                  <dd>vigente desde las {formatearHora(fila.vigenteDesde)}</dd>
+                  <dt>Vigente desde</dt>
+                  <dd>{fila.vencida ? "vencida: hay que publicar una tasa nueva" : `las ${formatearHora(fila.vigenteDesde)}`}</dd>
                 </div>
               )}
             </dl>
-          )}
-
-          {previa.data?.requiereFicha && (
-            <Aviso tono="atencion" titulo="Requiere ficha del cliente (UAF)">
-              Desde US$ {formatearMonto(umbralUsd, 0)} hay que identificar al cliente con su ficha completa e indicar el propósito.
-            </Aviso>
           )}
         </Tarjeta>
 
@@ -222,14 +214,21 @@ function BuscarCliente({ umbralUsd }: { umbralUsd: string }) {
         sufijo={<Search size={16} aria-hidden />}
         ayuda={`Opcional. Obligatorio desde US$ ${formatearMonto(umbralUsd, 0)} (UAF).`}
       />
-      {texto.trim().length >= 2 && (
+      {texto.trim().length >= MINIMO_BUSQUEDA && (
         <ul className={css.resultados}>
-          {resultados.data?.length ? (
+          {resultados.isPending ? (
+            <li className={css.sinResultados}>Buscando…</li>
+          ) : resultados.isError ? (
+            <li className={css.sinResultados}>{mensajeDe(resultados.error)}</li>
+          ) : resultados.data.length ? (
             resultados.data.map((c) => (
               <li key={c.id}>
                 <button type="button" className={css.resultado} onClick={() => setElegido({ id: c.id, nombre: c.nombre, documento: c.numeroDocumento })}>
                   <span>{c.nombre}</span>
-                  <span className={css.notaGrupo}>{c.numeroDocumento}</span>
+                  <span className={css.notaGrupo}>
+                    {c.numeroDocumento}
+                    {c.faltantesUaf.length > 0 && " · ficha incompleta"}
+                  </span>
                 </button>
               </li>
             ))

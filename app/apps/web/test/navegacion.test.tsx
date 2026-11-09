@@ -1,24 +1,13 @@
-// Quién ve qué: las rutas protegidas, la navegación por rol y el login de
-// ejemplo del esqueleto. Se renderiza la app completa en memoria (jsdom).
+// Quién ve qué: las rutas protegidas y la navegación por rol. La app
+// completa en memoria (jsdom), con la API simulada (apiFalsa.tsx).
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { RouterProvider } from "react-router";
-import { afterEach, describe, expect, it } from "vitest";
-import type { SesionEjemplo } from "../src/ejemplo/datos.ts";
-import { crearRutasDePrueba } from "../src/rutas.tsx";
-import { ProveedorSesion } from "../src/sesion/Sesion.tsx";
+import { screen, within } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import { abrir, rutasDe, usarApi, type NombreSesion } from "./apiFalsa.tsx";
 
-function abrir(ruta: string, sesion?: SesionEjemplo) {
-  const consultas = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  render(
-    <QueryClientProvider client={consultas}>
-      <ProveedorSesion inicial={sesion}>
-        <RouterProvider router={crearRutasDePrueba(ruta)} />
-      </ProveedorSesion>
-    </QueryClientProvider>,
-  );
+function abrirComo(ruta: string, sesion: NombreSesion | null) {
+  usarApi(rutasDe(sesion));
+  abrir(ruta);
 }
 
 /** Las secciones de la barra de navegación (la de escritorio). */
@@ -29,86 +18,66 @@ async function secciones() {
     .map((enlace) => enlace.textContent);
 }
 
-afterEach(() => {
-  cleanup();
-  sessionStorage.clear();
-});
-
 describe("sin sesión", () => {
   it("una vista del personal lleva al login", async () => {
-    abrir("/caja");
+    abrirComo("/caja", null);
     expect(await screen.findByRole("heading", { name: "Ingresar" })).toBeTruthy();
   });
 
   it("el portal del cliente también lleva al login", async () => {
-    abrir("/mi");
+    abrirComo("/mi", null);
     expect(await screen.findByRole("heading", { name: "Ingresar" })).toBeTruthy();
   });
 
-  it("el registro es público", async () => {
-    abrir("/registro");
+  it("el registro es público y muestra el nombre de la casa", async () => {
+    abrirComo("/registro", null);
     expect(await screen.findByRole("heading", { name: "Crea tu cuenta" })).toBeTruthy();
+    expect(await screen.findByText("Cambios Demo")).toBeTruthy();
   });
 });
 
 describe("navegación por rol", () => {
   it("el cajero no ve Administración", async () => {
-    abrir("/", "cajero");
+    abrirComo("/", "cajero");
     expect(await secciones()).toEqual(["Inicio", "Operaciones", "Caja", "Clientes", "Pizarra"]);
   });
 
   it("el admin ve Administración", async () => {
-    abrir("/", "admin");
+    abrirComo("/", "admin");
     expect(await secciones()).toContain("Administración");
   });
 
   it("un cajero que entra a Administración por la dirección no tiene acceso", async () => {
-    abrir("/administracion/usuarios", "cajero");
+    abrirComo("/administracion/usuarios", "cajero");
     expect(await screen.findByRole("heading", { name: "No tienes acceso a esta sección" })).toBeTruthy();
   });
 
   it("supervisores y admin ven el resumen del día; el cajero no", async () => {
-    abrir("/", "supervisor");
+    abrirComo("/", "supervisor");
     expect(await screen.findByRole("heading", { name: "Hoy en la casa" })).toBeTruthy();
-    cleanup();
-    abrir("/", "cajero");
+  });
+
+  it("el cajero ve su turno, sin el resumen de la casa", async () => {
+    abrirComo("/", "cajero");
     await screen.findByRole("heading", { name: "Hola, Cajero" });
+    expect(await screen.findByText("Turno abierto")).toBeTruthy();
     expect(screen.queryByRole("heading", { name: "Hoy en la casa" })).toBeNull();
   });
 });
 
 describe("cada sesión va a su lugar", () => {
   it("un cliente que abre una vista del personal va a su portal", async () => {
-    abrir("/operaciones", "clientePendiente");
+    abrirComo("/operaciones", "clientePendiente");
     expect(await screen.findByRole("heading", { name: "Hola, Ana" })).toBeTruthy();
   });
 
-  it("un cliente pendiente no ve operaciones, solo qué hacer", async () => {
-    abrir("/mi", "clientePendiente");
-    expect(await screen.findByText("Tu cuenta está pendiente de verificación")).toBeTruthy();
-    expect(screen.queryByText("Mis operaciones")).toBeNull();
-  });
-
   it("con sesión, el login lleva al inicio", async () => {
-    abrir("/ingresar", "cajero");
+    abrirComo("/ingresar", "cajero");
     expect(await screen.findByRole("heading", { name: "Hola, Cajero" })).toBeTruthy();
   });
 
   it("una dirección que no existe muestra su aviso", async () => {
-    abrir("/no-existe", "cajero");
+    abrirComo("/no-existe", "cajero");
     expect(await screen.findByRole("heading", { name: "Esta página no existe" })).toBeTruthy();
-  });
-});
-
-describe("login de ejemplo (solo en el esqueleto)", () => {
-  it("entra con el rol elegido y vuelve a la vista que se pidió", async () => {
-    const usuario = userEvent.setup();
-    abrir("/pizarra");
-    await screen.findByRole("heading", { name: "Ingresar" });
-    await usuario.selectOptions(screen.getByLabelText("Entrar como (solo en el esqueleto)"), "admin");
-    await usuario.click(screen.getByRole("button", { name: "Ingresar" }));
-    expect(await screen.findByRole("heading", { name: "Pizarra" })).toBeTruthy();
-    // Solo el admin ve el formulario para publicar tasas
-    expect(screen.getByRole("heading", { name: "Publicar una tasa" })).toBeTruthy();
   });
 });

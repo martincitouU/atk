@@ -4,43 +4,64 @@
 //   MarcoCliente   barra simple + la vista (portal de clientes)
 //   MarcoPublico   fondo con orbes + la vista centrada (login, registro)
 //
-// También deciden quién entra: sin sesión se va al login; una sesión del
-// tipo equivocado se va a su propio inicio.
+// También deciden quién entra: sin sesión se va al login (que después
+// vuelve a la vista pedida); una sesión del tipo equivocado se va a su
+// propio inicio.
 
 import { LogOut } from "lucide-react";
 import { Navigate, NavLink, Outlet, useLocation } from "react-router";
-import { useCatalogo } from "../api/consultas.ts";
+import { useCasa } from "../api/consultas.ts";
 import type { Rol } from "../api/tipos.ts";
 import { Aviso } from "../componentes/Aviso.tsx";
 import { Boton } from "../componentes/Boton.tsx";
 import { Marca } from "../componentes/Marca.tsx";
 import { Orbes } from "../componentes/Orbes.tsx";
 import { conexionSinCifrar } from "../lib/seguridad.ts";
-import { useSesion } from "../sesion/Sesion.tsx";
+import { useSalir, useSesion } from "../sesion/Sesion.tsx";
 import { SinPermiso } from "../vistas/SinPermiso.tsx";
-import { AvisoEsqueleto } from "./AvisoEsqueleto.tsx";
 import { BarraNavegacion } from "./BarraNavegacion.tsx";
 import css from "./Marcos.module.css";
 
-/** El nombre que se muestra de la casa: el de fantasía o la razón social. */
+/** El nombre que se muestra de la casa (GET /api/casa, público). */
 function useNombreCasa() {
-  const { data } = useCatalogo();
-  return data?.casa?.nombreFantasia ?? data?.casa?.razonSocial ?? "Casa de cambio";
+  return useCasa().data?.nombre ?? "Casa de cambio";
+}
+
+/**
+ * Al login, recordando la vista pedida para volver a ella después. Salvo
+ * cuando la persona cerró su sesión: quien entre después parte en su inicio.
+ */
+function AlLogin() {
+  const { cierre } = useSesion();
+  const { pathname, search } = useLocation();
+  return <Navigate to="/ingresar" replace state={cierre === "salida" ? undefined : { desde: pathname + search }} />;
+}
+
+/** Si cerrar la sesión falló (sin conexión), se dice: nunca se finge. */
+function ErrorAlSalir({ mensaje }: { mensaje: string | null }) {
+  if (!mensaje) return null;
+  return (
+    <div className={css.errorSalir}>
+      <Aviso tono="error" titulo="No se pudo cerrar la sesión">
+        {mensaje}
+      </Aviso>
+    </div>
+  );
 }
 
 export function MarcoPersonal() {
-  const { sesion, salir } = useSesion();
-  const ubicacion = useLocation();
+  const { sesion } = useSesion();
+  const { salir, error } = useSalir();
   const nombreCasa = useNombreCasa();
 
-  if (!sesion) return <Navigate to="/ingresar" replace state={{ desde: ubicacion.pathname }} />;
+  if (!sesion) return <AlLogin />;
   if (sesion.tipo === "cliente") return <Navigate to="/mi" replace />;
 
   return (
     <>
-      <AvisoEsqueleto />
       <BarraNavegacion nombreCasa={nombreCasa} usuario={sesion.usuario} alSalir={salir} />
       <main className={css.principal}>
+        <ErrorAlSalir mensaje={error} />
         <Outlet />
       </main>
     </>
@@ -57,17 +78,16 @@ export function SoloRoles({ roles }: { roles: Rol[] }) {
 const claseEnlaceCliente = ({ isActive }: { isActive: boolean }) => (isActive ? `${css.enlaceCliente} ${css.activo}` : css.enlaceCliente);
 
 export function MarcoCliente() {
-  const { sesion, salir } = useSesion();
-  const ubicacion = useLocation();
+  const { sesion } = useSesion();
+  const { salir, error } = useSalir();
   const nombreCasa = useNombreCasa();
 
-  if (!sesion) return <Navigate to="/ingresar" replace state={{ desde: ubicacion.pathname }} />;
+  if (!sesion) return <AlLogin />;
   if (sesion.tipo === "personal") return <Navigate to="/" replace />;
 
   return (
     <div className={css.conOrbes}>
       <Orbes />
-      <AvisoEsqueleto />
       <header className={css.barraCliente}>
         <Marca nombre={nombreCasa} compactaEnMovil />
         <nav aria-label="Secciones" className={css.navCliente}>
@@ -83,6 +103,7 @@ export function MarcoCliente() {
         </nav>
       </header>
       <main className={`${css.principal} ${css.encima}`}>
+        <ErrorAlSalir mensaje={error} />
         <Outlet />
       </main>
     </div>
@@ -102,7 +123,6 @@ export function MarcoPublico() {
   return (
     <div className={`${css.conOrbes} ${css.publico}`}>
       <Orbes />
-      <AvisoEsqueleto />
       <div className={css.centro}>
         <Marca nombre={nombreCasa} tamano="grande" />
         {conexionSinCifrar() && (

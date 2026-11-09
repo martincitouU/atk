@@ -48,3 +48,8 @@
   line-height: var(--leading-body);
   color: var(--color-texto-secundario);
 }
+
+/* El aviso de error de una lectura, con aire también dentro de una tarjeta sin relleno */
+.conError {
+  padding: var(--spacing-16);
+}

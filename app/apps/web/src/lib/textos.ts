@@ -2,7 +2,17 @@
 // y con qué tono de etiqueta. Un solo lugar: todas las vistas dicen lo mismo.
 
 import type { Tono } from "../componentes/Etiqueta.tsx";
-import type { EstadoCuentaCliente, EstadoGasto, EstadoOperacion, MedioPago, Rol, TipoDocumento, TipoMovimiento, TipoOperacion } from "../api/tipos.ts";
+import type {
+  AccionAuditoria,
+  EstadoCuentaCliente,
+  EstadoGasto,
+  EstadoOperacion,
+  MedioPago,
+  Rol,
+  TipoDocumento,
+  TipoMovimiento,
+  TipoOperacion,
+} from "../api/tipos.ts";
 
 export const ROL: Record<Rol, string> = { ADMIN: "Admin", SUPERVISOR: "Supervisor", CAJERO: "Cajero" };
 
@@ -39,4 +49,33 @@ export const ESTADO_CUENTA: Record<EstadoCuentaCliente, { texto: string; tono: T
 export const ESTADO_GASTO: Record<EstadoGasto, { texto: string; tono: Tono }> = {
   VIGENTE: { texto: "Vigente", tono: "neutro" },
   REVERSADO: { texto: "Reversado", tono: "error" },
+};
+
+export const ACCION_AUDITORIA: Record<AccionAuditoria, string> = {
+  CREAR: "Crear",
+  EDITAR: "Editar",
+  ELIMINAR: "Eliminar",
+  CONFIRMAR: "Confirmar",
+  REVERSAR: "Reversar",
+  AUTORIZAR: "Autorizar",
+  PUBLICAR: "Publicar",
+  ABRIR: "Abrir",
+  CERRAR: "Cerrar",
+  GENERAR: "Generar",
+  EXPORTAR: "Exportar",
+  IMPORTAR: "Importar",
+};
+
+/** Qué registra cada fila de la auditoría (su columna `tabla`), en palabras. */
+export const TABLA_AUDITADA: Record<string, string> = {
+  operacion: "Operación",
+  movimiento_caja: "Movimiento de caja",
+  turno: "Turno",
+  gasto: "Gasto",
+  cotizacion: "Cotización",
+  cliente: "Cliente",
+  cuenta_cliente: "Cuenta del portal",
+  usuario: "Usuario",
+  categoria_cliente: "Categoría de cliente",
+  casa: "Configuración de la casa",
 };

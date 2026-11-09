@@ -3,12 +3,12 @@
 
 import { useState } from "react";
 import { Link } from "react-router";
-import { nombreUsuario, useCatalogo, useOperaciones, type FiltrosOperaciones } from "../../api/consultas.ts";
+import { useCasa, useDecimalesTasa, useMonedaBase, useNombres, useOperaciones, type FiltrosOperaciones } from "../../api/consultas.ts";
 import type { EstadoOperacion } from "../../api/tipos.ts";
 import { Entrada, Seleccion } from "../../componentes/Campo.tsx";
 import { DivisaCompacta } from "../../componentes/Divisa.tsx";
 import { EncabezadoPagina } from "../../componentes/EncabezadoPagina.tsx";
-import { Cargando, Vacio } from "../../componentes/Estados.tsx";
+import { ConDatos, Vacio } from "../../componentes/Estados.tsx";
 import { Etiqueta } from "../../componentes/Etiqueta.tsx";
 import { Monto, Tasa } from "../../componentes/Monto.tsx";
 import { Pagina } from "../../componentes/Pagina.tsx";
@@ -18,11 +18,16 @@ import { formatearFechaHora } from "../../lib/fechas.ts";
 import { ESTADO_OPERACION, MEDIO_PAGO, TIPO_OPERACION } from "../../lib/textos.ts";
 import css from "./Personal.module.css";
 
+/** Cuántas se muestran: las más recientes. Para ver más atrás, se filtra por fecha. */
+const LIMITE = 200;
+
 export function Operaciones() {
   const [filtros, setFiltros] = useState<FiltrosOperaciones>({});
-  const catalogo = useCatalogo();
-  const { data: operaciones, isPending } = useOperaciones(filtros);
-  const decimalesTasa = new Map(catalogo.data?.divisas.map((d) => [d.codigo, d.decimalesTasa]));
+  const casa = useCasa();
+  const operaciones = useOperaciones({ ...filtros, limite: LIMITE });
+  const decimalesTasa = useDecimalesTasa();
+  const monedaBase = useMonedaBase();
+  const nombre = useNombres();
 
   return (
     <Pagina>
@@ -42,9 +47,13 @@ export function Operaciones() {
               </option>
             ))}
           </Seleccion>
-          <Seleccion etiqueta="Divisa" value={filtros.monedaCodigo ?? ""} onChange={(e) => setFiltros({ ...filtros, monedaCodigo: e.target.value || undefined })}>
+          <Seleccion
+            etiqueta="Divisa"
+            value={filtros.monedaCodigo ?? ""}
+            onChange={(e) => setFiltros({ ...filtros, monedaCodigo: e.target.value || undefined })}
+          >
             <option value="">Todas</option>
-            {catalogo.data?.divisas.map((d) => (
+            {casa.data?.divisas.map((d) => (
               <option key={d.codigo} value={d.codigo}>
                 {d.codigo} · {d.nombre}
               </option>
@@ -56,56 +65,63 @@ export function Operaciones() {
       </Tarjeta>
 
       <Tarjeta sinRelleno>
-        {isPending ? (
-          <Cargando texto="Cargando operaciones…" />
-        ) : !operaciones?.length ? (
-          <Vacio titulo="No hay operaciones con estos filtros">Prueba con otro estado, divisa o rango de fechas.</Vacio>
-        ) : (
-          <Tabla etiqueta="Operaciones">
-            <thead>
-              <tr>
-                <th>N°</th>
-                <th>Fecha</th>
-                <th>Tipo</th>
-                <th>Divisa</th>
-                <th className="num">Monto</th>
-                <th className="num">Tasa</th>
-                <th className="num">Pesos</th>
-                <th>Pago</th>
-                <th>Registró</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {operaciones.map((o) => (
-                <tr key={o.id}>
-                  <td>
-                    <Link to={`/operaciones/${o.id}`}>{o.id}</Link>
-                  </td>
-                  <td>{formatearFechaHora(o.realizadaEn)}</td>
-                  <td>{TIPO_OPERACION[o.tipo]}</td>
-                  <td>
-                    <DivisaCompacta codigo={o.monedaCodigo} />
-                  </td>
-                  <td className="num">
-                    <Monto valor={o.montoDivisa} moneda={o.monedaCodigo} />
-                  </td>
-                  <td className="num">
-                    <Tasa valorE6={o.tasaAplicadaE6} decimales={decimalesTasa.get(o.monedaCodigo) ?? 2} />
-                  </td>
-                  <td className="num">
-                    <Monto valor={o.montoBase} moneda="CLP" />
-                  </td>
-                  <td>{MEDIO_PAGO[o.medioPago]}</td>
-                  <td>{nombreUsuario(o.usuarioId)}</td>
-                  <td>
-                    <Etiqueta tono={ESTADO_OPERACION[o.estado].tono}>{ESTADO_OPERACION[o.estado].texto}</Etiqueta>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Tabla>
-        )}
+        <ConDatos consulta={operaciones} cargando="Cargando operaciones…">
+          {(lista) =>
+            lista.length === 0 ? (
+              <Vacio titulo="No hay operaciones con estos filtros">Prueba con otro estado, divisa o rango de fechas.</Vacio>
+            ) : (
+              <>
+                <Tabla etiqueta="Operaciones">
+                  <thead>
+                    <tr>
+                      <th>N°</th>
+                      <th>Fecha</th>
+                      <th>Tipo</th>
+                      <th>Divisa</th>
+                      <th className="num">Monto</th>
+                      <th className="num">Tasa</th>
+                      <th className="num">Pesos</th>
+                      <th>Pago</th>
+                      <th>Cliente</th>
+                      <th>Registró</th>
+                      <th>Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lista.map((o) => (
+                      <tr key={o.id}>
+                        <td>
+                          <Link to={`/operaciones/${o.id}`}>{o.id}</Link>
+                        </td>
+                        <td>{formatearFechaHora(o.realizadaEn)}</td>
+                        <td>{TIPO_OPERACION[o.tipo]}</td>
+                        <td>
+                          <DivisaCompacta codigo={o.monedaCodigo} />
+                        </td>
+                        <td className="num">
+                          <Monto valor={o.montoDivisa} moneda={o.monedaCodigo} />
+                        </td>
+                        <td className="num">
+                          <Tasa valorE6={o.tasaAplicadaE6} decimales={decimalesTasa(o.monedaCodigo)} />
+                        </td>
+                        <td className="num">
+                          <Monto valor={o.montoBase} moneda={monedaBase} />
+                        </td>
+                        <td>{MEDIO_PAGO[o.medioPago]}</td>
+                        <td className="ajustable">{o.clienteNombre ?? "—"}</td>
+                        <td>{nombre(o.usuarioId)}</td>
+                        <td>
+                          <Etiqueta tono={ESTADO_OPERACION[o.estado].tono}>{ESTADO_OPERACION[o.estado].texto}</Etiqueta>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Tabla>
+                {lista.length === LIMITE && <p className={css.notaTabla}>Se muestran las {LIMITE} más recientes. Para ver más atrás, filtra por fecha.</p>}
+              </>
+            )
+          }
+        </ConDatos>
       </Tarjeta>
     </Pagina>
   );

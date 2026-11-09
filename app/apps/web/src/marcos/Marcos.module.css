@@ -75,3 +75,8 @@
 .avisoHttp {
   width: min(440px, 100%);
 }
+
+/* Cerrar la sesión falló: el aviso va arriba de la vista */
+.errorSalir {
+  margin-bottom: var(--spacing-24);
+}

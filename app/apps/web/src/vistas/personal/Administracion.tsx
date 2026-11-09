@@ -1,17 +1,17 @@
 // Administración (solo ADMIN): el personal (RF-14) y la auditoría.
 //
-// ESQUELETO (F1): crear o editar usuarios no guarda.
+// Lee de la API; crear y editar usuarios se conecta en F3.
 
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import { Outlet } from "react-router";
-import { nombreUsuario, useAuditoria, useCatalogo, useUsuarios } from "../../api/consultas.ts";
-import type { Rol } from "../../api/tipos.ts";
+import { useAuditoria, useCatalogo, useNombres, useUsuarios, type FiltrosAuditoria } from "../../api/consultas.ts";
+import type { AccionAuditoria, Rol } from "../../api/tipos.ts";
 import { Boton } from "../../componentes/Boton.tsx";
 import { Entrada, FilaCampos, Seleccion } from "../../componentes/Campo.tsx";
 import { Dialogo } from "../../componentes/Dialogo.tsx";
 import { EncabezadoPagina } from "../../componentes/EncabezadoPagina.tsx";
-import { Cargando, Vacio } from "../../componentes/Estados.tsx";
+import { ConDatos, Vacio } from "../../componentes/Estados.tsx";
 import { Etiqueta } from "../../componentes/Etiqueta.tsx";
 import { Pagina } from "../../componentes/Pagina.tsx";
 import { Pestanas } from "../../componentes/Pestanas.tsx";
@@ -19,7 +19,7 @@ import { Tabla } from "../../componentes/Tabla.tsx";
 import { Tarjeta } from "../../componentes/Tarjeta.tsx";
 import { formatearFechaHora } from "../../lib/fechas.ts";
 import { formatearRut } from "../../lib/rut.ts";
-import { ROL } from "../../lib/textos.ts";
+import { ACCION_AUDITORIA, ROL, TABLA_AUDITADA } from "../../lib/textos.ts";
 import css from "./Personal.module.css";
 
 export function Administracion() {
@@ -41,7 +41,7 @@ export function Administracion() {
 // ---- Personal ----------------------------------------------------------------
 
 export function Usuarios() {
-  const { data: usuarios, isPending } = useUsuarios();
+  const usuarios = useUsuarios();
   const { data: catalogo } = useCatalogo();
   const [creando, setCreando] = useState(false);
   const sucursal = new Map(catalogo?.sucursales.map((s) => [s.id, s.nombre]));
@@ -54,49 +54,51 @@ export function Usuarios() {
         </Boton>
       </div>
       <Tarjeta sinRelleno>
-        {isPending ? (
-          <Cargando />
-        ) : !usuarios?.length ? (
-          <Vacio titulo="No hay usuarios" />
-        ) : (
-          <Tabla etiqueta="Personal">
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Correo</th>
-                <th>RUT</th>
-                <th>Rol</th>
-                <th>Sucursal</th>
-                <th>Estado</th>
-                <th aria-label="Acciones" />
-              </tr>
-            </thead>
-            <tbody>
-              {usuarios.map((u) => (
-                <tr key={u.id}>
-                  <td>{u.nombre}</td>
-                  <td>{u.email}</td>
-                  <td>{formatearRut(u.rut)}</td>
-                  <td>
-                    <Etiqueta tono={u.rol === "ADMIN" ? "fuerte" : "neutro"}>{ROL[u.rol]}</Etiqueta>
-                  </td>
-                  <td>{u.sucursalId ? sucursal.get(u.sucursalId) : "Todas"}</td>
-                  <td>{u.activo ? "Activo" : <Etiqueta tono="error">Inactivo</Etiqueta>}</td>
-                  <td>
-                    <div className={css.accionesFila}>
-                      <Boton variante="texto" tamano="chico">
-                        Editar
-                      </Boton>
-                      <Boton variante="texto" tamano="chico">
-                        Contraseña
-                      </Boton>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Tabla>
-        )}
+        <ConDatos consulta={usuarios}>
+          {(lista) =>
+            lista.length === 0 ? (
+              <Vacio titulo="No hay usuarios" />
+            ) : (
+              <Tabla etiqueta="Personal">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Correo</th>
+                    <th>RUT</th>
+                    <th>Rol</th>
+                    <th>Sucursal</th>
+                    <th>Estado</th>
+                    <th aria-label="Acciones" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {lista.map((u) => (
+                    <tr key={u.id}>
+                      <td>{u.nombre}</td>
+                      <td>{u.email}</td>
+                      <td>{formatearRut(u.rut)}</td>
+                      <td>
+                        <Etiqueta tono={u.rol === "ADMIN" ? "fuerte" : "neutro"}>{ROL[u.rol]}</Etiqueta>
+                      </td>
+                      <td>{u.sucursalId ? sucursal.get(u.sucursalId) : "Todas"}</td>
+                      <td>{u.activo ? "Activo" : <Etiqueta tono="error">Inactivo</Etiqueta>}</td>
+                      <td>
+                        <div className={css.accionesFila}>
+                          <Boton variante="texto" tamano="chico">
+                            Editar
+                          </Boton>
+                          <Boton variante="texto" tamano="chico">
+                            Contraseña
+                          </Boton>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Tabla>
+            )
+          }
+        </ConDatos>
       </Tarjeta>
 
       <Dialogo
@@ -142,64 +144,80 @@ export function Usuarios() {
 // ---- Auditoría ----------------------------------------------------------------
 
 export function Auditoria() {
-  const { data: registros, isPending } = useAuditoria();
+  const [filtros, setFiltros] = useState<FiltrosAuditoria>({});
+  const registros = useAuditoria(filtros);
+  const nombre = useNombres();
 
   return (
     <>
       <Tarjeta>
         <div className={css.filtros}>
-          <Seleccion etiqueta="Tabla" defaultValue="">
-            <option value="">Todas</option>
-            <option value="operacion">Operaciones</option>
-            <option value="cotizacion">Cotizaciones</option>
-            <option value="turno">Turnos</option>
-            <option value="gasto">Gastos</option>
-            <option value="usuario">Usuarios</option>
+          <Seleccion etiqueta="Qué" value={filtros.tabla ?? ""} onChange={(e) => setFiltros({ ...filtros, tabla: e.target.value || undefined })}>
+            <option value="">Todo</option>
+            {Object.entries(TABLA_AUDITADA).map(([tabla, texto]) => (
+              <option key={tabla} value={tabla}>
+                {texto}
+              </option>
+            ))}
           </Seleccion>
-          <Entrada etiqueta="Desde" type="date" />
-          <Entrada etiqueta="Hasta" type="date" />
+          <Seleccion
+            etiqueta="Acción"
+            value={filtros.accion ?? ""}
+            onChange={(e) => setFiltros({ ...filtros, accion: (e.target.value || undefined) as AccionAuditoria | undefined })}
+          >
+            <option value="">Todas</option>
+            {(Object.keys(ACCION_AUDITORIA) as AccionAuditoria[]).map((accion) => (
+              <option key={accion} value={accion}>
+                {ACCION_AUDITORIA[accion]}
+              </option>
+            ))}
+          </Seleccion>
+          <Entrada etiqueta="Desde" type="date" value={filtros.desde ?? ""} onChange={(e) => setFiltros({ ...filtros, desde: e.target.value || undefined })} />
+          <Entrada etiqueta="Hasta" type="date" value={filtros.hasta ?? ""} onChange={(e) => setFiltros({ ...filtros, hasta: e.target.value || undefined })} />
         </div>
       </Tarjeta>
       <Tarjeta sinRelleno>
-        {isPending ? (
-          <Cargando />
-        ) : !registros?.length ? (
-          <Vacio titulo="Sin registros con estos filtros" />
-        ) : (
-          <Tabla etiqueta="Auditoría">
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Quién</th>
-                <th>Acción</th>
-                <th>Registro</th>
-                <th>Motivo</th>
-                <th>Cambios</th>
-              </tr>
-            </thead>
-            <tbody>
-              {registros.map((r) => (
-                <tr key={r.id}>
-                  <td>{formatearFechaHora(r.registradoEn)}</td>
-                  <td>{nombreUsuario(r.usuarioId)}</td>
-                  <td>
-                    <Etiqueta>{r.accion}</Etiqueta>
-                  </td>
-                  <td>
-                    {r.tabla} #{r.registroId}
-                  </td>
-                  <td className="ajustable">{r.motivo ?? "—"}</td>
-                  <td className="ajustable">
-                    <details>
-                      <summary className={css.nota}>Ver</summary>
-                      <pre className={css.nota}>{JSON.stringify({ antes: r.datosAntes, despues: r.datosDespues }, null, 2)}</pre>
-                    </details>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Tabla>
-        )}
+        <ConDatos consulta={registros} cargando="Cargando la auditoría…">
+          {(lista) =>
+            lista.length === 0 ? (
+              <Vacio titulo="Sin registros con estos filtros" />
+            ) : (
+              <Tabla etiqueta="Auditoría">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Quién</th>
+                    <th>Acción</th>
+                    <th>Registro</th>
+                    <th>Motivo</th>
+                    <th>Cambios</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lista.map((r) => (
+                    <tr key={r.id}>
+                      <td>{formatearFechaHora(r.registradoEn)}</td>
+                      <td>{nombre(r.usuarioId)}</td>
+                      <td>
+                        <Etiqueta>{ACCION_AUDITORIA[r.accion]}</Etiqueta>
+                      </td>
+                      <td>
+                        {TABLA_AUDITADA[r.tabla] ?? r.tabla} N° {r.registroId}
+                      </td>
+                      <td className="ajustable">{r.motivo ?? "—"}</td>
+                      <td className="ajustable">
+                        <details>
+                          <summary className={css.nota}>Ver</summary>
+                          <pre className={css.nota}>{JSON.stringify({ antes: r.datosAntes, despues: r.datosDespues }, null, 2)}</pre>
+                        </details>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Tabla>
+            )
+          }
+        </ConDatos>
       </Tarjeta>
     </>
   );

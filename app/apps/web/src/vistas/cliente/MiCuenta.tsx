@@ -5,12 +5,12 @@
 // el cliente los COMPRÓ.
 
 import { Clock, IdCard, ShieldCheck } from "lucide-react";
-import { useMiFicha, useMisOperaciones } from "../../api/consultas.ts";
+import { useDecimalesTasa, useMiFicha, useMisOperaciones, useMonedaBase } from "../../api/consultas.ts";
 import type { CuentaYo } from "../../api/tipos.ts";
 import { Aviso } from "../../componentes/Aviso.tsx";
 import { IconoDivisa } from "../../componentes/Divisa.tsx";
 import { EncabezadoPagina } from "../../componentes/EncabezadoPagina.tsx";
-import { Cargando, Vacio } from "../../componentes/Estados.tsx";
+import { ConDatos, Vacio } from "../../componentes/Estados.tsx";
 import { Etiqueta } from "../../componentes/Etiqueta.tsx";
 import { Monto, Tasa } from "../../componentes/Monto.tsx";
 import { Columnas, Datos, Pagina } from "../../componentes/Pagina.tsx";
@@ -56,7 +56,11 @@ function PorVerificar({ cuenta }: { cuenta: CuentaYo }) {
     { icono: Clock, titulo: "Tus operaciones aparecen aquí", texto: "Las compras y ventas que hiciste con nosotros." },
   ];
   return (
-    <Tarjeta elevada titulo="Tu cuenta está pendiente de verificación" descripcion="Mientras tanto no mostramos datos: cualquiera podría registrarse con un RUT ajeno.">
+    <Tarjeta
+      elevada
+      titulo="Tu cuenta está pendiente de verificación"
+      descripcion="Mientras tanto no mostramos datos: cualquiera podría registrarse con un RUT ajeno."
+    >
       <ol className={css.pasos}>
         {pasos.map(({ icono: Icono, titulo, texto }, i) => (
           <li key={titulo} className={css.paso}>
@@ -76,59 +80,67 @@ function PorVerificar({ cuenta }: { cuenta: CuentaYo }) {
 }
 
 function Verificada() {
-  const operaciones = useMisOperaciones();
-  const ficha = useMiFicha();
+  const operaciones = useMisOperaciones(true);
+  const ficha = useMiFicha(true);
+  const decimalesTasa = useDecimalesTasa();
+  const monedaBase = useMonedaBase();
 
   return (
     <Columnas
       lateral={
         <Tarjeta titulo="Mis datos" descripcion="Si algo está mal, avísanos en el local.">
-          {ficha.isPending ? (
-            <Cargando />
-          ) : ficha.data ? (
-            <Datos
-              filas={[
-                { etiqueta: "Nombre", valor: ficha.data.nombre },
-                { etiqueta: TIPO_DOCUMENTO[ficha.data.tipoDocumento], valor: ficha.data.tipoDocumento === "RUT" ? formatearRut(ficha.data.numeroDocumento) : ficha.data.numeroDocumento },
-                { etiqueta: "Nacionalidad", valor: ficha.data.nacionalidad ?? "—" },
-                { etiqueta: "Domicilio", valor: ficha.data.domicilio ?? "—" },
-                { etiqueta: "Teléfono", valor: ficha.data.telefono ?? "—" },
-                { etiqueta: "Correo", valor: ficha.data.email ?? "—" },
-              ]}
-            />
-          ) : null}
+          <ConDatos consulta={ficha}>
+            {(datos) => (
+              <Datos
+                filas={[
+                  { etiqueta: "Nombre", valor: datos.nombre },
+                  {
+                    etiqueta: TIPO_DOCUMENTO[datos.tipoDocumento],
+                    valor: datos.tipoDocumento === "RUT" ? formatearRut(datos.numeroDocumento) : datos.numeroDocumento,
+                  },
+                  { etiqueta: "Nacionalidad", valor: datos.nacionalidad ?? "—" },
+                  { etiqueta: "Domicilio", valor: datos.domicilio ?? "—" },
+                  { etiqueta: "Teléfono", valor: datos.telefono ?? "—" },
+                  { etiqueta: "Correo", valor: datos.email ?? "—" },
+                ]}
+              />
+            )}
+          </ConDatos>
         </Tarjeta>
       }
     >
       <Tarjeta titulo="Mis operaciones" sinRelleno>
-        {operaciones.isPending ? (
-          <Cargando />
-        ) : !operaciones.data?.length ? (
-          <Vacio titulo="Todavía no hay operaciones">Cuando compres o vendas divisas con nosotros, aparecerán aquí.</Vacio>
-        ) : (
-          // Lista y no tabla: los clientes la revisan sobre todo desde el teléfono
-          <ul className={css.operaciones}>
-            {operaciones.data.map((o) => (
-              <li key={o.id} className={css.operacion}>
-                <IconoDivisa codigo={o.monedaCodigo} tamano={36} />
-                <div className={css.queHizo}>
-                  <p>
-                    {o.tipo === "VENTA" ? "Compraste" : "Vendiste"} <Monto valor={o.montoDivisa} moneda={o.monedaCodigo} />{" "}
-                    {o.estado === "REVERSADA" && <Etiqueta tono="error">Anulada</Etiqueta>}
-                  </p>
-                  <p className={css.detalleOperacion}>
-                    {formatearFechaHora(o.realizadaEn)} · Tasa <Tasa valorE6={o.tasaAplicadaE6} decimales={2} /> · {MEDIO_PAGO[o.medioPago]}
-                    {o.tipoDte ? ` · ${TIPO_DTE[o.tipoDte]} ${o.folioDte}` : ""}
-                  </p>
-                </div>
-                <p className={css.pesos}>
-                  <span className="solo-lectores">{o.tipo === "VENTA" ? "Pagaste" : "Recibiste"} </span>
-                  <Monto valor={o.montoBase} moneda="CLP" />
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
+        <ConDatos consulta={operaciones}>
+          {(lista) =>
+            lista.length === 0 ? (
+              <Vacio titulo="Todavía no hay operaciones">Cuando compres o vendas divisas con nosotros, aparecerán aquí.</Vacio>
+            ) : (
+              // Lista y no tabla: los clientes la revisan sobre todo desde el teléfono
+              <ul className={css.operaciones}>
+                {lista.map((o) => (
+                  <li key={o.id} className={css.operacion}>
+                    <IconoDivisa codigo={o.monedaCodigo} tamano={36} />
+                    <div className={css.queHizo}>
+                      <p>
+                        {o.tipo === "VENTA" ? "Compraste" : "Vendiste"} <Monto valor={o.montoDivisa} moneda={o.monedaCodigo} />{" "}
+                        {o.estado === "REVERSADA" && <Etiqueta tono="error">Anulada</Etiqueta>}
+                      </p>
+                      <p className={css.detalleOperacion}>
+                        {formatearFechaHora(o.realizadaEn)} · Tasa <Tasa valorE6={o.tasaAplicadaE6} decimales={decimalesTasa(o.monedaCodigo)} /> ·{" "}
+                        {MEDIO_PAGO[o.medioPago]}
+                        {o.tipoDte ? ` · ${TIPO_DTE[o.tipoDte]} ${o.folioDte}` : ""}
+                      </p>
+                    </div>
+                    <p className={css.pesos}>
+                      <span className="solo-lectores">{o.tipo === "VENTA" ? "Pagaste" : "Recibiste"} </span>
+                      <Monto valor={o.montoBase} moneda={monedaBase} />
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )
+          }
+        </ConDatos>
       </Tarjeta>
     </Columnas>
   );

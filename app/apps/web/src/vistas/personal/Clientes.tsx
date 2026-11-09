@@ -4,19 +4,21 @@
 // carnet EN PERSONA y la cuenta se enlaza con la ficha del mismo RUT. Sin
 // eso, cualquiera podría registrarse con un RUT ajeno y ver sus operaciones.
 //
-// ESQUELETO (F1): los formularios y los botones de verificar no guardan.
+// Lee de la API las fichas y las cuentas. Guardar fichas y verificar o
+// rechazar cuentas se conecta en F3.
 
 import { Plus, Search, UserCheck } from "lucide-react";
 import { useState } from "react";
 import { Link, Outlet, useParams } from "react-router";
-import { useCatalogo, useCliente, useClientes, useCuentasCliente } from "../../api/consultas.ts";
+import { esNoExiste } from "../../api/cliente.ts";
+import { MINIMO_BUSQUEDA, useCatalogo, useCliente, useClientes, useCuentasCliente } from "../../api/consultas.ts";
 import type { CuentaCliente, TipoDocumento } from "../../api/tipos.ts";
 import { Aviso } from "../../componentes/Aviso.tsx";
 import { Boton, EnlaceBoton } from "../../componentes/Boton.tsx";
 import { AreaTexto, Entrada, FilaCampos, Seleccion } from "../../componentes/Campo.tsx";
 import { Dialogo } from "../../componentes/Dialogo.tsx";
 import { EncabezadoPagina } from "../../componentes/EncabezadoPagina.tsx";
-import { Cargando, Vacio } from "../../componentes/Estados.tsx";
+import { Cargando, ConDatos, ErrorDeCarga, Vacio } from "../../componentes/Estados.tsx";
 import { Etiqueta } from "../../componentes/Etiqueta.tsx";
 import { Columnas, Datos, Pagina } from "../../componentes/Pagina.tsx";
 import { Pestanas } from "../../componentes/Pestanas.tsx";
@@ -31,8 +33,7 @@ import { NoEncontrada } from "../NoEncontrada.tsx";
 import css from "./Personal.module.css";
 
 export function Clientes() {
-  const cuentas = useCuentasCliente();
-  const pendientes = cuentas.data?.filter((c) => c.estado === "PENDIENTE").length ?? 0;
+  const pendientes = useCuentasCliente("PENDIENTE").data?.length ?? 0;
   return (
     <Pagina>
       <EncabezadoPagina
@@ -60,7 +61,8 @@ export function Clientes() {
 
 export function Fichas() {
   const [texto, setTexto] = useState("");
-  const { data: clientes, isPending } = useClientes(texto);
+  const clientes = useClientes(texto);
+  const buscando = texto.trim().length >= MINIMO_BUSQUEDA;
 
   return (
     <>
@@ -75,37 +77,43 @@ export function Fichas() {
         />
       </div>
       <Tarjeta sinRelleno>
-        {isPending ? (
-          <Cargando />
-        ) : !clientes?.length ? (
-          <Vacio titulo="Sin resultados" accion={<EnlaceBoton to="/clientes/nuevo">Crear cliente</EnlaceBoton>}>
-            No hay clientes con ese nombre o documento.
-          </Vacio>
+        {!buscando ? (
+          <p className={css.indicacion}>Escribe al menos {MINIMO_BUSQUEDA} letras o números del nombre o del documento.</p>
         ) : (
-          <Tabla etiqueta="Clientes">
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Documento</th>
-                <th>Nacionalidad</th>
-                <th>Ficha UAF</th>
-              </tr>
-            </thead>
-            <tbody>
-              {clientes.map((c) => (
-                <tr key={c.id}>
-                  <td>
-                    <Link to={`/clientes/${c.id}`}>{c.nombre}</Link>
-                  </td>
-                  <td>
-                    {TIPO_DOCUMENTO[c.tipoDocumento]} {c.tipoDocumento === "RUT" ? formatearRut(c.numeroDocumento) : c.numeroDocumento}
-                  </td>
-                  <td>{c.nacionalidad ?? "—"}</td>
-                  <td>{c.faltantesUaf.length ? <Etiqueta tono="atencion">Incompleta</Etiqueta> : <Etiqueta>Completa</Etiqueta>}</td>
-                </tr>
-              ))}
-            </tbody>
-          </Tabla>
+          <ConDatos consulta={clientes} cargando="Buscando…">
+            {(lista) =>
+              lista.length === 0 ? (
+                <Vacio titulo="Sin resultados" accion={<EnlaceBoton to="/clientes/nuevo">Crear cliente</EnlaceBoton>}>
+                  No hay clientes con ese nombre o documento.
+                </Vacio>
+              ) : (
+                <Tabla etiqueta="Clientes">
+                  <thead>
+                    <tr>
+                      <th>Nombre</th>
+                      <th>Documento</th>
+                      <th>Nacionalidad</th>
+                      <th>Ficha UAF</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lista.map((c) => (
+                      <tr key={c.id}>
+                        <td>
+                          <Link to={`/clientes/${c.id}`}>{c.nombre}</Link>
+                        </td>
+                        <td>
+                          {TIPO_DOCUMENTO[c.tipoDocumento]} {c.tipoDocumento === "RUT" ? formatearRut(c.numeroDocumento) : c.numeroDocumento}
+                        </td>
+                        <td>{c.nacionalidad ?? "—"}</td>
+                        <td>{c.faltantesUaf.length ? <Etiqueta tono="atencion">Incompleta</Etiqueta> : <Etiqueta>Completa</Etiqueta>}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Tabla>
+              )
+            }
+          </ConDatos>
         )}
       </Tarjeta>
     </>
@@ -116,16 +124,14 @@ export function Fichas() {
 
 export function CuentasWeb() {
   const [ver, setVer] = useState<"PENDIENTE" | "TODAS">("PENDIENTE");
-  const { data: cuentas, isPending } = useCuentasCliente();
+  const cuentas = useCuentasCliente(ver === "PENDIENTE" ? "PENDIENTE" : undefined);
   const [verificando, setVerificando] = useState<CuentaCliente | null>(null);
   const [rechazando, setRechazando] = useState<CuentaCliente | null>(null);
-  const lista = cuentas?.filter((c) => ver === "TODAS" || c.estado === "PENDIENTE");
 
   return (
     <>
       <Aviso tono="info" titulo="Verifica siempre en persona">
-        Pide el carnet y revisa que el RUT y el nombre coincidan. La cuenta se enlaza con la ficha del mismo RUT: si el cliente no tiene ficha, créala
-        antes.
+        Pide el carnet y revisa que el RUT y el nombre coincidan. La cuenta se enlaza con la ficha del mismo RUT: si el cliente no tiene ficha, créala antes.
       </Aviso>
       <Segmentado
         etiqueta="Qué cuentas ver"
@@ -137,47 +143,51 @@ export function CuentasWeb() {
         alCambiar={setVer}
       />
       <Tarjeta sinRelleno>
-        {isPending ? (
-          <Cargando />
-        ) : !lista?.length ? (
-          <Vacio titulo="No hay cuentas por verificar">Cuando un cliente se registre en el portal, aparecerá aquí.</Vacio>
-        ) : (
-          <Tabla etiqueta="Cuentas del portal">
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>RUT</th>
-                <th>Registrada</th>
-                <th>Estado</th>
-                <th aria-label="Acciones" />
-              </tr>
-            </thead>
-            <tbody>
-              {lista.map((c) => (
-                <tr key={c.id}>
-                  <td>{c.nombre}</td>
-                  <td>{formatearRut(c.rut)}</td>
-                  <td>{formatearFechaHora(c.creadaEn)}</td>
-                  <td>
-                    <Etiqueta tono={ESTADO_CUENTA[c.estado].tono}>{ESTADO_CUENTA[c.estado].texto}</Etiqueta>
-                  </td>
-                  <td>
-                    {c.estado === "PENDIENTE" && (
-                      <div className={css.accionesFila}>
-                        <Boton variante="suave" tamano="chico" icono={<UserCheck size={16} aria-hidden />} onClick={() => setVerificando(c)}>
-                          Verificar
-                        </Boton>
-                        <Boton variante="texto" tamano="chico" onClick={() => setRechazando(c)}>
-                          Rechazar
-                        </Boton>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Tabla>
-        )}
+        <ConDatos consulta={cuentas}>
+          {(lista) =>
+            lista.length === 0 ? (
+              <Vacio titulo={ver === "PENDIENTE" ? "No hay cuentas por verificar" : "Todavía no hay cuentas"}>
+                Cuando un cliente se registre en el portal, aparecerá aquí.
+              </Vacio>
+            ) : (
+              <Tabla etiqueta="Cuentas del portal">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>RUT</th>
+                    <th>Registrada</th>
+                    <th>Estado</th>
+                    <th aria-label="Acciones" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {lista.map((c) => (
+                    <tr key={c.id}>
+                      <td>{c.nombre}</td>
+                      <td>{formatearRut(c.rut)}</td>
+                      <td>{formatearFechaHora(c.creadaEn)}</td>
+                      <td>
+                        <Etiqueta tono={ESTADO_CUENTA[c.estado].tono}>{ESTADO_CUENTA[c.estado].texto}</Etiqueta>
+                      </td>
+                      <td>
+                        {c.estado === "PENDIENTE" && (
+                          <div className={css.accionesFila}>
+                            <Boton variante="suave" tamano="chico" icono={<UserCheck size={16} aria-hidden />} onClick={() => setVerificando(c)}>
+                              Verificar
+                            </Boton>
+                            <Boton variante="texto" tamano="chico" onClick={() => setRechazando(c)}>
+                              Rechazar
+                            </Boton>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Tabla>
+            )
+          }
+        </ConDatos>
       </Tarjeta>
 
       <Dialogo
@@ -214,11 +224,13 @@ export function CuentasWeb() {
 
 export function DetalleCliente() {
   const id = Number(useParams().id);
-  const { data: cliente, isPending } = useCliente(id);
+  const consulta = useCliente(id);
   const { data: catalogo } = useCatalogo();
 
-  if (isPending) return <Cargando texto="Cargando la ficha…" />;
-  if (!cliente) return <NoEncontrada />;
+  if (!Number.isInteger(id) || id <= 0 || esNoExiste(consulta.error)) return <NoEncontrada />;
+  if (consulta.isError) return <ErrorDeCarga error={consulta.error} alReintentar={() => void consulta.refetch()} />;
+  if (consulta.isPending) return <Cargando texto="Cargando la ficha…" />;
+  const cliente = consulta.data;
 
   const categoria = catalogo?.categoriasCliente.find((c) => c.id === cliente.categoriaId);
   return (
@@ -267,7 +279,11 @@ export function NuevoCliente() {
   const { data: catalogo } = useCatalogo();
   return (
     <Pagina angosta>
-      <EncabezadoPagina titulo="Nuevo cliente" descripcion="Los datos que pide la UAF. Puedes completarlos después." volver={{ a: "/clientes", texto: "Clientes" }} />
+      <EncabezadoPagina
+        titulo="Nuevo cliente"
+        descripcion="Los datos que pide la UAF. Puedes completarlos después."
+        volver={{ a: "/clientes", texto: "Clientes" }}
+      />
       <Tarjeta>
         <form className={css.formulario} onSubmit={(e) => e.preventDefault()}>
           <FilaCampos>
