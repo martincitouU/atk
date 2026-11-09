@@ -7,8 +7,9 @@ Cómo crear la VM en AWS y desplegar la app. Son tres etapas, en este orden:
 3. **Verificar** desde el navegador y desde la VM.
 
 > Lo que se despliega es la imagen de `app/` (`app/Dockerfile`): aplica las
-> migraciones sobre el disco de datos y sirve `/health` y la API (`/api`).
-> El contrato de la API está en `docs/api.md`.
+> migraciones sobre el disco de datos y sirve `/health`, la API (`/api`) y
+> el front compilado (todo lo demás). La imagen compila el front al
+> construirse en la VM. El contrato de la API está en `docs/api.md`.
 
 ## 0. Requisitos (una vez, en tu computador)
 
@@ -146,6 +147,8 @@ curl http://$(terraform -chdir=infra/terraform output -raw public_ip)/health
 `migraciones` son las aplicadas a la base del disco de datos
 (`/srv/atk/data/atk.db`). `configurada` dice si ya se cargaron los datos de
 la casa de cambio; en una base nueva es `false`.
+
+En el navegador, `http://<IP>` muestra el login de la app.
 
 ## 5. Configuración inicial (una sola vez)
 

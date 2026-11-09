@@ -56,18 +56,25 @@ La app debe:
 - **TypeScript** en todo, **Node 24 LTS**. Monorepo con npm workspaces:
   `apps/api`, `apps/web`, `packages/shared`.
 - **API**: Fastify. **BD**: SQLite con better-sqlite3 + Drizzle ORM.
-  Existen `apps/api` y `packages/shared`; `apps/web` se crea con el front.
   Node corre el TypeScript de `@atk/shared` directo (el workspace es un
   enlace, no está dentro de `node_modules`).
 - **Login**: Better Auth (sesiones en cookie httpOnly, roles). No escribir
   autenticación a mano.
 - **Front**: React + Vite + React Router, TanStack Query, react-hook-form.
+  Estilos con CSS Modules y los tokens de `DESIGN.md` (sin Tailwind).
 - **Validación**: esquemas zod compartidos en `packages/shared`.
 - **Excel del histórico**: exceljs (no el paquete `xlsx` de npm).
 - **Tests**: Vitest.
 - Un solo contenedor sirve la API (`/api/*`) y el front compilado: mismo
   origen, sin CORS. La imagen es `app/Dockerfile`; arranca en
-  `apps/api/src/principal.ts`, aplica las migraciones y sirve `/health` y `/api`.
+  `apps/api/src/principal.ts`, aplica las migraciones y sirve `/health`,
+  `/api` y el front (`apps/web/dist`, ver `src/http/front.ts`): las
+  direcciones del front responden `index.html`; una ruta de `/api` que no
+  existe, siempre 404 en JSON.
+- La imagen instala con `npm ci --omit=dev --omit=optional`: Better Auth
+  declara React, Vitest y otros como *peer* opcionales y, sin `--omit=optional`,
+  npm los mete en producción. El front se compila en una etapa aparte: en
+  producción no corre Node para él, solo se sirven sus archivos.
 - API: `src/servidor.ts` arma Fastify; `src/rutas/` (una por tema, delgadas);
   `src/http/` (actor, errores, JSON con bigint). Tests en `test/rutas/` con
   `app.inject` y la cabecera `x-actor-prueba`, que existe solo en los tests.
@@ -134,6 +141,32 @@ La app debe:
 - Los tests de servicios se nombran por RF (`RF-07: ...`) y usan
   `test/servicios/escenario.ts` (semilla + reloj + usuarios).
 
+### Front (`app/apps/web/`)
+- **`DESIGN.md` (raíz) es la guía visual de todas las vistas.** Sus valores
+  viven en `src/estilos/tokens.css`; ningún componente escribe colores ni
+  medidas sueltas. Se toma su lenguaje visual, no la marca Uniswap: la marca
+  es la de la casa. Basel es privada: se usa Inter Variable (peso 485 real),
+  servida desde el mismo origen.
+- Decisiones sobre `DESIGN.md` (se contradice en algunos puntos):
+  - Magenta `#ff37c7` = la acción principal: **máximo un botón magenta
+    relleno por vista** (`<Boton variante="primario">`). El resto, `suave`,
+    `secundario` o `texto`.
+  - Texto magenta sobre blanco en `#c8148f` (5,3:1); el `#ff37c7` da 3,2:1.
+  - Coral `#e01a2b` **solo para errores**, siempre con texto. Verde
+    `#0c8911` solo para datos en vivo (el día en curso, tasa vigente).
+- **El front no calcula dinero.** Precios y montos vienen de la API
+  (`previsualizar`). `src/lib/montos.ts` solo traduce entre lo que se ve
+  ("150,25") y el texto de dígitos de la API (`"15025"`), con `bigint` y sin
+  redondear nunca lo que se escribe. Un monto no se corta con "…".
+- Estructura: `componentes/` (piezas del diseño, sin lógica de negocio),
+  `marcos/` (barra por rol y quién entra a cada parte), `vistas/` (una por
+  pantalla), `api/` (`tipos.ts` = forma del JSON, `consultas.ts` = hooks de
+  TanStack Query), `lib/` (montos, fechas en la zona de la casa, RUT,
+  textos y tonos de cada estado), `sesion/`.
+- Esqueleto (F1): `src/ejemplo/datos.ts`, la sesión de ejemplo y
+  `AvisoEsqueleto` existen solo hasta conectar la API (F2).
+- Tests en `apps/web/test/` (Vitest + Testing Library, jsdom).
+
 ## Estructura
 
 - `infra/terraform/`: VPC, subred, IGW, rutas, SG, EC2, EIP, EBS, IAM y el
@@ -144,7 +177,9 @@ La app debe:
 - `deploy/`: compose y nginx; se copian a `/srv/atk` en la VM. El código de
   `app/` se copia a `/srv/atk/codigo` y la imagen se construye en la VM.
 - `app/`: la aplicación (npm workspaces). `app/db/` tiene migraciones,
-  semillas y `probar.sh`; `app/apps/api/` el backend.
+  semillas y `probar.sh`; `app/apps/api/` el backend; `app/apps/web/` el
+  front; `app/scripts/dev.ts` levanta los dos en desarrollo.
+- `DESIGN.md`: guía visual de todas las vistas.
 - `docs/api.md`: contrato de la API para el front. Si una ruta cambia, se
   actualiza en el mismo PR.
 - `docs/casa_cambio_schema_postgres.sql`: diseño original del modelo, solo
@@ -162,6 +197,11 @@ cd infra/ansible && ANSIBLE_INVENTORY_ENABLED=host_list ansible-playbook -i loca
 
 # App: tests, tipos y pruebas SQL del esquema
 cd app && npm test && npm run typecheck && npm run db:probar
+
+# Desarrollo: API (127.0.0.1:3000) + front (Vite) → http://localhost:5173
+# La primera vez crea app/.dev con la semilla y cuentas de prueba (ver
+# apps/api/src/cli/desarrollo.ts). Para partir de cero: rm -rf app/.dev
+cd app && npm run dev
 
 # Prueba local del stack (imagen real de app/)
 cd deploy && CODIGO=../app HTTP_PORT=8080 docker compose up -d --build --wait
