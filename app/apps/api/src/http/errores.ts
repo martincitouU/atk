@@ -6,7 +6,7 @@
 // errores inesperados se registran en el log y al usuario solo le llega un
 // mensaje genérico: nunca se exponen detalles internos.
 
-import type { FastifyError, FastifyInstance } from "fastify";
+import type { FastifyError, FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { ZodError } from "zod";
 import { ErrorNegocio } from "../servicios/contexto.ts";
 
@@ -36,8 +36,9 @@ export function registrarErrores(app: FastifyInstance) {
     request.log.error({ err: error }, "error inesperado");
     return reply.code(500).send({ error: { codigo: "ERROR_INTERNO", mensaje: "Ocurrió un error inesperado. Intente de nuevo." } });
   });
+}
 
-  app.setNotFoundHandler((request, reply) =>
-    reply.code(404).send({ error: { codigo: "RUTA_NO_EXISTE", mensaje: `No existe ${request.method} ${request.url}` } }),
-  );
+/** 404 con el formato de error de la API. servidor.ts decide dónde se usa. */
+export function rutaNoExiste(request: FastifyRequest, reply: FastifyReply) {
+  return reply.code(404).send({ error: { codigo: "RUTA_NO_EXISTE", mensaje: `No existe ${request.method} ${request.url}` } });
 }
