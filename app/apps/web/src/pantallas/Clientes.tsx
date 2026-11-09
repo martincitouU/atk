@@ -2,15 +2,16 @@ import { entradaCliente } from "@atk/shared";
 import { aBigint, type Cliente, type CuentaCliente, type EntradaCliente } from "../api/esquemas.ts";
 import { formatearMonto } from "@atk/shared/dinero";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CheckCircleIcon, MagnifyingGlassIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
+import { CheckCircleIcon, CurrencyCircleDollarIcon, MagnifyingGlassIcon, PlusIcon, UserCheckIcon, XIcon } from "@phosphor-icons/react";
 import { Fragment, useDeferredValue, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useForm, useWatch } from "react-hook-form";
-import { Link, useSearchParams } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { z } from "zod";
 import { ErrorNegocio } from "../api/cliente.ts";
 import { useCliente, useClientes, useGuardarCliente, useParametros } from "../api/consultas.ts";
 import { Aviso } from "../componentes/Aviso.tsx";
+import { useCinta, type GrupoCinta } from "../componentes/Cinta.tsx";
 import { ErrorCampo } from "../componentes/ErrorCampo.tsx";
 import { Kbd } from "../componentes/Kbd.tsx";
 import { Sep } from "../componentes/Sep.tsx";
@@ -194,12 +195,55 @@ export function Clientes() {
   // La API busca solo con texto (q es obligatorio). Sin búsqueda, la tabla
   // muestra la ficha abierta, si hay una, para que se vea su estado.
   const sinBuscar = buscado.trim() === "";
-  const consulta = sinBuscar
-    ? { isError: false, error: null, data: id !== null && ficha.data ? [ficha.data] : [], isFetching: false }
-    : clientes;
+  const consulta = sinBuscar ? { isError: false, error: null, data: id !== null && ficha.data ? [ficha.data] : [], isFetching: false } : clientes;
   const lista = clientes.data ?? [];
   const incompletas = lista.filter((c) => c.faltantes.length > 0).length;
   const aviso = guardado && <AvisoGuardado guardado={guardado} conVuelta={conVuelta(guardado)} />;
+
+  // La cinta de Clientes: lo mismo que el cartel y los paneles
+  const buscar = useRef<HTMLInputElement>(null);
+  const cuentas = useRef<HTMLDivElement>(null);
+  const navegar = useNavigate();
+  const grupos: GrupoCinta[] = [
+    {
+      nombre: "Fichas",
+      comandos: [
+        { id: "nueva", etiqueta: "Nueva ficha", Icono: PlusIcon, grande: true, alPulsar: abrirNueva },
+        { id: "buscar", etiqueta: "Buscar", Icono: MagnifyingGlassIcon, alPulsar: () => buscar.current?.focus() },
+        { id: "cerrar", etiqueta: "Cerrar la ficha", Icono: XIcon, deshabilitado: !nueva && id === null, alPulsar: cerrar },
+      ],
+    },
+    {
+      nombre: "Portal de clientes",
+      comandos: [
+        {
+          id: "cuentas",
+          etiqueta: "Cuentas por verificar",
+          Icono: UserCheckIcon,
+          grande: true,
+          alPulsar: () => {
+            cuentas.current?.scrollIntoView({ block: "nearest" });
+            cuentas.current?.querySelector<HTMLElement>("button")?.focus();
+          },
+        },
+      ],
+      nota: ["Se verifican con el carnet"],
+    },
+    {
+      nombre: "Ir a",
+      comandos: [
+        {
+          id: "ventanilla",
+          etiqueta: "Ventanilla",
+          Icono: CurrencyCircleDollarIcon,
+          tecla: "F1",
+          grande: true,
+          alPulsar: () => void navegar("/ventanilla"),
+        },
+      ],
+    },
+  ];
+  useCinta(grupos);
 
   let panel: ReactNode;
   if (nueva) {
@@ -244,6 +288,7 @@ export function Clientes() {
               <span className="oculto">Buscar cliente</span>
               <MagnifyingGlassIcon size={18} weight="bold" aria-hidden="true" />
               <input
+                ref={buscar}
                 type="search"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
@@ -262,7 +307,9 @@ export function Clientes() {
 
       <div className="clientes-trabajo">
         <div className="clientes-col">
-          <CuentasPendientes onCrearFicha={crearDesdeCuenta} />
+          <div ref={cuentas} className="clientes-cuentas">
+            <CuentasPendientes onCrearFicha={crearDesdeCuenta} />
+          </div>
           <section className="panel clientes-lista" aria-labelledby="clientes-lista-titulo">
             <header>
               <h2 id="clientes-lista-titulo">Fichas</h2>
@@ -410,8 +457,7 @@ function TablaClientes({
                     {c.relacionPermanente && <span className="clientes-permanente">Relación permanente</span>}
                   </td>
                   <td className="clientes-col-doc">
-                    <span className="clientes-doc">{TIPOS_DOCUMENTO[c.tipoDocumento]}</span>{" "}
-                    <span className="num">{numeroDe(c)}</span>
+                    <span className="clientes-doc">{TIPOS_DOCUMENTO[c.tipoDocumento]}</span> <span className="num">{numeroDe(c)}</span>
                   </td>
                   <td>
                     {c.faltantes.length === 0 ? (
@@ -463,9 +509,7 @@ function GuiaFicha({ umbral }: { umbral: string | undefined }) {
       </header>
       <div className="clientes-guia-cuerpo">
         <p>Elija un cliente de la lista para revisar o completar su ficha, o cree una con «Nueva ficha».</p>
-        <p>
-          Desde {desde}, y en toda operación de un cliente con relación permanente, la UAF exige estos siete datos:
-        </p>
+        <p>Desde {desde}, y en toda operación de un cliente con relación permanente, la UAF exige estos siete datos:</p>
         <ol className="clientes-siete">
           <li>Tipo y número de documento</li>
           <li>Nombre completo</li>
@@ -554,9 +598,7 @@ function FichaCliente({
         {faltan.size === 0 ? (
           <span className="est ok">Completa</span>
         ) : (
-          <span className="est obra">
-            {faltan.size === 1 ? "Falta 1 dato" : `Faltan ${faltan.size} datos`} para la UAF
-          </span>
+          <span className="est obra">{faltan.size === 1 ? "Falta 1 dato" : `Faltan ${faltan.size} datos`} para la UAF</span>
         )}
         <button type="button" className="cerrar" onClick={onCerrar} aria-label="Cerrar la ficha">
           <XIcon size={18} weight="bold" aria-hidden="true" />

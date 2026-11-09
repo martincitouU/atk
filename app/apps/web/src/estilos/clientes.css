@@ -29,7 +29,7 @@
 .config {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
 }
 
 /* ------------------------------------------------------------------ */
@@ -146,7 +146,7 @@
 .clientes-trabajo {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 448px;
-  gap: 18px;
+  gap: 14px;
   align-items: start;
 }
 
@@ -154,8 +154,13 @@
 .clientes-col {
   display: grid;
   align-content: start;
-  gap: 18px;
+  gap: 14px;
   min-width: 0;
+}
+
+/* Sin cuentas por verificar, su lugar no deja un hueco */
+.clientes-cuentas:empty {
+  display: none;
 }
 
 /* ------------------------------------------------------------------ */
@@ -610,7 +615,7 @@
 .config-dos {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
-  gap: 18px;
+  gap: 14px;
   align-items: start;
 }
 

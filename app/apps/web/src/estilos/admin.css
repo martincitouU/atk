@@ -36,7 +36,7 @@
 .admin-trabajo {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 420px;
-  gap: 18px;
+  gap: 14px;
   align-items: start;
 }
 
