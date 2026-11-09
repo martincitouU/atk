@@ -7,7 +7,7 @@
 .ventanilla {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  gap: 18px;
+  gap: 14px;
 }
 
 /* En el PC, el área de trabajo entera sin scroll: el libro corre por dentro */
@@ -29,21 +29,33 @@
 }
 
 .letrero-in {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 6px 12px;
-  align-items: center;
-  padding: 14px 22px 12px;
+  overflow: hidden;
   border: 3px solid #fff;
   border-radius: 10px;
 }
 
+/* La cabecera del letrero: el título, la vigencia y «Actualizar pizarra» */
+.letrero-cab {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  padding: 5px 14px 5px 16px;
+  border-bottom: 1px solid rgb(255 255 255 / 0.35);
+}
+
 .letrero h2 {
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  opacity: 0.85;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.letrero-unidad {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  opacity: 0.88;
+  text-transform: none;
 }
 
 .letrero-acc {
@@ -52,109 +64,158 @@
   align-items: center;
   justify-content: flex-end;
   gap: 6px 14px;
+  margin-left: auto;
 }
 
 .vig {
   font-size: 12px;
-  font-weight: 600;
-  opacity: 0.85;
+  font-weight: 700;
+  opacity: 0.92;
   text-align: right;
 }
 
 .letrero-error {
-  grid-column: 1 / -1;
+  padding: 12px 16px;
   font-weight: 700;
 }
 
-.filas {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px 14px;
-  margin-top: 6px;
+/* La pizarra como tabla: una fila por divisa, con líneas blancas como las
+   divisiones de un letrero de destinos (vuelta 3) */
+table.tasas {
+  font-size: 13px;
 }
 
-.dest {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  align-items: baseline;
-  gap: 0 12px;
-  padding: 8px 10px;
-  border-radius: 8px;
+table.tasas th,
+table.tasas td {
+  height: auto;
+  padding: 0 16px;
+  border-right: 0;
+  border-bottom: 1px solid rgb(255 255 255 / 0.22);
+  border-left: 1px solid rgb(255 255 255 / 0.22);
+  background: transparent;
+  color: inherit;
 }
 
-.dest.esperando {
-  grid-template-columns: 1fr;
-  min-height: 52px;
-  align-items: center;
+table.tasas thead th {
+  position: static;
+  padding-block: 3px;
+  border-bottom: 1px solid rgb(255 255 255 / 0.35);
+  color: rgb(255 255 255 / 0.85);
+  font-size: 11px;
+  letter-spacing: 0.12em;
 }
 
-.dest.esperando .esqueleto {
+table.tasas th:first-child,
+table.tasas td:first-child {
+  border-left: 0;
+}
+
+table.tasas tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+/* Sin la cebra de las grillas: el letrero es una sola lámina */
+table.tasas tbody tr {
+  background: transparent;
+}
+
+table.tasas tbody th {
+  height: 34px;
+  color: #fff;
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+table.tasas thead th.r {
+  width: 170px;
+}
+
+table.tasas .col-cambio {
+  width: 34%;
+}
+
+.dest-punto {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  margin-right: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px #fff;
+  vertical-align: 1px;
+}
+
+table.tasas .cod {
+  margin-right: 10px;
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  vertical-align: -2px;
+}
+
+table.tasas .nom {
+  font-weight: 600;
+  opacity: 0.88;
+}
+
+table.tasas td.cifra {
+  font: 700 21px var(--familia-num);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+table.tasas tr.esperando td {
+  height: 38px;
+}
+
+table.tasas tr.esperando .esqueleto {
+  display: block;
+  height: 14px;
   background: rgb(255 255 255 / 0.25);
 }
 
-.dest .cod {
-  font-size: 26px;
-  font-weight: 900;
-  letter-spacing: 0.02em;
-  line-height: 1;
-}
-
-/* El destino: el código grande y, debajo, el nombre completo en letra chica,
-   en hasta dos líneas («Dólar / estadounidense»), nunca cortado a mitad */
-.dest .id {
-  display: grid;
-  gap: 3px;
-  min-width: 0;
-}
-
-.dest .nom {
-  display: -webkit-box;
-  overflow: hidden;
-  font-size: 11.5px;
-  font-weight: 600;
-  line-height: 1.2;
-  opacity: 0.85;
-  overflow-wrap: break-word;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-}
-
-.dest .t {
-  text-align: right;
-}
-
-.dest .t > span {
-  display: block;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  opacity: 0.8;
-  text-transform: uppercase;
-}
-
-.dest .t b {
-  font: 700 21px/1.05 var(--familia-num);
-  font-variant-numeric: tabular-nums;
-}
-
 .aviso-dest {
-  grid-column: 1 / -1;
-  margin-top: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: var(--reflejo);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 12.5px;
+  font-weight: 700;
 }
 
-/* La tasa que cambió: encendida, con el borde reflectante, hasta que se mira.
-   Al llegar, el borde destella como un letrero que recoge los focos. */
-.dest.cambio {
-  cursor: pointer;
+.sin-cambio {
+  color: rgb(255 255 255 / 0.82);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+/* El aviso «cambió» es un botón de alternar: se ve como texto del letrero */
+.cambio-btn {
+  padding: 2px 4px;
+  margin-left: -4px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  text-align: left;
+}
+
+.cambio-btn:hover {
+  background: rgb(255 255 255 / 0.08);
+}
+
+/* Con foco, el anillo es blanco (8:1 sobre el verde): el amarillo ya dice «cambió» */
+.cambio-btn:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 1px;
+  box-shadow: 0 0 0 5px var(--foco-canto);
+}
+
+/* La tasa que cambió: la fila encendida, con el borde reflectante, hasta que
+   se mira. Al llegar, el borde destella como un letrero que recoge los focos. */
+table.tasas tr.cambio {
   outline: 3px solid var(--amarillo);
-  outline-offset: -1px;
+  outline-offset: -3px;
   background: var(--encendida);
   transition:
     outline-color 0.2s ease-out,
@@ -162,30 +223,13 @@
   animation: reflejo 1.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* Con foco, el anillo es blanco (8:1 sobre el verde): el amarillo ya dice «cambió».
-   Sin animación, para que el destello no le devuelva el amarillo al contorno. */
-.dest.cambio:focus-visible {
-  outline: 3px solid #fff;
-  outline-offset: 0;
-  box-shadow: 0 0 0 5px var(--foco-canto);
-  animation: none;
-}
-
-.dest.cambio.vista {
+table.tasas tr.cambio.vista {
   outline-color: transparent;
   background: transparent;
   animation: none;
 }
 
-.dest.cambio.vista:hover {
-  background: rgb(255 255 255 / 0.06);
-}
-
-.dest.cambio.vista:focus-visible {
-  outline-color: #fff;
-}
-
-.dest.cambio.vista .aviso-dest {
+table.tasas tr.cambio.vista .aviso-dest {
   color: #fff;
   opacity: 0.75;
 }
@@ -202,7 +246,7 @@
   }
 }
 
-.dest.vencida .t b {
+table.tasas tr.vencida td.cifra {
   opacity: 0.55;
 }
 
@@ -211,8 +255,8 @@
 
 .trabajo {
   display: grid;
-  grid-template-columns: 420px minmax(0, 1fr);
-  gap: 18px;
+  grid-template-columns: 400px minmax(0, 1fr);
+  gap: 14px;
   min-height: 0;
 }
 
@@ -222,9 +266,51 @@
 .registro form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 14px 18px 18px;
+  gap: 8px;
+  padding: 8px 12px 10px;
   overflow-y: auto;
+}
+
+/* Los grupos rotulados del registro (vuelta 3): Operación y Monto y documento */
+.registro fieldset.grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 10px 10px;
+}
+
+/* Más compacto que en otras pantallas: el registro entero cabe a 1440 × 900 */
+.registro .seg button {
+  min-height: 34px;
+  padding-block: 5px;
+}
+
+.registro .duo input,
+.registro .duo select {
+  min-height: 38px;
+  padding-block: 6px;
+}
+
+/* Los botones del registro, un poco más bajos que en otras pantallas */
+.registro .acciones .btn {
+  min-height: 40px;
+  padding-block: 6px;
+}
+
+.campo-divisa legend {
+  margin-bottom: 3px;
+}
+
+/* La vista previa no lleva recuadro: la placa ya es su caja. Su rótulo imita
+   la leyenda de los grupos (no es un fieldset: dentro de uno, Chrome dejaba en
+   cero la primera columna de la placa, que es un contenedor de consultas). */
+.grupo-rotulo {
+  padding: 0 0 4px;
+  color: var(--suave);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 /* Con la ficha UAF el formulario no cabe y se desplaza: nada se encoge. Sin
@@ -263,8 +349,8 @@ fieldset.campo-divisa {
   flex-direction: row;
   align-items: center;
   gap: 8px;
-  min-height: 40px;
-  padding: 7px 10px;
+  min-height: 36px;
+  padding: 5px 10px;
   border: 2px solid var(--linea);
   border-radius: var(--radio-control);
   background: var(--panel);
@@ -310,9 +396,9 @@ fieldset.campo-divisa {
 }
 
 input.monto {
-  padding: 8px 12px;
+  padding: 5px 12px;
   border-color: var(--trazo);
-  font: 700 28px var(--familia-num);
+  font: 700 26px var(--familia-num);
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
@@ -336,7 +422,7 @@ input.monto[aria-invalid="true"] {
   display: grid;
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.3fr) minmax(0, 0.9fr);
   gap: 6px;
-  padding: 14px 16px;
+  padding: 8px 14px;
   border: 1px solid var(--placa-borde);
   border-radius: var(--radio-panel);
   background: var(--placa);
@@ -484,6 +570,8 @@ input.monto[aria-invalid="true"] {
 }
 
 .libro tbody tr[aria-selected="true"] {
+  outline: 2px solid var(--amarillo);
+  outline-offset: -2px;
   background: var(--fila-elegida);
 }
 
@@ -514,10 +602,9 @@ input.monto[aria-invalid="true"] {
   white-space: nowrap;
 }
 
-/* base.css define .enlace en línea: aquí va debajo del chip */
+/* «Confirmar» del borrador, en la misma línea que el chip: la fila no crece */
 .libro .retomar {
-  display: block;
-  margin-top: 3px;
+  margin-left: 8px;
   color: var(--tinta);
   font-size: 12px;
 }
@@ -570,17 +657,31 @@ input.monto[aria-invalid="true"] {
   width: 70%;
 }
 
-/* El pie: los totales del día */
+/* El pie: los totales del día, como la fila de totales de una planilla */
 .pie {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 28px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-top: auto;
-  padding: 12px 18px;
   border-top: 2px solid var(--trazo);
+  border-radius: 0 0 var(--radio-panel) var(--radio-panel);
+  background: var(--cabecera);
+}
+
+.pie > div {
+  padding: 7px 14px;
+  border-right: 1px solid var(--linea);
+}
+
+.pie > div:last-child {
+  border-right: 0;
+}
+
+.pie dt {
   color: var(--suave);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .pie dd {
@@ -695,33 +796,29 @@ input.monto[aria-invalid="true"] {
     gap: 14px;
   }
 
-  .letrero-in {
-    grid-template-columns: minmax(0, 1fr);
-    padding: 12px 14px 10px;
-  }
-
   .letrero-acc {
     justify-content: space-between;
+    margin-left: 0;
   }
 
   .vig {
     text-align: left;
   }
 
-  .filas {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 4px;
+  table.tasas th,
+  table.tasas td {
+    padding: 0 10px;
   }
 
-  .dest {
-    padding: 6px 8px;
+  table.tasas thead th.r {
+    width: auto;
   }
 
-  .dest .cod {
-    font-size: 22px;
+  table.tasas .cod {
+    font-size: 19px;
   }
 
-  .dest .t b {
+  table.tasas td.cifra {
     font-size: 18px;
   }
 
@@ -815,12 +912,30 @@ input.monto[aria-invalid="true"] {
     background: var(--fila-elegida);
   }
 
-  .dest {
-    gap: 0 8px;
+  /* En el teléfono, la columna «Cambio» baja bajo la divisa; el nombre se va */
+  table.tasas .nom {
+    display: none;
+  }
+
+  table.tasas .col-cambio {
+    width: auto;
   }
 
   .pie {
-    gap: 8px 18px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pie > div:nth-child(2) {
+    border-right: 0;
+  }
+
+  .pie > div:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--linea);
+  }
+
+  .libro .retomar {
+    display: block;
+    margin: 3px 0 0;
   }
 }
 

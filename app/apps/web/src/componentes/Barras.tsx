@@ -144,7 +144,10 @@ export function Pestanas({ sesion }: { sesion?: Sesion | undefined }) {
 export function BarraEstado({ sesion, conectado }: { sesion?: Sesion | undefined; conectado: boolean }) {
   const ahora = useAhora();
   const pizarra = usePizarra();
-  const ultima = (pizarra.data ?? []).reduce<string | null>((max, f) => (f.vigenteDesde && (!max || f.vigenteDesde > max) ? f.vigenteDesde : max), null);
+  const ultima = (pizarra.data ?? []).reduce<string | null>(
+    (max, f) => (f.vigenteDesde && (!max || f.vigenteDesde > max) ? f.vigenteDesde : max),
+    null,
+  );
   const turno = sesion?.turno;
   return (
     <footer className="estado" aria-label="Barra de estado">

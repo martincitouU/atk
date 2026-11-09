@@ -29,6 +29,8 @@ import { esActivable, esCampoDeTexto, hora, montoDivisa, montoEn, pesos, tasa, T
 export type RegistroApi = {
   /** Trae un borrador del libro al registro para completarlo (el folio) y confirmarlo. */
   retomar: (op: Operacion) => void;
+  /** Lo mismo que pulsar esa tecla en el registro (la cinta: «c», «v», «b», «Enter», «Escape»). */
+  tecla: (tecla: string) => void;
 };
 
 type ClienteElegido = { id: number; nombre: string | null; documento: string | null; faltantes: string[] };
@@ -125,7 +127,14 @@ export function Registro({ ref }: { ref?: Ref<RegistroApi> }) {
   // teclas seguidas antes de un render no se pisan.
   const [borrador, setBorrador] = useState<Borrador>(() =>
     guardado
-      ? { tipo: guardado.tipo, moneda: guardado.moneda, monto: guardado.monto, medioPago: guardado.medioPago, folio: guardado.folio, esperaDivisa: false }
+      ? {
+          tipo: guardado.tipo,
+          moneda: guardado.moneda,
+          monto: guardado.monto,
+          medioPago: guardado.medioPago,
+          folio: guardado.folio,
+          esperaDivisa: false,
+        }
       : borradorVacio("USD"),
   );
   const borradorRef = useRef(borrador);
@@ -201,7 +210,13 @@ export function Registro({ ref }: { ref?: Ref<RegistroApi> }) {
     () =>
       monto === null
         ? null
-        : { tipo: borrador.tipo, monedaCodigo: borrador.moneda, montoDivisa: monto.toString(), medioPago: borrador.medioPago, clienteId: cliente?.id ?? null },
+        : {
+            tipo: borrador.tipo,
+            monedaCodigo: borrador.moneda,
+            montoDivisa: monto.toString(),
+            medioPago: borrador.medioPago,
+            clienteId: cliente?.id ?? null,
+          },
     [borrador.tipo, borrador.moneda, monto, borrador.medioPago, cliente?.id],
   );
   const consultaRetrasada = useRetrasado(consulta, 150);
@@ -220,7 +235,12 @@ export function Registro({ ref }: { ref?: Ref<RegistroApi> }) {
   // Un borrador retomado se confirma con la pizarra de ahora: si su tasa era otra, se dice antes.
   const tasaVista = datos?.tasaAplicadaE6;
   const recalculo =
-    pendiente && tasaVista && fila && pendiente.tasaAplicadaE6 !== tasaVista && pendiente.monedaCodigo === borrador.moneda && pendiente.tipo === borrador.tipo
+    pendiente &&
+    tasaVista &&
+    fila &&
+    pendiente.tasaAplicadaE6 !== tasaVista &&
+    pendiente.monedaCodigo === borrador.moneda &&
+    pendiente.tipo === borrador.tipo
       ? `El borrador se registró a ${tasa(pendiente.tasaAplicadaE6, fila.decimalesTasa)}; se confirmará a ${tasa(tasaVista, fila.decimalesTasa)}, la tasa de la placa.`
       : null;
 
@@ -359,6 +379,9 @@ export function Registro({ ref }: { ref?: Ref<RegistroApi> }) {
         setHecho("");
         setEnfocar({ campo: op.folioDte === null ? "folio" : "monto", vez: Date.now() });
       },
+      tecla(tecla: string) {
+        aplicarTeclaRef.current(tecla);
+      },
     }),
     [filas],
   );
@@ -386,9 +409,14 @@ export function Registro({ ref }: { ref?: Ref<RegistroApi> }) {
     if (enMonto && !b.esperaDivisa && (/^\d$/.test(e.key) || e.key === "," || e.key === "Backspace")) return;
 
     if (e.key === "Enter" && (enMonto || enFolio)) e.preventDefault(); // sin envío implícito del formulario
-    const { borrador: siguiente, accion } = teclear(b, e.key, codigos);
-    if (siguiente === b && accion === undefined) return;
-    e.preventDefault();
+    if (aplicarTecla(e.key)) e.preventDefault();
+  };
+
+  /** Una tecla del registro, venga del teclado o de la cinta. Devuelve si hizo algo. */
+  function aplicarTecla(tecla: string): boolean {
+    const b = borradorRef.current;
+    const { borrador: siguiente, accion } = teclear(b, tecla, codigos);
+    if (siguiente === b && accion === undefined) return false;
     if (accion === "LIMPIAR") limpiar(siguiente);
     else if (siguiente !== b) {
       cambiar(siguiente);
@@ -396,10 +424,13 @@ export function Registro({ ref }: { ref?: Ref<RegistroApi> }) {
     }
     if (accion === "CONFIRMAR") void confirmar();
     if (accion === "BORRADOR") void dejarBorrador();
-  };
+    return true;
+  }
   const alPulsarRef = useRef(alPulsar);
+  const aplicarTeclaRef = useRef(aplicarTecla);
   useLayoutEffect(() => {
     alPulsarRef.current = alPulsar;
+    aplicarTeclaRef.current = aplicarTecla;
   });
   useEffect(() => {
     const oyente = (e: KeyboardEvent) => alPulsarRef.current(e);
@@ -444,121 +475,145 @@ export function Registro({ ref }: { ref?: Ref<RegistroApi> }) {
       </header>
 
       <form onSubmit={enviar} noValidate>
-        <div className="seg" role="group" aria-label="Tipo de operación">
-          {(["COMPRA", "VENTA"] as const).map((t) => (
-            <button key={t} type="button" aria-pressed={borrador.tipo === t} onClick={() => cambiar({ ...borradorRef.current, tipo: t, esperaDivisa: false })}>
-              {TIPO[t]} <Kbd aria-hidden="true">{t === "COMPRA" ? "C" : "V"}</Kbd>
-            </button>
-          ))}
-        </div>
-
-        <fieldset className="campo-divisa">
-          <legend>
-            Divisa
-            {borrador.esperaDivisa && (
-              <span className="espera">
-                <Sep />
-                pulse {codigos.length > 1 ? `1–${Math.min(codigos.length, 9)}` : "1"}
-              </span>
-            )}
-          </legend>
-          <div className="divisas">
-            {filas.map((f, i) => (
-              <label key={f.monedaCodigo} className={`div${borrador.moneda === f.monedaCodigo ? " elegida" : ""}`}>
-                <input
-                  type="radio"
-                  name="divisa"
-                  className="oculto"
-                  value={f.monedaCodigo}
-                  checked={borrador.moneda === f.monedaCodigo}
-                  onChange={() => cambiar({ ...borradorRef.current, moneda: f.monedaCodigo, esperaDivisa: false })}
-                />
-                <i aria-hidden="true" style={{ background: `var(--${f.monedaCodigo.toLowerCase()}, var(--neutro))` }} />
-                {f.monedaCodigo}
-                {i < 9 && <Kbd aria-hidden="true">{i + 1}</Kbd>}
-              </label>
+        <fieldset className="grupo">
+          <legend>Operación</legend>
+          <div className="seg" role="group" aria-label="Tipo de operación">
+            {(["COMPRA", "VENTA"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                aria-pressed={borrador.tipo === t}
+                onClick={() => cambiar({ ...borradorRef.current, tipo: t, esperaDivisa: false })}
+              >
+                {TIPO[t]} <Kbd aria-hidden="true">{t === "COMPRA" ? "C" : "V"}</Kbd>
+              </button>
             ))}
+          </div>
+
+          <fieldset className="campo-divisa">
+            <legend>
+              Divisa
+              {borrador.esperaDivisa && (
+                <span className="espera">
+                  <Sep />
+                  pulse {codigos.length > 1 ? `1–${Math.min(codigos.length, 9)}` : "1"}
+                </span>
+              )}
+            </legend>
+            <div className="divisas">
+              {filas.map((f, i) => (
+                <label key={f.monedaCodigo} className={`div${borrador.moneda === f.monedaCodigo ? " elegida" : ""}`}>
+                  <input
+                    type="radio"
+                    name="divisa"
+                    className="oculto"
+                    value={f.monedaCodigo}
+                    checked={borrador.moneda === f.monedaCodigo}
+                    onChange={() => cambiar({ ...borradorRef.current, moneda: f.monedaCodigo, esperaDivisa: false })}
+                  />
+                  <i aria-hidden="true" style={{ background: `var(--${f.monedaCodigo.toLowerCase()}, var(--neutro))` }} />
+                  {f.monedaCodigo}
+                  {i < 9 && <Kbd aria-hidden="true">{i + 1}</Kbd>}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        </fieldset>
+
+        <fieldset className="grupo">
+          <legend>Monto y documento</legend>
+          <label>
+            {montoEn(borrador.moneda)}
+            <input
+              ref={montoRef}
+              className="monto num"
+              data-monto=""
+              inputMode="decimal"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder={decimales > 0 ? `0,${"0".repeat(decimales)}` : "0"}
+              value={verMonto(borrador.monto)}
+              aria-invalid={hayMonto && monto === null}
+              aria-describedby={nota ? "registro-nota" : undefined}
+              onChange={(e) => {
+                cambiar({ ...borradorRef.current, monto: limpiarMonto(e.target.value), esperaDivisa: false });
+                setHecho("");
+              }}
+              // Al salir, el monto se lee con sus decimales («450» → «450,00»); al volver, se sueltan los ceros para seguir escribiendo
+              onBlur={() => {
+                const b = borradorRef.current;
+                const m = montoMinimo(b, decimales);
+                if (m !== null && decimales > 0) cambiar({ ...b, monto: formatearMonto(m, decimales).replaceAll(".", "") });
+              }}
+              onFocus={() => {
+                const b = borradorRef.current;
+                if (/,0*$/.test(b.monto)) cambiar({ ...b, monto: b.monto.replace(/,0*$/, "") });
+              }}
+            />
+          </label>
+
+          <div className="duo">
+            <label>
+              Folio boleta (41)
+              <input
+                ref={folioRef}
+                className="num"
+                inputMode="numeric"
+                autoComplete="off"
+                maxLength={10}
+                value={borrador.folio}
+                onChange={(e) => cambiar({ ...borradorRef.current, folio: e.target.value.replace(/\D/g, "") })}
+              />
+            </label>
+            <label>
+              Medio de pago
+              <select value={borrador.medioPago} onChange={(e) => cambiar({ ...borradorRef.current, medioPago: e.target.value as MedioPago })}>
+                {MEDIOS.map(([valor, texto]) => (
+                  <option key={valor} value={valor}>
+                    {texto}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
         </fieldset>
 
-        <label>
-          {montoEn(borrador.moneda)}
-          <input
-            ref={montoRef}
-            className="monto num"
-            data-monto=""
-            inputMode="decimal"
-            autoComplete="off"
-            spellCheck={false}
-            placeholder={decimales > 0 ? `0,${"0".repeat(decimales)}` : "0"}
-            value={verMonto(borrador.monto)}
-            aria-invalid={hayMonto && monto === null}
-            aria-describedby={nota ? "registro-nota" : undefined}
-            onChange={(e) => {
-              cambiar({ ...borradorRef.current, monto: limpiarMonto(e.target.value), esperaDivisa: false });
-              setHecho("");
-            }}
-            // Al salir, el monto se lee con sus decimales («450» → «450,00»); al volver, se sueltan los ceros para seguir escribiendo
-            onBlur={() => {
-              const b = borradorRef.current;
-              const m = montoMinimo(b, decimales);
-              if (m !== null && decimales > 0) cambiar({ ...b, monto: formatearMonto(m, decimales).replaceAll(".", "") });
-            }}
-            onFocus={() => {
-              const b = borradorRef.current;
-              if (/,0*$/.test(b.monto)) cambiar({ ...b, monto: b.monto.replace(/,0*$/, "") });
-            }}
-          />
-        </label>
+        <div className="grupo-placa">
+          <p className="grupo-rotulo" aria-hidden="true">
+            Vista previa
+            <Sep />
+            se lee al cliente
+          </p>
+          <div className={`placa${desfasada ? " desfasada" : ""}`} role="group" aria-label="Vista previa" aria-live="polite" aria-busy={desfasada}>
+            <div>
+              <span>Tasa</span>
+              <b className="num" style={cifras(tasaPlaca)}>
+                {tasaPlaca}
+              </b>
+            </div>
+            <div className="total">
+              <span>{borrador.tipo === "VENTA" ? "Cliente paga" : "Cliente recibe"}</span>
+              <b className="num" style={cifras(totalPlaca)}>
+                {totalPlaca}
+              </b>
+            </div>
+            <div>
+              <span>Margen</span>
+              <b className="num" style={cifras(margenPlaca)}>
+                {margenPlaca}
+              </b>
+            </div>
+          </div>
 
-        <div className="duo">
-          <label>
-            Folio boleta (41)
-            <input
-              ref={folioRef}
-              className="num"
-              inputMode="numeric"
-              autoComplete="off"
-              maxLength={10}
-              value={borrador.folio}
-              onChange={(e) => cambiar({ ...borradorRef.current, folio: e.target.value.replace(/\D/g, "") })}
-            />
-          </label>
-          <label>
-            Medio de pago
-            <select value={borrador.medioPago} onChange={(e) => cambiar({ ...borradorRef.current, medioPago: e.target.value as MedioPago })}>
-              {MEDIOS.map(([valor, texto]) => (
-                <option key={valor} value={valor}>
-                  {texto}
-                </option>
-              ))}
-            </select>
-          </label>
+          <p id="registro-nota" className="nota-placa" role="status">
+            {nota && (
+              <>
+                <WarningIcon size={15} weight="bold" aria-hidden="true" />
+                {nota}
+              </>
+            )}
+          </p>
         </div>
-
-        <div className={`placa${desfasada ? " desfasada" : ""}`} role="group" aria-label="Vista previa" aria-live="polite" aria-busy={desfasada}>
-          <div>
-            <span>Tasa</span>
-            <b className="num" style={cifras(tasaPlaca)}>{tasaPlaca}</b>
-          </div>
-          <div className="total">
-            <span>{borrador.tipo === "VENTA" ? "Cliente paga" : "Cliente recibe"}</span>
-            <b className="num" style={cifras(totalPlaca)}>{totalPlaca}</b>
-          </div>
-          <div>
-            <span>Margen</span>
-            <b className="num" style={cifras(margenPlaca)}>{margenPlaca}</b>
-          </div>
-        </div>
-
-        <p id="registro-nota" className="nota-placa" role="status">
-          {nota && (
-            <>
-              <WarningIcon size={15} weight="bold" aria-hidden="true" />
-              {nota}
-            </>
-          )}
-        </p>
 
         {consulta !== null && (datos?.requiereFicha || cliente !== null) && (
           <FichaUaf
@@ -589,7 +644,12 @@ export function Registro({ ref }: { ref?: Ref<RegistroApi> }) {
         )}
 
         <div className="acciones">
-          <button type="submit" className="btn prim" disabled={ocupado || bloqueo !== null || !hayMonto} aria-describedby={nota ? "registro-nota" : undefined}>
+          <button
+            type="submit"
+            className="btn prim"
+            disabled={ocupado || bloqueo !== null || !hayMonto}
+            aria-describedby={nota ? "registro-nota" : undefined}
+          >
             {ocupado ? "Confirmando…" : "Confirmar"} <Kbd aria-hidden="true">Enter</Kbd>
           </button>
           <button type="button" className="btn" disabled={ocupado || monto === null} onClick={() => void dejarBorrador()}>
@@ -700,7 +760,12 @@ function FichaUaf({
       )}
       <label>
         Propósito de la operación
-        <input value={proposito} onChange={(e) => onProposito(e.target.value)} placeholder="Turismo, ahorro, pago a un proveedor…" autoComplete="off" />
+        <input
+          value={proposito}
+          onChange={(e) => onProposito(e.target.value)}
+          placeholder="Turismo, ahorro, pago a un proveedor…"
+          autoComplete="off"
+        />
       </label>
       <p>
         <Link to="/clientes?nuevo=1" className="crear-ficha">
@@ -710,4 +775,3 @@ function FichaUaf({
     </Aviso>
   );
 }
-

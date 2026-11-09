@@ -1,7 +1,7 @@
 import { aBigint, type FilaPizarra } from "../../api/esquemas.ts";
 import { calcularPrecios, formatearTasa, leerDecimal } from "@atk/shared/dinero";
-import { XIcon } from "@phosphor-icons/react";
-import { Fragment, useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import { WarningDiamondIcon, XIcon } from "@phosphor-icons/react";
+import { Fragment, useEffect, useId, useImperativeHandle, useRef, useState, type FormEvent, type KeyboardEvent, type Ref } from "react";
 import { ErrorNegocio } from "../../api/cliente.ts";
 import { usePizarra, usePublicarCotizacion, useSesion } from "../../api/consultas.ts";
 import { puede } from "../../api/permisos.ts";
@@ -55,13 +55,21 @@ function antes(f: FilaPizarra): string[] {
 
 // ---------------------------------------------------------------------------
 
-export function Pizarra() {
+export type PizarraApi = {
+  /** «Actualizar pizarra» (cinta): abre el formulario si el rol puede publicar. */
+  actualizar: () => void;
+};
+
+export function Pizarra({ ref }: { ref?: Ref<PizarraApi> }) {
   const pizarra = usePizarra();
   const { data: sesion } = useSesion();
   const ahora = useAhora();
   const [vistas, setVistas] = useState(leerVistas);
   const [actualizando, setActualizando] = useState(false);
   const filas = pizarra.data ?? [];
+  const puedePublicar = puede(sesion?.usuario.rol, "publicarPizarra") && filas.length > 0;
+
+  useImperativeHandle(ref, () => ({ actualizar: () => puedePublicar && setActualizando(true) }), [puedePublicar]);
 
   function alternar(clave: string) {
     setVistas((previas) => {
@@ -78,46 +86,66 @@ export function Pizarra() {
   return (
     <section className="letrero" aria-labelledby="pizarra-titulo">
       <div className="letrero-in">
-        <h2 id="pizarra-titulo">
-          Pizarra
-          <Sep />
-          pesos por unidad
-        </h2>
-        <div className="letrero-acc">
-          <p className="vig">
-            {ultima ? `Vigente desde ${hora(ultima)}` : "Sin cotizaciones"}
-            {DATOS_DE_EJEMPLO && (
-              <>
-                <Sep />
-                <span className="sint">datos de ejemplo</span>
-              </>
+        <div className="letrero-cab">
+          <h2 id="pizarra-titulo">
+            Pizarra
+            <span className="letrero-unidad">
+              <Sep />
+              pesos por unidad
+            </span>
+          </h2>
+          <div className="letrero-acc">
+            <p className="vig">
+              {ultima ? `Vigente desde ${hora(ultima)}` : "Sin cotizaciones"}
+              {DATOS_DE_EJEMPLO && (
+                <>
+                  <Sep />
+                  <span className="sint">datos de ejemplo</span>
+                </>
+              )}
+            </p>
+            {puedePublicar && (
+              <button type="button" className="btn-letrero" onClick={() => setActualizando(true)}>
+                Actualizar pizarra
+              </button>
             )}
-          </p>
-          {puede(sesion?.usuario.rol, "publicarPizarra") && filas.length > 0 && (
-            <button type="button" className="btn-letrero" onClick={() => setActualizando(true)}>
-              Actualizar pizarra
-            </button>
-          )}
+          </div>
         </div>
 
-        {pizarra.isPending ? (
-          <div className="filas" aria-busy="true">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="dest esperando">
-                <span className="esqueleto" style={{ width: "40%" }} />
-              </div>
-            ))}
-          </div>
-        ) : pizarra.isError ? (
+        {pizarra.isError ? (
           <p className="letrero-error" role="alert">
             {pizarra.error instanceof ErrorNegocio ? pizarra.error.message : "No se pudo leer la pizarra."}
           </p>
         ) : (
-          <div className="filas">
-            {filas.map((f) => (
-              <Destino key={f.monedaCodigo} fila={f} ahora={ahora} vista={vistas.has(claveDe(f))} onMirar={() => alternar(claveDe(f))} />
-            ))}
-          </div>
+          <table className="tasas">
+            <thead>
+              <tr>
+                <th scope="col">Divisa</th>
+                <th scope="col" className="r">
+                  Compra
+                </th>
+                <th scope="col" className="r">
+                  Venta
+                </th>
+                <th scope="col" className="col-cambio">
+                  Cambio
+                </th>
+              </tr>
+            </thead>
+            <tbody aria-busy={pizarra.isPending}>
+              {pizarra.isPending
+                ? [0, 1, 2].map((i) => (
+                    <tr key={i} className="esperando">
+                      <td colSpan={4}>
+                        <span className="esqueleto" style={{ width: "40%" }} />
+                      </td>
+                    </tr>
+                  ))
+                : filas.map((f) => (
+                    <Destino key={f.monedaCodigo} fila={f} ahora={ahora} vista={vistas.has(claveDe(f))} onMirar={() => alternar(claveDe(f))} />
+                  ))}
+            </tbody>
+          </table>
         )}
       </div>
       {actualizando && <ActualizarPizarra filas={filas} onCerrar={() => setActualizando(false)} />}
@@ -125,42 +153,14 @@ export function Pizarra() {
   );
 }
 
+/** Una fila de la pizarra: la divisa, sus dos tasas y si cambió (o está vencida). */
 function Destino({ fila: f, ahora, vista, onMirar }: { fila: FilaPizarra; ahora: Date; vista: boolean; onMirar: () => void }) {
-  const cifras = (
-    <>
-      <span className="id">
-        <span className="cod">{f.monedaCodigo}</span>
-        <span className="nom">{f.nombre}</span>
-      </span>
-      <span className="t">
-        <span>Compra</span>
-        <b className="num">{tasa(f.compraE6, f.decimalesTasa)}</b>
-      </span>
-      <span className="t">
-        <span>Venta</span>
-        <b className="num">{tasa(f.ventaE6, f.decimalesTasa)}</b>
-      </span>
-    </>
-  );
+  const vencida = f.vencida || f.compraE6 === null;
+  const cambio = vencida ? [] : antes(f);
+  const cambiada = cambio.length > 0 && f.vigenteDesde;
 
-  if (f.vencida || f.compraE6 === null) {
-    return (
-      <div className="dest vencida">
-        {cifras}
-        <span className="aviso-dest">
-          {f.compraE6 === null ? "Sin cotización" : "Vencida"}
-          <Sep />
-          actualice la pizarra
-        </span>
-      </div>
-    );
-  }
-
-  const cambio = antes(f);
-  if (cambio.length === 0 || !f.vigenteDesde) return <div className="dest">{cifras}</div>;
-
-  // La tasa que cambió: un botón de alternar. Encendida hasta que se mira (clic o Enter).
-  function alPulsar(e: KeyboardEvent<HTMLDivElement>) {
+  // La tasa que cambió: un botón de alternar en su celda. Encendida hasta que se mira (clic o Enter).
+  function alPulsar(e: KeyboardEvent<HTMLButtonElement>) {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       e.stopPropagation();
@@ -169,26 +169,46 @@ function Destino({ fila: f, ahora, vista, onMirar }: { fila: FilaPizarra; ahora:
   }
 
   return (
-    <div
-      className={`dest cambio${vista ? " vista" : ""}`}
-      role="button"
-      tabIndex={0}
-      aria-pressed={vista}
-      title={vista ? "Vista: clic para volver a encenderla" : "Clic o Enter para marcarla como vista"}
-      onClick={onMirar}
-      onKeyDown={alPulsar}
-    >
-      {cifras}
-      <span className="aviso-dest">
-        Cambió {haceCuanto(new Date(f.vigenteDesde), ahora)}
-        {cambio.map((parte) => (
-          <Fragment key={parte}>
+    <tr className={vencida ? "vencida" : cambiada ? `cambio${vista ? " vista" : ""}` : undefined}>
+      <th scope="row">
+        <i className="dest-punto" aria-hidden="true" style={{ background: `var(--${f.monedaCodigo.toLowerCase()}-letrero, #fff)` }} />
+        <span className="cod">{f.monedaCodigo}</span>
+        <span className="nom">{f.nombre}</span>
+      </th>
+      <td className="r cifra num">{tasa(f.compraE6, f.decimalesTasa)}</td>
+      <td className="r cifra num">{tasa(f.ventaE6, f.decimalesTasa)}</td>
+      <td className="col-cambio">
+        {vencida ? (
+          <span className="aviso-dest">
+            <WarningDiamondIcon size={15} weight="bold" aria-hidden="true" />
+            {f.compraE6 === null ? "Sin cotización" : "Vencida"}
             <Sep />
-            {parte}
-          </Fragment>
-        ))}
-      </span>
-    </div>
+            actualice la pizarra
+          </span>
+        ) : cambiada ? (
+          <button
+            type="button"
+            className="aviso-dest cambio-btn"
+            aria-pressed={vista}
+            title={vista ? "Vista: clic para volver a encenderla" : "Clic o Enter para marcarla como vista"}
+            onClick={onMirar}
+            onKeyDown={alPulsar}
+          >
+            <WarningDiamondIcon size={15} weight="bold" aria-hidden="true" />
+            <span className="oculto">{f.monedaCodigo}: </span>
+            Cambió {haceCuanto(new Date(f.vigenteDesde as string), ahora)}
+            {cambio.map((parte) => (
+              <Fragment key={parte}>
+                <Sep />
+                {parte}
+              </Fragment>
+            ))}
+          </button>
+        ) : (
+          <span className="sin-cambio">Sin cambios{f.vigenteDesde ? ` desde las ${hora(f.vigenteDesde)}` : ""}</span>
+        )}
+      </td>
+    </tr>
   );
 }
 
@@ -336,22 +356,43 @@ function ActualizarPizarra({ filas, onCerrar }: { filas: FilaPizarra[]; onCerrar
                 </legend>
                 <label>
                   Referencia
-                  <input className="num" inputMode="decimal" autoComplete="off" value={r.referencia} onChange={(e) => editar(f.monedaCodigo, { referencia: e.target.value })} />
+                  <input
+                    className="num"
+                    inputMode="decimal"
+                    autoComplete="off"
+                    value={r.referencia}
+                    onChange={(e) => editar(f.monedaCodigo, { referencia: e.target.value })}
+                  />
                 </label>
                 <label>
                   Margen en
-                  <select value={r.tipoMargen} onChange={(e) => editar(f.monedaCodigo, { tipoMargen: e.target.value === "MONTO_FIJO" ? "MONTO_FIJO" : "PORCENTAJE" })}>
+                  <select
+                    value={r.tipoMargen}
+                    onChange={(e) => editar(f.monedaCodigo, { tipoMargen: e.target.value === "MONTO_FIJO" ? "MONTO_FIJO" : "PORCENTAJE" })}
+                  >
                     <option value="PORCENTAJE">Porcentaje</option>
                     <option value="MONTO_FIJO">Pesos</option>
                   </select>
                 </label>
                 <label>
                   Margen compra ({unidad})
-                  <input className="num" inputMode="decimal" autoComplete="off" value={r.compra} onChange={(e) => editar(f.monedaCodigo, { compra: e.target.value })} />
+                  <input
+                    className="num"
+                    inputMode="decimal"
+                    autoComplete="off"
+                    value={r.compra}
+                    onChange={(e) => editar(f.monedaCodigo, { compra: e.target.value })}
+                  />
                 </label>
                 <label>
                   Margen venta ({unidad})
-                  <input className="num" inputMode="decimal" autoComplete="off" value={r.venta} onChange={(e) => editar(f.monedaCodigo, { venta: e.target.value })} />
+                  <input
+                    className="num"
+                    inputMode="decimal"
+                    autoComplete="off"
+                    value={r.venta}
+                    onChange={(e) => editar(f.monedaCodigo, { venta: e.target.value })}
+                  />
                 </label>
                 <output className={`queda${l?.ok ? "" : " mal"}`}>
                   {l?.ok ? (

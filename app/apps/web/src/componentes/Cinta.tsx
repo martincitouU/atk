@@ -72,16 +72,20 @@ export function Cinta() {
           <div className="cinta-botones">
             {g.comandos.some((c) => c.grande) && (
               <div className="cinta-grandes">
-                {g.comandos.filter((c) => c.grande).map((c) => (
-                  <Boton key={c.id} comando={c} />
-                ))}
+                {g.comandos
+                  .filter((c) => c.grande)
+                  .map((c) => (
+                    <Boton key={c.id} comando={c} />
+                  ))}
               </div>
             )}
             {g.comandos.some((c) => !c.grande) && (
               <div className="cinta-pila">
-                {g.comandos.filter((c) => !c.grande).map((c) => (
-                  <Boton key={c.id} comando={c} />
-                ))}
+                {g.comandos
+                  .filter((c) => !c.grande)
+                  .map((c) => (
+                    <Boton key={c.id} comando={c} />
+                  ))}
               </div>
             )}
             {g.nota && (
@@ -119,7 +123,7 @@ function Boton({ comando: c }: { comando: Comando }) {
       // El foco vuelve a la pantalla: la cinta no se queda con el teclado
       onMouseDown={(e) => e.preventDefault()}
     >
-      <Icono size={c.grande ? 24 : 18} weight="bold" aria-hidden="true" />
+      <Icono size={c.grande ? 22 : 18} weight="bold" aria-hidden="true" />
       <span className="cinta-etiqueta">
         {c.etiqueta}
         {c.tecla && <Kbd>{c.tecla}</Kbd>}

@@ -235,6 +235,19 @@ describe("Ventanilla", () => {
     expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
   });
 
+  it("la cinta hace lo mismo que las teclas: Venta, el monto y Confirmar registran la operación", async () => {
+    const { u } = montarApp();
+    await esperarPizarra();
+    const cinta = screen.getByRole("toolbar", { name: "Comandos" });
+    await u.click(within(cinta).getByRole("button", { name: /^Venta/ }));
+    expect(within(screen.getByRole("group", { name: "Tipo de operación" })).getByRole("button", { name: /Venta/ })).toHaveAttribute("aria-pressed", "true");
+    await u.keyboard("1450");
+    await u.click(screen.getByLabelText(/folio/i));
+    await u.keyboard("18234");
+    await u.click(within(cinta).getByRole("button", { name: /^Confirmar/ }));
+    expect(await screen.findByText(texto(/Venta confirmada · US\$ 450,00/))).toBeInTheDocument();
+  });
+
   it("la tasa que cambió queda encendida hasta que se mira", async () => {
     const u = montar();
     const pizarra = await esperarPizarra();

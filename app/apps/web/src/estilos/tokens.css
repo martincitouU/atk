@@ -43,6 +43,10 @@
   --usd: #2f7d4f;
   --ars: #3e8fc9;
   --eur: #2d3f9e;
+  /* El punto de cada divisa dentro del letrero verde (vuelta 3): más claro, con anillo blanco; el letrero no cambia de noche */
+  --usd-letrero: #58c47f;
+  --ars-letrero: #6cb8ec;
+  --eur-letrero: #8f9ef5;
 
   /* Teclas */
   --kbd-fondo: #f7f7f3;

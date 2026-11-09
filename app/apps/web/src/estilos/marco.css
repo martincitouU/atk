@@ -193,8 +193,8 @@
 .cinta {
   display: flex;
   align-items: stretch;
-  min-height: 86px;
-  padding: 6px 8px 3px;
+  min-height: 76px;
+  padding: 4px 8px 1px;
   overflow-x: auto;
   border-bottom: 1px solid var(--linea);
   background: var(--cabecera);
@@ -240,8 +240,8 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  min-height: 28px;
-  padding: 3px 8px;
+  min-height: 26px;
+  padding: 2px 8px;
   border: 1px solid transparent;
   border-radius: 5px;
   background: transparent;
@@ -264,9 +264,9 @@
 
 .cinta-btn.grande {
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   min-width: 72px;
-  padding: 5px 8px;
+  padding: 3px 8px;
 }
 
 .cinta-btn.verde svg {
@@ -294,7 +294,8 @@
 }
 
 .cinta-rotulo {
-  padding: 3px 0 2px;
+  padding: 1px 0 2px;
+  line-height: 1.2;
   color: var(--suave);
   font-size: 11px;
   font-weight: 800;

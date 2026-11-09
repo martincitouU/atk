@@ -1,6 +1,17 @@
 import { aBigint, type FilaPizarra, type Operacion } from "../../api/esquemas.ts";
 import { formatearMonto } from "@atk/shared/dinero";
-import { Fragment, useEffect, useId, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent as TeclaReact } from "react";
+import {
+  Fragment,
+  useEffect,
+  useId,
+  useImperativeHandle,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent as TeclaReact,
+  type Ref,
+} from "react";
 import { ErrorNegocio } from "../../api/cliente.ts";
 import { useCatalogo, useLibroDelDia, useParametros, usePizarra, useReversar, useSaldos, useSesion } from "../../api/consultas.ts";
 import { usePuede } from "../../api/permisos.ts";
@@ -32,7 +43,14 @@ function totales(ops: Operacion[]) {
   return { compras, ventas, margen };
 }
 
-export function Libro({ onRetomar }: { onRetomar: (op: Operacion) => void }) {
+export type LibroApi = {
+  /** Lo mismo que R: el reverso de la fila elegida (o la explicación de por qué no). */
+  reversar: () => void;
+  /** El foco en el libro, para elegir una fila con ↑/↓. */
+  enfocar: () => void;
+};
+
+export function Libro({ onRetomar, ref }: { onRetomar: (op: Operacion) => void; ref?: Ref<LibroApi> }) {
   const libro = useLibroDelDia();
   const pizarra = usePizarra();
   const { data: sesion } = useSesion();
@@ -119,9 +137,12 @@ export function Libro({ onRetomar }: { onRetomar: (op: Operacion) => void }) {
     pedirReverso();
   };
   const alPulsarRef = useRef(alPulsar);
+  const pedirReversoRef = useRef(pedirReverso);
   useLayoutEffect(() => {
     alPulsarRef.current = alPulsar;
+    pedirReversoRef.current = pedirReverso;
   });
+  useImperativeHandle(ref, () => ({ reversar: () => pedirReversoRef.current(), enfocar: () => grilla.current?.focus() }), []);
   useEffect(() => {
     const oyente = (e: KeyboardEvent) => alPulsarRef.current(e);
     window.addEventListener("keydown", oyente);
@@ -236,7 +257,10 @@ export function Libro({ onRetomar }: { onRetomar: (op: Operacion) => void }) {
                 elegir(op.id);
                 grilla.current?.focus({ preventScroll: true });
               };
-              const clases = [op.estado === "REVERSADA" ? "reversada" : op.estado === "BORRADOR" ? "borrador" : "", op.motivoReverso ? "con-motivo" : ""];
+              const clases = [
+                op.estado === "REVERSADA" ? "reversada" : op.estado === "BORRADOR" ? "borrador" : "",
+                op.motivoReverso ? "con-motivo" : "",
+              ];
               return (
                 <Fragment key={op.id}>
                   <tr
@@ -388,7 +412,14 @@ function PanelReverso({
       <form onSubmit={enviar}>
         <label>
           Motivo del reverso
-          <textarea ref={texto} required rows={3} value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Monto mal digitado, cliente se arrepintió…" />
+          <textarea
+            ref={texto}
+            required
+            rows={3}
+            value={motivo}
+            onChange={(e) => setMotivo(e.target.value)}
+            placeholder="Monto mal digitado, cliente se arrepintió…"
+          />
         </label>
         <p className="hint">La caja vuelve a como estaba antes de la operación. El reverso queda en la auditoría con su motivo.</p>
         {fallo && (
