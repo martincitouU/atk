@@ -1,0 +1,173 @@
+/* ATK, vuelta 3 (sesión 057): «profesional tipo Office» dentro de Carretera Austral.
+   Comps estáticos para elegir dirección; no es código de la app. Tokens = tokens.css. */
+:root{
+  --vial:#005c45; --vial-hi:#0b7a5d; --amarillo:#f2b705; --reflejo:#ffd54a;
+  --faena:#e06a1b; --pare:#c8102e; --servicios:#1e4fa0; --turismo:#7a4a2a; --neutro:#6b7378;
+  --usd:#2f7d4f; --ars:#3e8fc9; --eur:#2d3f9e;
+  --fondo:#ecede6; --lamina:#f4f4ef; --panel:#ffffff; --cabecera:#fafaf7; --cebra:#f7f7f2;
+  --asfalto:#1d2226; --asfalto-2:#2a3035; --riel-tinta:#e9eae4; --riel-suave:#a9b1b6; --riel-linea:#3a4146;
+  --tinta:#1d2226; --suave:#5d666c; --linea:#d9dbd3; --linea-fila:#e6e7e0; --trazo:#1d2226; --borde-control:#8a9296;
+  --ok-tinta:#005c45; --ok-fondo:#e1efe9; --obra-tinta:#8a3d0b; --obra-fondo:#fce9da; --rev-tinta:#c8102e; --rev-fondo:#fbe3e6;
+  --aviso-fondo:#fff4cc; --fila-elegida:#fcf1cd; --kbd-fondo:#f7f7f3; --kbd-borde:#c7cac1; --kbd-tinta:#1d2226;
+  --placa:#1d2226; --placa-tinta:#ffffff; --placa-suave:#b5bcc0;
+  --boton-hover:#eceee8; --pestana:#fafaf7;
+  --sombra-letrero:0 2px 0 rgb(0 0 0 / .08),0 10px 24px -14px rgb(0 40 30 / .55);
+}
+:root[data-theme="dark"]{
+  --amarillo:#f2b705; --faena:#e06a1b; --pare:#f5596b; --servicios:#5b8be0; --turismo:#b98057; --neutro:#7a8287;
+  --usd:#4fb477; --ars:#3e8fc9; --eur:#7b8cf0;
+  --fondo:#14181b; --lamina:#22282c; --panel:#1c2125; --cabecera:#20262a; --cebra:#1f2428;
+  --asfalto:#0e1113; --asfalto-2:#1f252a; --riel-linea:#252b30;
+  --tinta:#ecede6; --suave:#9aa3a8; --linea:#2c3338; --linea-fila:#262c30; --trazo:#c8cdc6; --borde-control:#6b7479;
+  --ok-tinta:#6fd3ae; --ok-fondo:#12352b; --obra-tinta:#f59a5c; --obra-fondo:#3a2414; --rev-tinta:#ff7a8a; --rev-fondo:#3a1a20;
+  --aviso-fondo:#33290a; --fila-elegida:#3a3112; --kbd-fondo:#262c31; --kbd-borde:#4a5358; --kbd-tinta:#ecede6;
+  --placa:#f4f4ef; --placa-tinta:#1d2226; --placa-suave:#5d666c;
+  --boton-hover:#2a3136; --pestana:#20262a;
+  --sombra-letrero:0 2px 0 rgb(0 0 0 / .4),0 14px 28px -14px rgb(0 0 0 / .8);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--fondo)}
+body{font-family:Overpass,system-ui,sans-serif;color:var(--tinta);width:1440px;height:900px;overflow:hidden;font-size:14px;line-height:1.35}
+::selection{background:var(--amarillo);color:#1d2226}
+.num{font-family:Overpass Mono, ui-monospace, monospace;font-variant-numeric:tabular-nums}
+i.ph,i.ph-bold,i.ph-fill{font-size:18px;line-height:1}
+
+/* Teclas */
+kbd{font:700 11px/1.3 Overpass Mono, ui-monospace, monospace;background:var(--kbd-fondo);color:var(--kbd-tinta);border:1px solid var(--kbd-borde);border-bottom-width:2px;border-radius:4px;padding:0 5px;white-space:nowrap}
+.oscura kbd,.riel kbd,.titulo kbd,.pestanas kbd,.estado kbd{background:#2f363b;border-color:#4a5358;color:#e9eae4}
+
+/* Barra de estado */
+.estado{background:var(--asfalto);color:var(--riel-tinta);display:flex;align-items:center;font-size:12px;font-weight:600;height:28px;padding:0 6px}
+.estado span{display:flex;align-items:center;gap:6px;padding:0 12px;border-right:1px solid var(--riel-linea);height:100%}
+.estado span:last-child{border-right:0}
+.estado .ph,.estado .ph-bold{font-size:15px;color:var(--riel-suave)}
+.estado .der{margin-left:auto;border-left:1px solid var(--riel-linea)}
+.estado .punto{width:8px;height:8px;border-radius:50%;background:#4fb477;display:inline-block;flex:none}
+.estado b{font-weight:800;color:#fff}
+
+/* Botones de la barra de comandos */
+.cmd{display:flex;align-items:center;gap:6px;height:32px;padding:0 8px;border:1px solid transparent;border-radius:5px;background:transparent;color:var(--tinta);font:700 13px Overpass,sans-serif;white-space:nowrap}
+.cmd:hover{background:var(--boton-hover)}
+.cmd .ph,.cmd .ph-bold{font-size:18px;color:var(--suave)}
+.cmd.activo{background:var(--panel);border-color:var(--trazo)}
+.cmd.activo .ph-bold{color:var(--tinta)}
+.cmd.peligro .ph-bold{color:var(--pare)}
+.cmd.verde .ph-bold{color:var(--vial)}
+:root[data-theme="dark"] .cmd.verde .ph-bold{color:#6fd3ae}
+.sep{width:1px;align-self:stretch;background:var(--linea);margin:6px 6px}
+
+/* Panel con título y recuadro */
+.panel{background:var(--panel);border:1px solid var(--linea);border-radius:6px;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.panel-cab{display:flex;align-items:center;gap:10px;min-height:38px;padding:7px 14px;background:var(--cabecera);border-bottom:1px solid var(--linea);flex:none}
+.panel-cab h2{font-size:14px;font-weight:800;letter-spacing:.01em}
+.panel-cab .meta{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--suave);font-weight:600}
+.panel-cab .ph-bold{font-size:16px;color:var(--suave)}
+
+/* Grupo rotulado (como en un cuadro de diálogo) */
+fieldset.grupo{border:1px solid var(--linea);border-radius:6px;padding:12px 12px 12px;min-width:0}
+fieldset.grupo legend{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--suave);padding:0 6px;margin-left:-4px}
+.campo label,.rot{display:block;font-size:12px;font-weight:700;color:var(--suave);margin-bottom:5px}
+.control{height:38px;border:2px solid var(--borde-control);border-radius:6px;background:var(--panel);display:flex;align-items:center;padding:0 10px;font-weight:600;font-size:15px;color:var(--tinta)}
+.control.sel{justify-content:space-between}
+.monto{height:52px;border:2px solid var(--trazo);border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding:0 14px;font:700 28px Overpass Mono, ui-monospace, monospace;font-variant-numeric:tabular-nums;box-shadow:0 0 0 3px var(--amarillo),0 0 0 5px var(--asfalto)}
+:root[data-theme="dark"] .monto{box-shadow:0 0 0 3px var(--amarillo),0 0 0 5px #000}
+.monto .cursor{width:2px;height:28px;background:var(--vial-hi);margin-left:2px}
+
+/* Segmentado y divisas */
+.seg{display:grid;grid-template-columns:1fr 1fr;border:2px solid var(--trazo);border-radius:6px;overflow:hidden}
+.seg div{display:flex;align-items:center;justify-content:center;gap:8px;min-height:36px;padding:6px 10px;font-weight:800;font-size:15px}
+.seg .on{background:var(--asfalto);color:#fff}
+:root[data-theme="dark"] .seg .on{background:var(--trazo);color:#14181b}
+.seg .on kbd{background:#2f363b;border-color:#4a5358;color:#e9eae4}
+.divisas{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.divisas div{display:flex;align-items:center;gap:8px;height:36px;border:2px solid var(--borde-control);border-radius:6px;padding:0 10px;font-weight:800;font-size:14px}
+.divisas div kbd{margin-left:auto}
+.divisas .on{border-color:var(--trazo);box-shadow:inset 0 0 0 1px var(--trazo)}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.dot.usd{background:var(--usd)}.dot.ars{background:var(--ars)}.dot.eur{background:var(--eur)}.dot.clp{background:var(--neutro)}
+
+/* Placa: la vista previa invertida */
+.placa{background:var(--placa);color:var(--placa-tinta);border-radius:6px;display:grid;grid-template-columns:repeat(3,1fr)}
+.placa div{padding:10px 14px;border-left:1px solid rgb(255 255 255 / .14)}
+:root[data-theme="dark"] .placa div{border-left-color:rgb(0 0 0 / .14)}
+.placa div:first-child{border-left:0}
+.placa small{display:block;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--placa-suave);margin-bottom:3px}
+.placa b{font:700 21px Overpass Mono, ui-monospace, monospace;font-variant-numeric:tabular-nums}
+
+/* Botones de acción */
+.acciones{display:grid;grid-template-columns:1fr auto;gap:10px}
+.btn{min-height:44px;padding-top:8px!important;padding-bottom:8px!important;border-radius:6px;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:800;font-size:15px;border:2px solid var(--trazo);background:var(--panel);color:var(--tinta);padding:0 16px}
+.btn.prim{background:var(--vial);border-color:var(--vial);color:#fff}
+.btn.prim kbd{background:var(--vial-hi);border-color:#0f8f6c;color:#fff}
+
+/* Grilla tipo Excel */
+.grilla{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+.grilla th{position:sticky;top:0;background:var(--cabecera);text-align:left;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--suave);height:30px;padding:0 10px;border-bottom:2px solid var(--trazo);border-right:1px solid var(--linea);white-space:nowrap}
+.grilla td{height:32px;padding:0 10px;border-bottom:1px solid var(--linea-fila);border-right:1px solid var(--linea-fila);white-space:nowrap}
+.grilla th:last-child,.grilla td:last-child{border-right:0}
+.grilla tbody tr:nth-child(even) td{background:var(--cebra)}
+.grilla .der{text-align:right}
+.grilla td.num{font-size:13.5px;font-weight:700}
+.grilla td.nro{color:var(--suave);font-weight:500;text-align:right;width:44px;background:var(--cabecera)!important;border-right:1px solid var(--linea)}
+.grilla tr.elegida{outline:2px solid var(--amarillo);outline-offset:-2px}
+.grilla tr.elegida td{background:var(--fila-elegida)!important}
+.grilla tr.borr td{color:var(--suave)}
+.grilla tr.rev td.monto-rev{color:var(--rev-tinta);text-decoration:line-through}
+.motivo{display:block;font:600 11px Overpass,sans-serif;color:var(--rev-tinta);text-decoration:none;margin-top:1px}
+.div{display:inline-flex;align-items:center;gap:7px;font-weight:800}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:4px}
+.chip.ok{background:var(--ok-fondo);color:var(--ok-tinta)}
+.chip.obra{background:var(--obra-fondo);color:var(--obra-tinta)}
+.chip.rev{background:var(--rev-fondo);color:var(--rev-tinta)}
+.chip .ph-bold{font-size:12px}
+.link{font-weight:800;font-size:12px;text-decoration:underline;text-underline-offset:2px;color:var(--tinta);margin-left:8px}
+
+/* Pie de totales (fila de totales de la grilla) */
+.totales{display:grid;grid-template-columns:repeat(4,1fr);border-top:2px solid var(--trazo);background:var(--cabecera);flex:none}
+.totales div{padding:8px 14px;border-right:1px solid var(--linea)}
+.totales div:last-child{border-right:0}
+.totales small{display:block;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--suave)}
+.totales b{font:700 18px Overpass Mono, ui-monospace, monospace;font-variant-numeric:tabular-nums}
+
+/* Letrero: la pizarra como tabla */
+.letrero{background:var(--vial);color:#fff;border-radius:12px;padding:5px;box-shadow:var(--sombra-letrero);flex:none}
+.letrero-in{border:3px solid #fff;border-radius:8px;overflow:hidden}
+.letrero-cab{display:flex;align-items:center;gap:14px;padding:8px 14px;border-bottom:1px solid rgb(255 255 255 / .35)}
+.letrero-cab h2{font-size:14px;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
+.letrero-cab h2 span{font-weight:600;letter-spacing:.02em;text-transform:none;opacity:.88}
+.letrero-cab .vig{margin-left:auto;font-size:12px;font-weight:700;opacity:.92;display:flex;align-items:center;gap:6px}
+.btn-letrero{display:flex;align-items:center;gap:7px;border:2px solid #fff;border-radius:6px;padding:4px 10px;font-weight:800;font-size:13px}
+.btn-letrero kbd{background:transparent;border-color:rgb(255 255 255 / .6);color:#fff}
+table.tasas{width:100%;border-collapse:collapse}
+table.tasas th{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:rgb(255 255 255 / .82);text-align:right;padding:6px 16px;border-bottom:1px solid rgb(255 255 255 / .35);border-left:1px solid rgb(255 255 255 / .22)}
+table.tasas th:first-child{text-align:left;border-left:0}
+table.tasas td{padding:0 16px;height:44px;border-bottom:1px solid rgb(255 255 255 / .22);border-left:1px solid rgb(255 255 255 / .22);text-align:right}
+table.tasas tr:last-child td{border-bottom:0}
+table.tasas td:first-child{text-align:left;border-left:0}
+table.tasas .cod{font-weight:900;font-size:22px;letter-spacing:.02em;margin-right:10px}
+table.tasas .nom{font-weight:600;font-size:13px;opacity:.88}
+table.tasas .dotb{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:10px;box-shadow:0 0 0 2px #fff;vertical-align:2px}
+table.tasas td.cifra{font:700 22px Overpass Mono, ui-monospace, monospace;font-variant-numeric:tabular-nums}
+table.tasas td.cambio{text-align:left;font-size:12.5px;font-weight:700;color:rgb(255 255 255 / .8)}
+table.tasas tr.cambio-on td{background:rgb(242 183 5 / .14)}
+table.tasas tr.cambio-on{outline:3px solid var(--amarillo);outline-offset:-3px}
+table.tasas tr.cambio-on td.cambio{color:var(--reflejo)}
+table.tasas td.cambio .ph-bold{font-size:15px;vertical-align:-2px;margin-right:5px}
+.usdb{background:#58c47f}.arsb{background:#6cb8ec}.eurb{background:#8f9ef5}
+
+/* Riel (A) */
+.riel{background:var(--asfalto);color:var(--riel-tinta);display:flex;flex-direction:column}
+.riel .marca{font-weight:900;font-size:22px;letter-spacing:.04em;padding:18px 22px 16px;border-bottom:1px solid var(--riel-linea)}
+.riel .marca small{display:block;font-weight:700;font-size:11px;letter-spacing:.1em;color:var(--riel-suave);margin-top:3px;text-transform:uppercase}
+.riel ul{list-style:none;padding:10px 0}
+.riel li{display:flex;align-items:center;gap:12px;padding:10px 22px;font-weight:700;font-size:14px}
+.riel li kbd{margin-left:auto}
+.riel li.on{background:var(--asfalto-2)}
+.riel .cuadro{width:14px;height:14px;border-radius:3px;flex:none}
+.riel li.on .cuadro{box-shadow:0 0 0 2px var(--asfalto-2),0 0 0 4px #e9eae4}
+.c-vial{background:var(--vial-hi)}.c-amar{background:var(--amarillo)}.c-tur{background:#b98057}.c-serv{background:#5b8be0}.c-neu{background:#7a8287}
+.riel .pie{margin-top:auto;padding:14px 22px;border-top:1px solid var(--riel-linea);font-size:12px;color:var(--riel-suave);line-height:1.6}
+.riel .pie b{color:#fff;font-size:13px}
+
+.pt{display:inline-block;margin:0 .32em}
+.estado span.pt{padding:0;border:0;height:auto;display:inline-block;margin:0 .1em}

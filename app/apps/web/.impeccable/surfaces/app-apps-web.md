@@ -28,3 +28,7 @@ FIRST VIEWPORT: riel de 208 px a la izquierda; arriba, la pizarra-letrero a todo
 FORM: candidato 5 de 7 de la lista propia (señalética vial de la Carretera Austral); seed fc087548; movimiento propio: la tasa que cambió queda encendida con borde reflectante hasta que se mira.
 
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+
+## Vuelta 3 (sesión 057, pendiente de elección): profesional tipo Office
+
+Alonso pide estructura de software de escritorio sin perder la temática: paneles con título y recuadro (grupos rotulados), grillas tipo Excel (líneas, encabezado fijo, cebra, fila elegida con contorno amarillo), barra de estado abajo (turno, caja, usuario, conexión, vigencia de la pizarra, hora) y barra de comandos arriba con los atajos. La pizarra pasa a ser una tabla dentro del letrero verde: Divisa | Compra | Venta | Cambio, con la fila que cambió contorneada en amarillo. Comps en `.impeccable/mocks/office/` (A riel + barra, B pestañas de cinta —recomendado—, C pizarra acoplada) y la lámina `comparacion.png`. El portal `/mi` no cambia. Hasta que Alonso elija, el FIRST VIEWPORT de arriba sigue siendo el construido.

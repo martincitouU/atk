@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="es-CL">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ATK — Cierre del día (B, pestañas de cinta)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;700;800;900&family=Overpass+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+<link rel="stylesheet" href="office.css">
+<script>if(new URLSearchParams(location.search).get('tema')==='oscuro')document.documentElement.dataset.theme='dark'</script>
+<style>
+
+body{display:grid;grid-template-rows:32px 34px auto minmax(0,1fr) 28px}
+.letrero-cab{padding:6px 14px}
+table.tasas td{height:36px}
+table.tasas .cod{font-size:20px}
+table.tasas td.cifra{font-size:20px}
+.registro .cuerpo{padding:10px 12px!important;gap:8px!important}
+fieldset.grupo{padding:6px 10px 10px}
+.monto{height:44px;font-size:24px}
+.divisas{margin-top:8px!important}
+.placa div{padding:7px 12px}
+.placa b{font-size:19px}
+.grande{padding:4px 8px}
+.gr .cap{padding:2px 0 3px}
+table.tasas td{height:32px}
+.letrero-cab{padding:5px 14px}
+.seg div,.divisas div{min-height:34px;height:34px}
+.registro fieldset.grupo:last-of-type{border:0;padding:0}
+.registro fieldset.grupo:last-of-type legend{padding:0 0 4px;margin:0}
+.registro .cuerpo{gap:7px!important}
+.monto{height:42px}
+.titulo{background:var(--asfalto);color:var(--riel-tinta);display:flex;align-items:center;gap:14px;padding:0 16px;font-size:12.5px;font-weight:600}
+.titulo .marca{font-weight:900;font-size:17px;letter-spacing:.05em;color:#fff}
+.titulo .lugar{color:var(--riel-suave);font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:11px}
+.titulo .doc{margin:0 auto;font-weight:700;color:#fff}
+.titulo .usr{display:flex;align-items:center;gap:8px}
+.titulo .usr .ph-bold{font-size:16px;color:var(--riel-suave)}
+.pestanas{background:var(--asfalto);display:flex;align-items:flex-end;gap:2px;padding:0 10px;border-bottom:1px solid var(--linea)}
+.pestanas div{display:flex;align-items:center;gap:9px;height:30px;padding:0 16px;border-radius:6px 6px 0 0;color:var(--riel-tinta);font-weight:700;font-size:13.5px}
+.pestanas div.on{background:var(--pestana);color:var(--tinta);height:32px;margin-bottom:-1px;border:1px solid var(--linea);border-bottom-color:var(--pestana)}
+.pestanas div.on kbd{background:var(--kbd-fondo);border-color:var(--kbd-borde);color:var(--kbd-tinta)}
+.pestanas .cuadro{width:12px;height:12px;border-radius:3px}
+.cinta{background:var(--pestana);border-bottom:1px solid var(--linea);display:flex;align-items:stretch;padding:6px 8px 3px;gap:0}
+.gr{display:flex;flex-direction:column;padding:0 8px;border-right:1px solid var(--linea)}
+.gr:last-child{border-right:0}
+.gr .btns{display:flex;align-items:flex-start;gap:4px;flex:1}
+.gr .cap{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--suave);text-align:center;padding:4px 0 5px}
+.grande{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:70px;padding:6px 8px;border-radius:5px;border:1px solid transparent;font-weight:700;font-size:12.5px;white-space:nowrap}
+.grande .ph-bold{font-size:24px;color:var(--suave)}
+.grande.activo{background:var(--panel);border-color:var(--trazo)}
+.grande.activo .ph-bold{color:var(--tinta)}
+.grande.verde .ph-bold{color:var(--vial)}
+.pila{display:flex;flex-direction:column;gap:2px;padding-top:2px}
+.pila .cmd{height:28px;font-size:12.5px}
+.nota{font-size:12px;color:var(--suave);font-weight:600;padding:6px 6px 0;line-height:1.5}
+.nota b{color:var(--tinta)}
+:root[data-theme="dark"] .grande.verde .ph-bold{color:#6fd3ae}
+.contenido{min-height:0;display:flex;flex-direction:column;gap:14px;padding:14px 18px}
+.trabajo{flex:1;min-height:0;display:grid;grid-template-columns:400px minmax(0,1fr);gap:14px}
+.registro .cuerpo{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.dos{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.libro .scroll{flex:1;min-height:0;overflow:hidden}
+
+.cierre{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;grid-template-rows:auto minmax(0,1fr);gap:14px}
+.conteo{grid-column:1;grid-row:1}
+.movs{grid-column:1;grid-row:2}
+.billetes{grid-column:2;grid-row:1/3}
+.letrero.amarillo{background:var(--amarillo);color:#1d2226}
+.letrero.amarillo .letrero-in{border-color:#1d2226}
+.letrero.amarillo .letrero-cab{border-bottom:0;padding:10px 16px}
+.letrero.amarillo .letrero-cab h2 span{opacity:1}
+.res{display:flex;margin-left:auto}
+.res div{padding:0 16px;border-left:2px solid rgb(29 34 38 / .35);font-size:12px;font-weight:700;line-height:1.3}
+.res b{display:block;font:700 18px Overpass Mono, ui-monospace, monospace;font-variant-numeric:tabular-nums}
+.aviso-cierre{display:flex;align-items:center;gap:10px;background:#1d2226;color:#ffd54a;padding:8px 16px;font-size:13px;font-weight:700}
+.aviso-cierre .ph-bold{font-size:18px}
+.aviso-cierre .link{color:#fff;margin-left:6px}
+.grilla tr.falta td{background:var(--aviso-fondo)!important}
+.chip.aviso{background:var(--aviso-fondo);color:var(--obra-tinta);box-shadow:inset 0 0 0 1px var(--amarillo)}
+.chip.nada{background:var(--lamina);color:var(--suave)}
+.billetes .cuerpo{padding:12px 14px;display:flex;flex-direction:column;gap:12px;min-height:0}
+.billetes .grilla td{height:34px}
+.cant{display:inline-flex;align-items:center;justify-content:flex-end;min-width:64px;height:28px;border:2px solid var(--borde-control);border-radius:5px;padding:0 8px;font:700 14px Overpass Mono, ui-monospace, monospace}
+.cant.on{border-color:var(--trazo);box-shadow:0 0 0 3px var(--amarillo),0 0 0 5px var(--asfalto)}
+.tot{display:flex;justify-content:space-between;align-items:baseline;border-top:2px solid var(--trazo);padding-top:8px;font-weight:800}
+.tot b{font:700 22px Overpass Mono, ui-monospace, monospace}
+.ok-linea{display:flex;align-items:center;gap:8px;color:var(--ok-tinta);font-weight:800;font-size:13px}
+.suave{color:var(--suave);font-weight:600}
+
+</style>
+</head>
+<body>
+<header class="titulo">
+  <span class="marca">ATK</span><span class="lugar">Casa de cambio <span class="pt">·</span> Coyhaique</span>
+  <span class="doc">Cierre del día <span class="pt">·</span> Caja 1</span>
+  <span class="usr"><i class="ph-bold ph-user-circle"></i>Rolando del Río <span class="pt">·</span> Administrador<span class="pt"></span><i class="ph-bold ph-sign-out"></i>Salir</span>
+</header>
+<nav class="pestanas" aria-label="Secciones">
+  <div><span class="cuadro c-vial"></span>Ventanilla<kbd>F1</kbd></div>
+  <div class="on"><span class="cuadro c-amar"></span>Cierre del día<kbd>F2</kbd></div>
+  <div><span class="cuadro c-tur"></span>Jornada<kbd>F3</kbd></div>
+  <div><span class="cuadro c-serv"></span>Clientes<kbd>F4</kbd></div>
+  <div><span class="cuadro c-neu"></span>Configuración<kbd>F5</kbd></div>
+</nav>
+<div class="cinta" role="toolbar" aria-label="Comandos del Cierre del día">
+  <div class="gr"><div class="btns">
+    <span class="grande verde"><i class="ph-bold ph-lock-key"></i><span>Cerrar turno</span></span>
+    <div class="nota">Abierto desde <b>20:05</b><br>Caja 1</div>
+  </div><div class="cap">Turno</div></div>
+  <div class="gr"><div class="btns">
+    <span class="grande"><i class="ph-bold ph-receipt"></i><span>Gasto</span></span>
+    <span class="grande"><i class="ph-bold ph-hand-withdraw"></i><span>Retiro</span></span>
+    <span class="grande"><i class="ph-bold ph-hand-deposit"></i><span>Ingreso</span></span>
+  </div><div class="cap">Movimientos de caja</div></div>
+  <div class="gr"><div class="btns">
+    <span class="grande activo"><i class="ph-bold ph-money"></i><span>Contar billetes</span></span>
+    <div class="pila"><span class="cmd"><i class="ph-bold ph-arrows-down-up"></i>Elegir divisa<kbd>↑↓</kbd></span><span class="cmd"><i class="ph-bold ph-eraser"></i>Limpiar conteo<kbd>Esc</kbd></span></div>
+  </div><div class="cap">Conteo</div></div>
+  <div class="gr"><div class="btns">
+    <span class="grande"><i class="ph-bold ph-currency-circle-dollar"></i><span>Ventanilla <kbd>F1</kbd></span></span>
+  </div><div class="cap">Ir a</div></div>
+</div>
+<div class="contenido">
+  <section class="letrero amarillo" aria-label="Estado del cierre">
+    <div class="letrero-in">
+      <div class="letrero-cab">
+        <h2>Cierre del día <span><span class="pt">·</span>Caja 1</span></h2>
+        <div class="res"><div>Divisas contadas<b>3 <span style="font-family:Overpass,sans-serif;font-weight:700;font-size:13px">de</span> 4</b></div><div>No cuadran<b>1</b></div><div>Borradores pendientes<b>1</b></div></div>
+      </div>
+      <div class="aviso-cierre"><i class="ph-bold ph-warning-diamond"></i>Para cerrar el turno: confirma o elimina el borrador de las 20:43, cuenta el ARS y revisa el EUR (faltan 50,00).<span class="link">Ver el borrador</span></div>
+    </div>
+  </section>
+  <div class="cierre">
+    <section class="panel conteo" aria-label="Conteo por divisa">
+      <div class="panel-cab"><h2>Conteo por divisa</h2><span class="meta">Lo contado contra el saldo del sistema</span></div>
+      <table class="grilla">
+        <thead><tr><th>Divisa</th><th class="der">Saldo del sistema</th><th class="der">Contado</th><th class="der">Diferencia</th><th>Estado</th></tr></thead>
+        <tbody>
+<tr class="elegida"><td><span class="div"><span class="dot clp"></span>CLP</span> <span class="suave">Peso chileno</span></td><td class="num der">3.482.150</td><td class="num der">3.482.150</td><td class="num der">0</td><td><span class="chip ok"><i class="ph-bold ph-check"></i>Cuadra</span></td></tr>
+<tr class=""><td><span class="div"><span class="dot usd"></span>USD</span> <span class="suave">Dólar estadounidense</span></td><td class="num der">2.900,00</td><td class="num der">2.900,00</td><td class="num der">0,00</td><td><span class="chip ok"><i class="ph-bold ph-check"></i>Cuadra</span></td></tr>
+<tr class="falta"><td><span class="div"><span class="dot eur"></span>EUR</span> <span class="suave">Euro</span></td><td class="num der">1.450,00</td><td class="num der">1.400,00</td><td class="num der" style="color:var(--obra-tinta)">−50,00</td><td><span class="chip aviso"><i class="ph-bold ph-warning"></i>Falta</span></td></tr>
+<tr class=""><td><span class="div"><span class="dot ars"></span>ARS</span> <span class="suave">Peso argentino</span></td><td class="num der">500.000,00</td><td class="num der"><span class="suave">—</span></td><td class="num der"><span class="suave">—</span></td><td><span class="chip nada">Por contar</span></td></tr>
+        </tbody>
+      </table>
+    </section>
+    <section class="panel movs" aria-label="Movimientos del turno">
+      <div class="panel-cab"><h2>Movimientos del turno</h2><span class="meta">Fondo inicial, gastos, retiros e ingresos</span></div>
+      <table class="grilla">
+        <thead><tr><th>Hora</th><th>Tipo</th><th>Divisa</th><th class="der">Monto</th><th>Descripción</th><th>Medio</th></tr></thead>
+        <tbody>
+<tr><td class="num">20:05</td><td>Ingreso</td><td><span class="div"><span class="dot clp"></span>CLP</span></td><td class="num der">4.378.240</td><td>Fondo inicial</td><td>Efectivo</td></tr>
+<tr><td class="num">20:05</td><td>Ingreso</td><td><span class="div"><span class="dot usd"></span>USD</span></td><td class="num der">2.000,00</td><td>Fondo inicial</td><td>Efectivo</td></tr>
+<tr><td class="num">20:05</td><td>Ingreso</td><td><span class="div"><span class="dot ars"></span>ARS</span></td><td class="num der">350.000,00</td><td>Fondo inicial</td><td>Efectivo</td></tr>
+<tr><td class="num">20:05</td><td>Ingreso</td><td><span class="div"><span class="dot eur"></span>EUR</span></td><td class="num der">1.500,00</td><td>Fondo inicial</td><td>Efectivo</td></tr>
+<tr><td class="num">20:23</td><td>Gasto</td><td><span class="div"><span class="dot clp"></span>CLP</span></td><td class="num der">18.990</td><td>Insumos y oficina <span class="pt">·</span> Resma de papel y tinta para la impresora</td><td>Efectivo</td></tr>
+        </tbody>
+      </table>
+    </section>
+    <section class="panel billetes" aria-label="Contar billetes">
+      <div class="panel-cab"><h2>Contar billetes</h2><span class="meta"><span class="div"><span class="dot clp"></span>CLP</span></span></div>
+      <div class="cuerpo">
+        <table class="grilla">
+          <thead><tr><th>Billete</th><th class="der">Cantidad</th><th class="der">Subtotal</th></tr></thead>
+          <tbody>
+<tr><td class="num">$20.000</td><td class="der"><span class="cant">120</span></td><td class="num der">2.400.000</td></tr>
+<tr><td class="num">$10.000</td><td class="der"><span class="cant">85</span></td><td class="num der">850.000</td></tr>
+<tr><td class="num">$5.000</td><td class="der"><span class="cant">38</span></td><td class="num der">190.000</td></tr>
+<tr><td class="num">$2.000</td><td class="der"><span class="cant">16</span></td><td class="num der">32.000</td></tr>
+<tr><td class="num">$1.000</td><td class="der"><span class="cant">9</span></td><td class="num der">9.000</td></tr>
+<tr><td>Monedas y sueltos</td><td class="der"><span class="cant on">1.150</span></td><td class="num der">1.150</td></tr>
+          </tbody>
+        </table>
+        <div class="tot"><span>Total contado</span><b>$3.482.150</b></div>
+        <div class="ok-linea"><i class="ph-bold ph-check-circle"></i>Cuadra con el saldo del sistema</div>
+        <div class="btn prim">Usar este total <kbd>Enter</kbd></div>
+      </div>
+    </section>
+  </div>
+</div>
+<footer class="estado" aria-label="Barra de estado">
+  <span><i class="ph-bold ph-cash-register"></i><b>Turno abierto</b> <span class="pt">·</span> Caja 1 <span class="pt">·</span> desde 20:05</span>
+  <span><i class="ph-bold ph-user"></i>Rolando del Río <span class="pt">·</span> Administrador</span>
+  <span><i class="punto"></i>Conectado al servidor</span>
+  <span><i class="ph-bold ph-clock"></i>Pizarra vigente desde 21:45</span>
+  <span class="der"><i class="ph-bold ph-calendar-blank"></i>Domingo 8 de noviembre <span class="pt">·</span> <b class="num">22:04</b></span>
+</footer>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "border-accent-on-rounded",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/office/**"
+        ],
+        "createdAt": "2026-11-09T02:21:15.348Z",
+        "reason": "kbd de DESIGN.md: 1 px con 2 px abajo (tecla física), no es un acento lateral"
+      }
+    ]
+  }
+}
