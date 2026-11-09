@@ -12,13 +12,15 @@
     mode: u=rwX,g=rX,o=rX
 
 # El código se empaqueta en el equipo que corre Ansible, sin node_modules
-# (las dependencias se instalan dentro de la imagen, para Linux) y sin
-# bases de datos locales. Un solo archivo viaja mucho más rápido por SSM.
+# (las dependencias se instalan dentro de la imagen, para Linux), sin
+# bases de datos locales y sin el front compilado en el computador (la
+# imagen lo compila). Un solo archivo viaja mucho más rápido por SSM.
 - name: Empaquetar el código de la app
   ansible.builtin.command:
     cmd: >-
       tar -czf /tmp/atk-codigo.tgz -C {{ playbook_dir }}/../../../app
-      --exclude=node_modules --exclude='*.db' --exclude='*.db-wal' --exclude='*.db-shm' .
+      --exclude=node_modules --exclude='*.db' --exclude='*.db-wal' --exclude='*.db-shm'
+      --exclude=dist .
   delegate_to: localhost
   become: false
   run_once: true

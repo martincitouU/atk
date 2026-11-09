@@ -9,3 +9,6 @@ db/probar.sh
 Dockerfile
 .dockerignore
 packages/*/test
+apps/web/test
+# El front se compila dentro de la imagen, no se copia el del computador
+apps/web/dist
