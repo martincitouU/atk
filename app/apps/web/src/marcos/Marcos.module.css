@@ -1,0 +1,77 @@
+.principal {
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: var(--spacing-40) var(--margen-pagina) var(--spacing-60);
+}
+
+/* Fondo blanco con orbes (DESIGN.md: los orbes ponen todo el color) */
+.conOrbes {
+  position: relative;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+.encima {
+  position: relative;
+  z-index: 1;
+}
+
+.barraCliente {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-16);
+  max-width: var(--page-max-width);
+  height: 64px;
+  margin: 0 auto;
+  padding: 0 var(--margen-pagina);
+}
+
+.navCliente {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+.enlaceCliente {
+  white-space: nowrap;
+  padding: var(--spacing-8) var(--spacing-12);
+  border-radius: var(--radius-full);
+  color: var(--color-texto-secundario);
+  font-size: var(--text-body-sm);
+  text-decoration: none;
+}
+
+.enlaceCliente:hover {
+  color: var(--color-texto);
+  background: var(--color-campo);
+}
+
+.activo,
+.activo:hover {
+  color: var(--color-accion-texto);
+  background: var(--color-accion-suave);
+}
+
+.publico {
+  display: flex;
+  flex-direction: column;
+}
+
+.centro {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-24);
+  padding: var(--spacing-48) var(--margen-pagina);
+}
+
+.avisoHttp {
+  width: min(440px, 100%);
+}

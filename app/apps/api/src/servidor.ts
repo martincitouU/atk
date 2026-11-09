@@ -1,4 +1,5 @@
-// Servidor HTTP de la app: /health para la infra y la API bajo /api.
+// Servidor HTTP de la app: /health para la infra, la API bajo /api y, en
+// producción, el front compilado en todo lo demás (http/front.ts).
 //
 // Las rutas son una capa delgada: validan la entrada con los esquemas de
 // @atk/shared, toman el actor de la petición y llaman al servicio. Las
@@ -10,7 +11,8 @@ import type { Auth } from "./auth/auth.ts";
 import type { Conexion } from "./db/conexion.ts";
 import { casa } from "./db/esquema.ts";
 import { exigirSesion, type ObtenerSesion } from "./http/acceso.ts";
-import { registrarErrores } from "./http/errores.ts";
+import { registrarErrores, rutaNoExiste } from "./http/errores.ts";
+import { servirFront } from "./http/front.ts";
 import { aJson } from "./http/json.ts";
 import { exigirMismoOrigen } from "./http/origen.ts";
 import { rutasAuth } from "./rutas/auth.ts";
@@ -35,6 +37,8 @@ export type OpcionesServidor = {
   auth?: Auth | null;
   /** Reloj inyectable para los tests */
   ahora?: () => Date;
+  /** Carpeta del front compilado (apps/web/dist). Sin ella no se sirve el front (desarrollo y tests). */
+  carpetaFront?: string | null;
 };
 
 export function construirServidor({ sqlite, db }: Conexion, opciones: OpcionesServidor) {
@@ -45,6 +49,10 @@ export function construirServidor({ sqlite, db }: Conexion, opciones: OpcionesSe
   });
   app.setReplySerializer((payload) => aJson(payload));
   registrarErrores(app);
+
+  // Lo que no es de la API: el front, o un 404 en JSON si no hay front
+  if (opciones.carpetaFront) servirFront(app, opciones.carpetaFront);
+  else app.setNotFoundHandler(rutaNoExiste);
 
   // Contrato con la infra: el HEALTHCHECK de Docker y Ansible piden 200.
   // Si la base no responde, la consulta falla y Fastify contesta 500.
@@ -61,6 +69,8 @@ export function construirServidor({ sqlite, db }: Conexion, opciones: OpcionesSe
   const ctx = crearContexto(db, opciones.ahora);
   app.register(
     async (api) => {
+      // Una ruta de la API que no existe siempre responde JSON, nunca el front
+      api.setNotFoundHandler(rutaNoExiste);
       exigirMismoOrigen(api, opciones.urlPublica);
 
       // Login y registro de clientes: lo único de /api que no exige sesión

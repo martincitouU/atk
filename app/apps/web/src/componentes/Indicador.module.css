@@ -1,0 +1,56 @@
+.indicador {
+  /* El tamaño de la cifra se ajusta al ancho de la tarjeta (unidades cqi) */
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-8);
+  min-width: 0;
+  padding: var(--card-padding);
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radius-cards);
+}
+
+.etiqueta {
+  font-size: var(--text-body-sm);
+  line-height: var(--leading-body-sm);
+  color: var(--color-texto-secundario);
+}
+
+.valor {
+  /*
+   * 36px (DESIGN.md) si cabe; en tarjetas angostas baja hasta 18px. Un monto
+   * nunca se corta con "…": si aun así no cabe, pasa a la línea siguiente.
+   */
+  font-size: clamp(var(--text-subheading), 11cqi, var(--text-heading));
+  line-height: var(--leading-heading);
+  overflow-wrap: anywhere;
+}
+
+.detalle {
+  font-size: var(--text-caption);
+  line-height: var(--leading-caption);
+  color: var(--color-texto-secundario);
+}
+
+.enVivo {
+  background: var(--color-vivo-suave);
+  border-color: transparent;
+}
+
+/* Cifra grande (36px): el verde sobre verde suave da 3,3:1, suficiente en texto grande */
+.enVivo .valor {
+  color: var(--color-vivo);
+}
+
+.enVivo .etiqueta,
+.enVivo .detalle {
+  color: var(--color-texto);
+}
+
+/* Tantas columnas como quepan (mínimo 200px cada una) */
+.grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+  gap: var(--spacing-16);
+}

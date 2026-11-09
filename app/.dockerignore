@@ -9,3 +9,10 @@ db/probar.sh
 Dockerfile
 .dockerignore
 packages/*/test
+apps/web/test
+# El front se compila dentro de la imagen, no se copia el del computador
+apps/web/dist
+# Base y secreto del entorno de desarrollo (npm run dev)
+.dev
+# Solo para desarrollo: crea una base con la semilla (que tampoco entra)
+apps/api/src/cli/desarrollo.ts

@@ -1,0 +1,10 @@
+.aviso {
+  position: relative;
+  z-index: 2;
+  padding: var(--spacing-8) var(--margen-pagina);
+  background: var(--color-campo);
+  color: var(--color-texto-secundario);
+  font-size: var(--text-caption);
+  line-height: var(--leading-caption);
+  text-align: center;
+}

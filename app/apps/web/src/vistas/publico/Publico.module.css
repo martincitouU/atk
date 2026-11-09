@@ -1,0 +1,56 @@
+.tarjeta {
+  width: min(440px, 100%);
+  padding: var(--spacing-32);
+  gap: var(--spacing-24);
+}
+
+@media (max-width: 640px) {
+  .tarjeta {
+    padding: var(--spacing-24) var(--spacing-20);
+  }
+}
+
+.cabecera {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-8);
+}
+
+.titulo {
+  font-size: var(--text-heading);
+  line-height: var(--leading-heading);
+}
+
+.bajada {
+  color: var(--color-texto-secundario);
+}
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-16);
+}
+
+.ejemplo {
+  padding: var(--spacing-12);
+  border: 1px dashed var(--color-fog);
+  border-radius: var(--radius-campo);
+}
+
+.pie {
+  font-size: var(--text-body-sm);
+  color: var(--color-texto-secundario);
+  text-align: center;
+}
+
+.listo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-12);
+  text-align: center;
+}
+
+.iconoListo {
+  color: var(--color-texto);
+}

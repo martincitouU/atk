@@ -1,0 +1,92 @@
+/*
+ * Estilos globales: lo mínimo para que todo herede la guía de DESIGN.md.
+ * El resto vive en el .module.css de cada componente.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  font-family: var(--font-ui);
+  font-weight: var(--peso-normal);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  letter-spacing: var(--tracking);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: 0;
+  font-weight: var(--peso-normal);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+}
+
+a {
+  color: var(--color-accion-texto);
+}
+
+/* Foco visible para quien usa el teclado (el magenta da 3,2:1 sobre blanco) */
+:focus-visible {
+  outline: 2px solid var(--color-accion);
+  outline-offset: 2px;
+}
+
+/* Cifras alineadas en columnas de montos: todos los dígitos del mismo ancho */
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Un monto no se parte entre el símbolo y las cifras: "US$ 500,00" va junto */
+.monto {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Texto solo para lectores de pantalla */
+.solo-lectores {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Quien pide menos movimiento en su sistema no ve animaciones */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

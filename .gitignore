@@ -22,5 +22,11 @@ node_modules/
 *.db-wal
 *.db-shm
 
+# Front compilado (vite build): la imagen lo compila sola
+dist/
+
+# Base y secreto de desarrollo (npm run dev)
+.dev/
+
 # Sistema
 .DS_Store

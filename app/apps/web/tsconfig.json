@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // El front corre en el navegador: tipos del DOM y de Vite en vez de Node
+    "lib": ["es2024", "dom", "dom.iterable"],
+    "types": ["vite/client"],
+    "jsx": "react-jsx",
+    // Vite resuelve los imports (no Node): mismo estilo, con extensión .ts/.tsx
+    "module": "esnext",
+    "moduleResolution": "bundler"
+  },
+  "include": ["src", "test", "vite.config.ts"]
+}

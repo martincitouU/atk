@@ -1,0 +1,139 @@
+/*
+ * Tokens de diseño: los valores de DESIGN.md (raíz del repo) en variables CSS.
+ *
+ * Regla: ningún componente escribe un color, tamaño o radio suelto. Usa
+ * estas variables, así todas las vistas siguen la misma guía.
+ *
+ * Dos capas:
+ *   1. Paleta: los nombres de DESIGN.md, para poder buscarlos allá.
+ *   2. Roles: qué significa cada color en la app (texto, acción, error...).
+ *      Los componentes usan los roles, no la paleta.
+ */
+
+:root {
+  /* ---- 1. Paleta (DESIGN.md › Tokens — Colors) ------------------------ */
+  --color-magenta: #ff37c7; /* DESIGN.md: --color-uniswap-magenta */
+  --color-ink: #131313;
+  --color-charcoal: #222222;
+  --color-steel: #6a6a6a;
+  --color-fog: #acacac;
+  --color-pure-white: #ffffff;
+  --color-bone: #f2f2f2;
+  --color-onyx: #000000;
+
+  /* Colores de los orbes y de los íconos de divisa: solo decoración */
+  --color-electric-violet: #8251fb;
+  --color-ember-orange: #ff4d00;
+  --color-hot-pink: #f50db4;
+  --color-sky-cyan: #2abdff;
+  --color-mint-teal: #00c3a0;
+  --color-coral-red: #e01a2b;
+  --color-forest-green: #0c8911;
+
+  /* ---- 2. Roles -------------------------------------------------------- */
+  --color-fondo: var(--color-pure-white);
+  --color-superficie: var(--color-pure-white);
+  --color-texto: var(--color-ink);
+  --color-texto-secundario: var(--color-steel); /* 5,4:1 sobre blanco */
+  --color-texto-deshabilitado: var(--color-fog);
+  --color-borde: var(--color-bone);
+  --color-campo: var(--color-bone); /* relleno de los campos de formulario */
+  --color-campo-hover: #ebebeb;
+  --color-fila-hover: #fafafa; /* fila de tabla bajo el puntero */
+
+  /* La única acción con color. Máximo un botón magenta relleno por vista. */
+  --color-accion: var(--color-magenta);
+  --color-accion-hover: #f51fba;
+  /*
+   * El blanco sobre #ff37c7 da 3,2:1 y el magenta sobre blanco también:
+   * para TEXTO magenta (enlaces, menú activo, botón suave) se usa este tono
+   * más oscuro, que da 5,3:1 sobre blanco y 4,7:1 sobre el rosa suave.
+   */
+  --color-accion-texto: #c8148f;
+  /* DESIGN.md › Soft Pink CTA: "near #f2f2f2 with a magenta tint" */
+  --color-accion-suave: #fdebf7;
+  --color-accion-suave-hover: #fbdcf1;
+
+  /* Decisión del equipo: el coral solo marca errores, siempre con texto */
+  --color-error: var(--color-coral-red); /* 4,8:1 sobre blanco */
+  --color-error-suave: #fdecee;
+
+  /* DESIGN.md: el verde, solo para datos en vivo (pizarra vigente, el día) */
+  --color-vivo: var(--color-forest-green); /* 4,6:1 sobre blanco */
+  --color-vivo-suave: #c5e3c6;
+
+  --color-velo: rgb(19 19 19 / 0.32); /* fondo detrás de un diálogo */
+  --color-barra: rgb(255 255 255 / 0.85); /* barra superior esmerilada */
+
+  /* ---- Tipografía (DESIGN.md › Typography) ---------------------------- */
+  /*
+   * DESIGN.md usa Basel, una fuente privada. Su sustituto recomendado es
+   * Inter; la versión variable acepta el peso 485 tal cual.
+   */
+  --font-ui: "Inter Variable", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  --peso-normal: 485; /* el peso de casi todo el texto */
+  --peso-medio: 500;
+  --peso-fuerte: 535;
+
+  --tracking: -0.02em; /* igual en todos los tamaños */
+
+  --text-caption: 12px;
+  --leading-caption: 1.33;
+  --text-body-sm: 14px;
+  --leading-body-sm: 1.25;
+  --text-body: 16px;
+  --leading-body: 1.49;
+  --text-subheading: 18px;
+  --leading-subheading: 1.33;
+  --text-heading-sm: 24px;
+  --leading-heading-sm: 1.2;
+  --text-heading: 36px;
+  --leading-heading: 1.15;
+  --text-heading-lg: 52px;
+  --leading-heading-lg: 1;
+  --text-display: 64px;
+  --leading-display: 0.96;
+
+  /* ---- Espaciado (base de 4px) ---------------------------------------- */
+  --spacing-4: 4px;
+  --spacing-8: 8px;
+  --spacing-12: 12px;
+  --spacing-16: 16px;
+  --spacing-20: 20px;
+  --spacing-24: 24px;
+  --spacing-32: 32px;
+  --spacing-40: 40px;
+  --spacing-48: 48px;
+  --spacing-60: 60px;
+  --spacing-120: 120px;
+
+  /* ---- Layout ---------------------------------------------------------- */
+  --page-max-width: 1200px;
+  --section-gap: 64px;
+  --card-padding: 20px;
+  --element-gap: 8px;
+  --margen-pagina: 24px;
+
+  /* ---- Radios ------------------------------------------------------------ */
+  --radius-cards: 20px;
+  --radius-nav: 20px;
+  --radius-buttons: 16px;
+  --radius-boton-chico: 12px;
+  --radius-campo: 12px;
+  --radius-full: 999px; /* pastillas: divisas, búsqueda, etiquetas */
+
+  /* ---- Elevación ----------------------------------------------------- */
+  /* DESIGN.md: la única sombra, casi invisible (10px, negro al 3 %), para
+     widgets elevados y diálogos. Nada de sombras visibles. */
+  --shadow-elevado: 0 0 10px 0 rgb(19 19 19 / 0.03);
+
+  --altura-control: 44px; /* botones y campos: cómodo para el dedo */
+}
+
+@media (max-width: 640px) {
+  :root {
+    --margen-pagina: 16px;
+    --card-padding: 16px;
+  }
+}

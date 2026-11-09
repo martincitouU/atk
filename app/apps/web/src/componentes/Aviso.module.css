@@ -1,0 +1,72 @@
+.aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-12);
+  padding: var(--spacing-12) var(--spacing-16);
+  border: 1px solid transparent;
+  border-radius: var(--radius-campo);
+  font-size: var(--text-body-sm);
+  line-height: var(--leading-body);
+}
+
+.icono {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.cuerpo {
+  flex: 1;
+  min-width: 0;
+}
+
+.titulo {
+  font-weight: var(--peso-fuerte);
+}
+
+.texto {
+  color: inherit;
+}
+
+.acciones {
+  display: flex;
+  gap: var(--spacing-8);
+  align-self: center;
+}
+
+/* En el teléfono la acción baja bajo el texto, alineada con él */
+@media (max-width: 640px) {
+  .aviso {
+    flex-wrap: wrap;
+  }
+  .acciones {
+    flex-basis: 100%;
+    padding-left: 30px;
+  }
+}
+
+.info,
+.exito {
+  background: var(--color-campo);
+  color: var(--color-texto);
+}
+.info .icono,
+.exito .icono {
+  color: var(--color-texto-secundario);
+}
+
+.atencion {
+  background: var(--color-accion-suave);
+  color: var(--color-texto);
+}
+.atencion .icono {
+  color: var(--color-accion-texto);
+}
+
+.error {
+  background: var(--color-superficie);
+  border-color: var(--color-error);
+  color: var(--color-texto);
+}
+.error .icono {
+  color: var(--color-error);
+}
