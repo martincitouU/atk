@@ -143,6 +143,8 @@ export type Estado = {
   usuarios: Usuario[];
   /** Quién tiene la sesión abierta; null después de salir. */
   sesion: Usuario | null;
+  /** La sesión de un cliente en el portal (excluye a `sesion`). */
+  sesionCliente: CuentaMock | null;
   parametros: ParametrosMock;
   monedaBase: Moneda;
   /** En el orden de la pizarra: el dígito 1, 2, 3 del teclado. */
@@ -168,6 +170,8 @@ type CuentaMock = {
   id: number;
   nombre: string;
   rut: string;
+  email: string;
+  clave: string;
   estado: "PENDIENTE" | "VERIFICADA" | "RECHAZADA";
   clienteId: number | null;
   motivoRechazo: string | null;
@@ -1021,7 +1025,7 @@ export function saldos(e: Estado, cajaId?: number) {
 // ---------------------------------------------------------------------------
 // Cuentas del portal (cuentas.ts): los códigos y mensajes, copiados del servicio
 
-const aCuenta = (c: CuentaMock) => ({ ...c, creadaEn: iso(c.creadaEn) });
+const aCuenta = ({ email: _email, clave: _clave, ...c }: CuentaMock) => ({ ...c, creadaEn: iso(c.creadaEn) });
 
 export function listarCuentas(e: Estado, estado?: string) {
   usuarioActual(e);
@@ -1052,6 +1056,74 @@ export function rechazarCuenta(e: Estado, id: number, motivo: string) {
   const cuenta = cuentaPendiente(e, id);
   Object.assign(cuenta, { estado: "RECHAZADA", motivoRechazo: elMotivo });
   return aCuenta(cuenta);
+}
+
+// ---------------------------------------------------------------------------
+// El portal (cuentas.ts): registro y lo que ve el cliente, solo lo suyo
+
+/** POST /api/registro: la entrada ya validada por registroCliente (@atk/shared). */
+export function registrarCliente(e: Estado, entrada: { nombre: string; rut: string; email: string; contrasena: string }) {
+  const email = entrada.email.trim().toLowerCase();
+  exigir(!e.cuentas.some((c) => c.email === email) && !e.usuarios.some((u) => u.email === email), "CORREO_EN_USO", "Ya existe una cuenta con ese correo");
+  const cuenta: CuentaMock = {
+    id: Math.max(0, ...e.cuentas.map((c) => c.id)) + 1,
+    nombre: entrada.nombre.trim(),
+    rut: entrada.rut.replace(/\./g, "").trim().toUpperCase(),
+    email,
+    clave: entrada.contrasena,
+    estado: "PENDIENTE",
+    clienteId: null,
+    motivoRechazo: null,
+    creadaEn: e.ahora(),
+  };
+  e.cuentas.push(cuenta);
+  return { nombre: cuenta.nombre, rut: cuenta.rut, estado: cuenta.estado, mensaje: "Cuenta creada. Para ver sus operaciones, acérquese al local con su carnet para verificarla." };
+}
+
+function fichaVerificada(e: Estado): number {
+  const cuenta = e.sesionCliente;
+  exigir(cuenta, "SIN_SESION", "Inicie sesión para continuar");
+  exigir(
+    cuenta.estado === "VERIFICADA" && cuenta.clienteId !== null,
+    "CUENTA_NO_VERIFICADA",
+    cuenta.estado === "RECHAZADA"
+      ? "Su cuenta fue rechazada. Acérquese al local si cree que es un error."
+      : "Su cuenta aún no está verificada. Acérquese al local con su carnet para activarla.",
+  );
+  return cuenta.clienteId;
+}
+
+/** GET /api/mi/operaciones: confirmadas y reversadas, sin márgenes ni quién atendió. */
+export function misOperaciones(e: Estado) {
+  const clienteId = fichaVerificada(e);
+  return e.operaciones
+    .filter((o) => o.clienteId === clienteId && o.estado !== "BORRADOR")
+    .sort((a, b) => b.realizadaEn.getTime() - a.realizadaEn.getTime() || b.id - a.id)
+    .map((o) => {
+      const op = aOperacion(o);
+      return {
+        id: op.id,
+        tipo: op.tipo,
+        monedaCodigo: op.monedaCodigo,
+        montoDivisa: op.montoDivisa,
+        tasaAplicadaE6: op.tasaAplicadaE6,
+        montoBase: op.montoBase,
+        medioPago: op.medioPago,
+        estado: op.estado,
+        tipoDte: op.tipoDte,
+        folioDte: op.folioDte,
+        realizadaEn: op.realizadaEn,
+      };
+    });
+}
+
+/** GET /api/mi/ficha */
+export function miFicha(e: Estado) {
+  const clienteId = fichaVerificada(e);
+  const c = e.clientes.find((x) => x.id === clienteId);
+  exigir(c, "CLIENTE_NO_EXISTE", `El cliente ${clienteId} no existe`);
+  const { nombre, tipoDocumento, numeroDocumento, nacionalidad, oficio, paisResidencia, domicilio, telefono, email } = c;
+  return { nombre, tipoDocumento, numeroDocumento, nacionalidad, oficio, paisResidencia, domicilio, telefono, email };
 }
 
 // ---------------------------------------------------------------------------
@@ -1137,8 +1209,10 @@ export function parametros(e: Estado): Parametros {
   return { ...p, umbralFichaClienteUsd: texto(p.umbralFichaClienteUsd), umbralRoeUsd: texto(p.umbralRoeUsd) };
 }
 
-/** GET /api/yo, del personal. */
+/** GET /api/yo: el personal o, en el portal, el cliente. */
 export function yo(e: Estado): Yo {
+  const c = e.sesionCliente;
+  if (c) return { tipo: "cliente", cuenta: { nombre: c.nombre, rut: c.rut, estado: c.estado, motivoRechazo: c.motivoRechazo, creadaEn: iso(c.creadaEn) } };
   const u = usuarioActual(e);
   const turno = turnoAbiertoDe(e, u.id);
   return { tipo: "personal", usuario: { id: u.id, nombre: u.nombre, email: u.email, rol: u.rol, sucursalId: null }, turnoAbierto: turno ? aTurno(turno) : null };
@@ -1146,14 +1220,18 @@ export function yo(e: Estado): Yo {
 
 /** Better Auth en pequeño: correo y contraseña de un usuario de ejemplo. */
 export function entrar(e: Estado, email: string, clave: string): Yo {
-  const u = e.usuarios.find((x) => x.email === email.trim().toLowerCase() && x.clave === clave);
-  exigir(u, "CREDENCIALES", "Correo o contraseña incorrectos");
-  e.sesion = u;
+  const correo = email.trim().toLowerCase();
+  const u = e.usuarios.find((x) => x.email === correo && x.clave === clave);
+  const c = u ? undefined : e.cuentas.find((x) => x.email === correo && x.clave === clave);
+  exigir(u ?? c, "CREDENCIALES", "Correo o contraseña incorrectos");
+  e.sesion = u ?? null;
+  e.sesionCliente = c ?? null;
   return yo(e);
 }
 
 export function salir(e: Estado): void {
   e.sesion = null;
+  e.sesionCliente = null;
 }
 
 // ---------------------------------------------------------------------------
@@ -1174,6 +1252,7 @@ export function crearEstado(ahora: () => Date = () => new Date()): Estado {
     ahora,
     usuarios: [ROLANDO],
     sesion: ROLANDO,
+    sesionCliente: null,
     parametros: {
       zonaHoraria: "America/Coyhaique",
       umbralFichaClienteUsd: 5000n,
@@ -1278,8 +1357,8 @@ function sembrar(e: Estado): void {
     // Dos cuentas del portal por verificar: Mariela ya tiene ficha; Ana, no
     hace(30, () => {
       e.cuentas.push(
-        { id: 1, nombre: "Mariela Contreras Vidal", rut: "11111111-1", estado: "PENDIENTE", clienteId: null, motivoRechazo: null, creadaEn: e.ahora() },
-        { id: 2, nombre: "Ana Ruiz Toledo", rut: "12345678-5", estado: "PENDIENTE", clienteId: null, motivoRechazo: null, creadaEn: e.ahora() },
+        { id: 1, nombre: "Mariela Contreras Vidal", rut: "11111111-1", email: "mariela@ejemplo.com", clave: "portal-demo-2026", estado: "PENDIENTE", clienteId: null, motivoRechazo: null, creadaEn: e.ahora() },
+        { id: 2, nombre: "Ana Ruiz Toledo", rut: "12345678-5", email: "ana@ejemplo.com", clave: "portal-demo-2026", estado: "PENDIENTE", clienteId: null, motivoRechazo: null, creadaEn: e.ahora() },
       );
     });
 

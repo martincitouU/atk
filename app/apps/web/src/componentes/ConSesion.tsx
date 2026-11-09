@@ -8,6 +8,8 @@ import { useParametros, useSalir, useSesion } from "../api/consultas.ts";
 export type EstadoEntrar = { motivo?: "inactividad" };
 
 const sinSesion = (error: unknown) => error instanceof ErrorNegocio && error.codigo === "SIN_SESION";
+/** Una cuenta de cliente que llega a las pantallas del personal: su lugar es el portal. */
+const esCliente = (error: unknown) => error instanceof ErrorNegocio && error.codigo === "SOLO_PERSONAL";
 
 /** Lo que cuenta como actividad: cualquier tecla, clic, toque, rueda o movimiento del puntero. */
 const ACTIVIDAD = ["pointerdown", "pointermove", "keydown", "wheel", "touchstart"] as const;
@@ -88,6 +90,7 @@ export function ConSesion({ children }: { children: ReactNode }) {
     };
   }, [minutos]);
 
+  if (sesion.isError && esCliente(sesion.error)) return <Navigate to="/mi" replace />;
   if (sesion.isError && !sesion.isFetching && sinSesion(sesion.error) && !cerrando.current) {
     return <Navigate to="/entrar" replace />;
   }

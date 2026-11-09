@@ -18,6 +18,7 @@ import {
   entradaRechazoCuenta,
   entradaReverso,
   entradaUsuario,
+  registroCliente,
 } from "@atk/shared";
 import { http, HttpResponse, type HttpHandler, type PathParams } from "msw";
 import { z } from "zod";
@@ -137,6 +138,11 @@ export function handlers(e: m.Estado): HttpHandler[] {
     http.post(en(RUTAS.clientes), manejar(async ({ request }) => m.guardarCliente(e, await cuerpo(request, entradaCliente)), 201)),
     http.get(conId(RUTAS.cliente), manejar(({ params }) => m.clientePorId(e, id(params)))),
     http.patch(conId(RUTAS.cliente), manejar(async ({ request, params }) => m.guardarCliente(e, await cuerpo(request, entradaCliente), id(params)))),
+
+    // El portal: registro (sin sesión) y lo que ve el cliente
+    http.post(en(RUTAS.registro), manejar(async ({ request }) => m.registrarCliente(e, await cuerpo(request, registroCliente)), 201)),
+    http.get(en(RUTAS.misOperaciones), manejar(() => m.misOperaciones(e))),
+    http.get(en(RUTAS.miFicha), manejar(() => m.miFicha(e))),
 
     // Cuentas del portal, que se verifican en el local
     http.get(en(RUTAS.cuentas), manejar(({ url }) => m.listarCuentas(e, consulta(url, "estado")))),

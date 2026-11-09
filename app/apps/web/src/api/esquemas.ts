@@ -18,6 +18,7 @@ import {
   entradaOperacion,
   entradaPublicacion,
   entradaUsuario,
+  registroCliente,
   ESTADOS_CUENTA_CLIENTE,
   ESTADOS_GASTO,
   ESTADOS_OPERACION,
@@ -305,6 +306,41 @@ export const RegistroAuditoria = z.object({
   registradoEn: fecha,
 });
 
+/**
+ * GET /api/mi/operaciones (portal): lo que hizo el cliente, confirmado o
+ * anulado, sin datos internos de la casa. `tipo` es desde la casa: VENTA es
+ * que el cliente compró divisa.
+ */
+export const OperacionCliente = z.object({
+  id,
+  tipo: z.enum(TIPOS_OPERACION),
+  monedaCodigo: z.string(),
+  montoDivisa: dinero,
+  tasaAplicadaE6: dinero,
+  montoBase: dinero,
+  medioPago: MedioPago,
+  estado: z.enum(ESTADOS_OPERACION),
+  tipoDte: nulo(z.number().int()),
+  folioDte: nulo(z.number().int()),
+  realizadaEn: fecha,
+});
+
+/** GET /api/mi/ficha (portal): sus datos, para que los revise. */
+export const FichaCliente = z.object({
+  nombre: z.string(),
+  tipoDocumento: z.enum(TIPOS_DOCUMENTO),
+  numeroDocumento: z.string(),
+  nacionalidad: nulo(z.string()),
+  oficio: nulo(z.string()),
+  paisResidencia: nulo(z.string()),
+  domicilio: nulo(z.string()),
+  telefono: nulo(z.string()),
+  email: nulo(z.string()),
+});
+
+/** POST /api/registro: la cuenta queda PENDIENTE hasta que se verifica en el local. */
+export const RespuestaRegistro = z.object({ nombre: z.string(), rut: z.string(), estado: z.enum(ESTADOS_CUENTA_CLIENTE), mensaje: z.string() });
+
 /** GET /api/yo: lo primero que se pide al cargar. */
 export const Yo = z.discriminatedUnion("tipo", [
   z.object({
@@ -350,6 +386,9 @@ export const RUTAS = {
   usuario: (id: number) => `/api/usuarios/${id}`,
   contrasena: (id: number) => `/api/usuarios/${id}/contrasena`,
   auditoria: "/api/auditoria",
+  registro: "/api/registro",
+  misOperaciones: "/api/mi/operaciones",
+  miFicha: "/api/mi/ficha",
   verificarCuenta: (id: number) => `/api/cuentas-cliente/${id}/verificar`,
   rechazarCuenta: (id: number) => `/api/cuentas-cliente/${id}/rechazar`,
   catalogo: "/api/catalogo",
@@ -382,5 +421,9 @@ export type CuentaCliente = z.infer<typeof CuentaCliente>;
 export type Usuario = z.infer<typeof Usuario>;
 export type RegistroAuditoria = z.infer<typeof RegistroAuditoria>;
 export type Yo = z.infer<typeof Yo>;
+export type CuentaDelCliente = Extract<Yo, { tipo: "cliente" }>["cuenta"];
+export type OperacionCliente = z.infer<typeof OperacionCliente>;
+export type FichaCliente = z.infer<typeof FichaCliente>;
+export type EntradaRegistro = z.input<typeof registroCliente>;
 export type Sesion = z.infer<typeof Sesion>;
 export type ErrorApi = z.infer<typeof ErrorApi>;

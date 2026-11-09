@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useState, type ReactNode } from "react";
 import { createBrowserRouter, Navigate, RouterProvider, type RouteObject } from "react-router";
 import { ErrorNegocio } from "./api/cliente.ts";
 import { ConPermiso } from "./componentes/ConPermiso.tsx";
@@ -20,8 +20,31 @@ const Clientes = lazy(() => import("./pantallas/Clientes.tsx").then((m) => ({ de
 const Configuracion = lazy(() => import("./pantallas/Configuracion.tsx").then((m) => ({ default: m.Configuracion })));
 const Usuarios = lazy(() => import("./pantallas/Usuarios.tsx").then((m) => ({ default: m.Usuarios })));
 const Auditoria = lazy(() => import("./pantallas/Auditoria.tsx").then((m) => ({ default: m.Auditoria })));
+// El portal de clientes es su propio chunk: un cliente no descarga la ventanilla
+const portal = () => import("./pantallas/Portal/Portal.tsx");
+const acceso = () => import("./pantallas/Portal/Acceso.tsx");
+const Portal = lazy(() => portal().then((m) => ({ default: m.Portal })));
+const MisOperaciones = lazy(() => portal().then((m) => ({ default: m.MisOperaciones })));
+const MiFicha = lazy(() => portal().then((m) => ({ default: m.MiFicha })));
+const PortalEntrar = lazy(() => acceso().then((m) => ({ default: m.PortalEntrar })));
+const PortalRegistro = lazy(() => acceso().then((m) => ({ default: m.PortalRegistro })));
+
+/** Las pantallas del portal esperan con el esqueleto del ingreso (una columna con el letrero). */
+const enEspera = (pantalla: ReactNode) => <Suspense fallback={<EsqueletoEntrar />}>{pantalla}</Suspense>;
 
 export const rutas: RouteObject[] = [
+  // El portal de clientes (docs/api.md §4): fuera del marco del personal
+  { path: "/mi/entrar", element: enEspera(<PortalEntrar />) },
+  { path: "/mi/registro", element: enEspera(<PortalRegistro />) },
+  {
+    path: "/mi",
+    element: enEspera(<Portal />),
+    children: [
+      { index: true, element: enEspera(<MisOperaciones />) },
+      { path: "ficha", element: enEspera(<MiFicha />) },
+      { path: "*", element: <Navigate to="/mi" replace /> },
+    ],
+  },
   {
     path: "/entrar",
     element: (

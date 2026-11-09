@@ -12,6 +12,9 @@ import {
   Cliente,
   Cotizacion,
   CuentaCliente,
+  FichaCliente,
+  OperacionCliente,
+  RespuestaRegistro,
   FilaArqueo,
   FilaPizarra,
   Gasto,
@@ -29,6 +32,7 @@ import {
   type CambiosUsuario,
   type EntradaCliente,
   type EntradaCotizacion,
+  type EntradaRegistro,
   type EntradaGasto,
   type EntradaMovimiento,
   type EntradaOperacion,
@@ -364,6 +368,32 @@ export const useAuditoria = (filtros: FiltrosAuditoria) =>
     queryFn: ({ signal }) => pedir(conConsulta(RUTAS.auditoria, { ...filtros, limite: "200" }), z.array(RegistroAuditoria), { signal }),
     placeholderData: keepPreviousData,
   });
+
+// ---------------------------------------------------------------------------
+// El portal de clientes (/mi)
+
+/** Quién está, sea del personal o cliente (el portal mira las dos ramas). Sin sesión, SIN_SESION. */
+export const useYo = () => useQuery({ queryKey: ["yo"], queryFn: ({ signal }) => pedir(RUTAS.yo, Yo, { signal }), retry: false });
+
+/** Sus operaciones. Con la cuenta sin verificar, la API responde CUENTA_NO_VERIFICADA con el qué hacer. */
+export const useMisOperaciones = (activa: boolean) =>
+  useQuery({
+    queryKey: ["mi", "operaciones"],
+    queryFn: activa ? ({ signal }) => pedir(RUTAS.misOperaciones, z.array(OperacionCliente), { signal }) : skipToken,
+    retry: false,
+  });
+
+export const useMiFicha = (activa: boolean) =>
+  useQuery({
+    queryKey: ["mi", "ficha"],
+    queryFn: activa ? ({ signal }) => pedir(RUTAS.miFicha, FichaCliente, { signal }) : skipToken,
+    retry: false,
+  });
+
+/** Crea la cuenta del portal (5 por hora por conexión). Queda PENDIENTE. */
+export function useRegistrarCliente() {
+  return useMutation({ mutationFn: (entrada: EntradaRegistro) => enviar(RUTAS.registro, RespuestaRegistro, entrada) });
+}
 
 /** Inicia sesión (Better Auth). Su respuesta no se usa: después se vuelve a pedir /api/yo. */
 export function useEntrar() {
