@@ -1,0 +1,87 @@
+.orbes {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Círculos de 60 a 120px, sin borde ni sombra: nubes de color */
+.orbe {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(18px);
+  opacity: 0.55;
+  animation: flotar 16s ease-in-out infinite alternate;
+}
+
+.violeta {
+  width: 120px;
+  height: 120px;
+  top: 12%;
+  left: 8%;
+  background: var(--color-electric-violet);
+}
+
+.naranja {
+  width: 72px;
+  height: 72px;
+  top: 64%;
+  left: 14%;
+  background: var(--color-ember-orange);
+  animation-delay: -4s;
+}
+
+.rosa {
+  width: 104px;
+  height: 104px;
+  top: 8%;
+  right: 12%;
+  background: var(--color-hot-pink);
+  animation-delay: -8s;
+}
+
+.cian {
+  width: 88px;
+  height: 88px;
+  top: 58%;
+  right: 8%;
+  background: var(--color-sky-cyan);
+  animation-delay: -2s;
+}
+
+.menta {
+  width: 60px;
+  height: 60px;
+  bottom: 6%;
+  left: 46%;
+  background: var(--color-mint-teal);
+  animation-delay: -10s;
+}
+
+.coral {
+  width: 64px;
+  height: 64px;
+  top: 34%;
+  left: 30%;
+  background: var(--color-coral-red);
+  opacity: 0.35;
+  animation-delay: -6s;
+}
+
+@keyframes flotar {
+  to {
+    transform: translate(24px, -32px) scale(1.08);
+  }
+}
+
+/* En pantallas chicas, menos orbes para no tapar el formulario */
+@media (max-width: 640px) {
+  .coral,
+  .menta {
+    display: none;
+  }
+  .orbe {
+    opacity: 0.4;
+  }
+}

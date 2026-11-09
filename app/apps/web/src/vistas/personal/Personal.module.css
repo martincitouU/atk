@@ -1,0 +1,147 @@
+/* Piezas de diseño compartidas por las vistas del personal */
+
+.turno {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-16);
+  flex-wrap: wrap;
+}
+
+.turnoTexto {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-8);
+}
+
+.turnoTitulo {
+  font-size: var(--text-heading-sm);
+  line-height: var(--leading-heading-sm);
+}
+
+.turnoAcciones {
+  display: flex;
+  gap: var(--spacing-8);
+  flex-wrap: wrap;
+}
+
+.abrirTurno {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--spacing-12);
+  flex-wrap: wrap;
+}
+
+.abrirTurno > :first-child {
+  flex: 1;
+  min-width: 200px;
+  max-width: 320px;
+}
+
+.seccion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-16);
+}
+
+.seccionCabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-12);
+  flex-wrap: wrap;
+}
+
+.seccionTitulo {
+  font-size: var(--text-heading-sm);
+  line-height: var(--leading-heading-sm);
+}
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.filaLista {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-12);
+  padding: var(--spacing-12) 0;
+  border-bottom: 1px solid var(--color-borde);
+  font-size: var(--text-body-sm);
+}
+
+.filaLista:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.filaLista:first-child {
+  padding-top: 0;
+}
+
+.secundario {
+  color: var(--color-texto-secundario);
+}
+
+.divisaConEstado {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-8);
+}
+
+/* Filtros de una lista, en una fila */
+.filtros {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--spacing-12);
+  align-items: end;
+}
+
+/* Formulario dentro de una tarjeta */
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-16);
+}
+
+.acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-8);
+  flex-wrap: wrap;
+}
+
+.accionesFila {
+  display: flex;
+  gap: var(--spacing-4);
+  justify-content: flex-end;
+}
+
+.casilla {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  font-size: var(--text-body-sm);
+  cursor: pointer;
+}
+
+.casilla input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-accion);
+}
+
+.nota {
+  font-size: var(--text-caption);
+  line-height: var(--leading-caption);
+  color: var(--color-texto-secundario);
+}
+
+.busqueda {
+  max-width: 480px;
+}

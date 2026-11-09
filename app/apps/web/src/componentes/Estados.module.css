@@ -1,0 +1,50 @@
+.cargando {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-8);
+  padding: var(--spacing-40) var(--spacing-16);
+  color: var(--color-texto-secundario);
+  font-size: var(--text-body-sm);
+}
+
+.girando {
+  animation: girar 0.8s linear infinite;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-8);
+  padding: var(--spacing-40) var(--spacing-16);
+  text-align: center;
+}
+
+.iconoVacio {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: var(--spacing-4);
+  border-radius: 50%;
+  background: var(--color-campo);
+  color: var(--color-texto-secundario);
+}
+
+.tituloVacio {
+  font-size: var(--text-body);
+}
+
+.textoVacio {
+  max-width: 420px;
+  font-size: var(--text-body-sm);
+  line-height: var(--leading-body);
+  color: var(--color-texto-secundario);
+}

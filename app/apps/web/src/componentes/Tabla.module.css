@@ -1,0 +1,61 @@
+.marco {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.marco:focus-visible {
+  outline-offset: -2px;
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-body-sm);
+  line-height: var(--leading-body-sm);
+}
+
+.tabla th {
+  padding: var(--spacing-12) var(--spacing-16);
+  text-align: left;
+  font-weight: var(--peso-normal);
+  font-size: var(--text-caption);
+  color: var(--color-texto-secundario);
+  white-space: nowrap;
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.tabla td {
+  padding: var(--spacing-12) var(--spacing-16);
+  border-bottom: 1px solid var(--color-borde);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.tabla tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.tabla tbody tr:hover td {
+  background: var(--color-fila-hover);
+}
+
+.tabla :global(.num) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Texto largo que sí puede partirse (motivos, descripciones) */
+.tabla :global(.ajustable) {
+  white-space: normal;
+  min-width: 200px;
+}
+
+.tabla a {
+  color: var(--color-texto);
+  text-decoration: none;
+}
+
+.tabla a:hover {
+  color: var(--color-accion-texto);
+  text-decoration: underline;
+}

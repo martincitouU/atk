@@ -1,0 +1,42 @@
+.marca {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  min-width: 0;
+  color: var(--color-texto);
+}
+
+.simbolo {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.nombre {
+  font-size: var(--text-subheading);
+  line-height: var(--leading-subheading);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.grande .simbolo {
+  width: 40px;
+  height: 40px;
+}
+
+.grande .nombre {
+  font-size: var(--text-heading-sm);
+  line-height: var(--leading-heading-sm);
+}
+
+@media (max-width: 480px) {
+  .compacta .nombre {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+}

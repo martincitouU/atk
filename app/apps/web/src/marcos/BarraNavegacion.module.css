@@ -1,0 +1,209 @@
+/* Blanca con un leve esmerilado: el contenido se adivina al pasar por debajo */
+.barra {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--color-barra);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.contenido {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-24);
+  max-width: var(--page-max-width);
+  height: 64px;
+  margin: 0 auto;
+  padding: 0 var(--margen-pagina);
+}
+
+.marca {
+  display: flex;
+  min-width: 0;
+  text-decoration: none;
+}
+
+.secciones {
+  display: flex;
+  gap: var(--spacing-4);
+  flex: 1;
+}
+
+.enlace {
+  padding: var(--spacing-8) var(--spacing-12);
+  border-radius: var(--radius-full);
+  color: var(--color-texto-secundario);
+  font-size: var(--text-body-sm);
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.enlace:hover {
+  color: var(--color-texto);
+  background: var(--color-campo);
+}
+
+/* DESIGN.md: la sección activa lleva un fondo magenta suave */
+.activo,
+.activo:hover {
+  color: var(--color-accion-texto);
+  background: var(--color-accion-suave);
+}
+
+.derecha {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  margin-left: auto;
+}
+
+.persona {
+  position: relative;
+}
+
+.botonPersona {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  padding: var(--spacing-4) var(--spacing-8) var(--spacing-4) var(--spacing-4);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  color: var(--color-texto);
+}
+
+.botonPersona:hover {
+  background: var(--color-campo);
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-ink);
+  color: var(--color-pure-white);
+  font-size: var(--text-caption);
+  font-weight: var(--peso-fuerte);
+}
+
+.nombrePersona {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-body-sm);
+}
+
+.desplegable {
+  position: absolute;
+  right: 0;
+  top: calc(100% + var(--spacing-8));
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+  padding: var(--spacing-8);
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radius-campo);
+  box-shadow: var(--shadow-elevado);
+}
+
+.quien {
+  padding: var(--spacing-8) var(--spacing-12) var(--spacing-12);
+  border-bottom: 1px solid var(--color-borde);
+  margin-bottom: var(--spacing-4);
+}
+
+.correo {
+  font-size: var(--text-caption);
+  color: var(--color-texto-secundario);
+}
+
+.opcion {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  padding: var(--spacing-8) var(--spacing-12);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-boton-chico);
+  color: var(--color-texto);
+  font-size: var(--text-body-sm);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.opcion:hover {
+  background: var(--color-campo);
+}
+
+.botonMenu {
+  display: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-full);
+  color: var(--color-texto);
+  cursor: pointer;
+}
+
+.botonMenu:hover {
+  background: var(--color-campo);
+}
+
+.menuMovil {
+  display: none;
+}
+
+/* Tablet y teléfono: las secciones pasan al menú desplegable */
+@media (max-width: 1024px) {
+  .secciones {
+    display: none;
+  }
+  .botonMenu {
+    display: grid;
+  }
+  .menuMovil {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+    padding: var(--spacing-8) var(--margen-pagina) var(--spacing-16);
+    border-top: 1px solid var(--color-borde);
+  }
+  .menuMovil .enlace {
+    padding: var(--spacing-12) var(--spacing-16);
+    font-size: var(--text-body);
+  }
+}
+
+@media (max-width: 640px) {
+  .contenido {
+    gap: var(--spacing-12);
+  }
+  .nombrePersona {
+    display: none;
+  }
+  /* Se oculta a la vista, pero el lector de pantalla sigue leyendo el texto */
+  .textoNueva {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+  .nueva {
+    padding: 0 var(--spacing-12);
+  }
+}

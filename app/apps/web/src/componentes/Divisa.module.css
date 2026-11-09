@@ -1,0 +1,91 @@
+.icono {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: var(--tamano-icono);
+  height: var(--tamano-icono);
+  border-radius: 50%;
+  background: var(--color-divisa);
+  color: var(--color-pure-white);
+  font-size: calc(var(--tamano-icono) * 0.42);
+  font-weight: var(--peso-fuerte);
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.compacta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  white-space: nowrap;
+}
+
+/* DESIGN.md › Token Selector Pill */
+.pastilla {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  padding: 6px var(--spacing-12) 6px 6px;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radius-full);
+  color: var(--color-texto);
+  white-space: nowrap;
+}
+
+.boton {
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.boton:hover {
+  background: var(--color-campo);
+}
+
+.codigo {
+  font-size: var(--text-body);
+  font-weight: var(--peso-medio);
+  line-height: 1.2;
+}
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.opcion {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-12);
+  width: 100%;
+  padding: var(--spacing-12);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-campo);
+  text-align: left;
+  cursor: pointer;
+}
+
+.opcion:hover,
+.opcion[aria-current] {
+  background: var(--color-campo);
+}
+
+.nombres {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.nombre {
+  font-size: var(--text-body-sm);
+  color: var(--color-texto-secundario);
+}
+
+.marca {
+  color: var(--color-accion-texto);
+}

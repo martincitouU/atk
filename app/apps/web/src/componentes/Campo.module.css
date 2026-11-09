@@ -1,0 +1,108 @@
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-8);
+  min-width: 0;
+}
+
+.etiqueta {
+  font-size: var(--text-body-sm);
+  line-height: var(--leading-body-sm);
+  color: var(--color-texto-secundario);
+}
+
+/*
+ * El campo se reconoce por su relleno gris claro (DESIGN.md: Bone para
+ * "faint surface tints"). Al enfocarlo se vuelve blanco con borde magenta.
+ */
+.control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--color-campo);
+  border: 1px solid transparent;
+  border-radius: var(--radius-campo);
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.control:hover {
+  background: var(--color-campo-hover);
+}
+
+.control:focus-within {
+  background: var(--color-superficie);
+  border-color: var(--color-accion);
+}
+
+.control[data-error] {
+  background: var(--color-superficie);
+  border-color: var(--color-error);
+}
+
+.entrada {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--altura-control);
+  padding: 0 var(--spacing-16);
+  background: transparent;
+  border: 0;
+  border-radius: inherit;
+  font-size: var(--text-body);
+  outline: none;
+}
+
+.entrada::placeholder {
+  color: var(--color-texto-deshabilitado);
+}
+
+.entrada:disabled {
+  color: var(--color-texto-deshabilitado);
+  cursor: not-allowed;
+}
+
+.seleccion {
+  appearance: none;
+  padding-right: var(--spacing-40);
+  cursor: pointer;
+  /* Flecha del selector, en Steel */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%236a6a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--spacing-16) center;
+}
+
+.area {
+  min-height: 88px;
+  padding: var(--spacing-12) var(--spacing-16);
+  line-height: var(--leading-body);
+  resize: vertical;
+}
+
+.sufijo {
+  padding-right: var(--spacing-16);
+  color: var(--color-texto-secundario);
+  font-size: var(--text-body-sm);
+  white-space: nowrap;
+}
+
+.ayuda {
+  font-size: var(--text-caption);
+  line-height: var(--leading-caption);
+  color: var(--color-texto-secundario);
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  font-size: var(--text-caption);
+  line-height: var(--leading-caption);
+  color: var(--color-error);
+}
+
+.fila {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--spacing-16);
+}

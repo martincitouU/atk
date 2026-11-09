@@ -1,0 +1,40 @@
+.etiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  padding: 2px var(--spacing-8);
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  font-size: var(--text-caption);
+  line-height: var(--leading-caption);
+  font-weight: var(--peso-fuerte);
+  white-space: nowrap;
+}
+
+.neutro {
+  background: var(--color-campo);
+  color: var(--color-charcoal);
+}
+
+.fuerte {
+  background: var(--color-ink);
+  color: var(--color-pure-white);
+}
+
+.atencion {
+  background: var(--color-accion-suave);
+  color: var(--color-accion-texto);
+}
+
+/* Coral y verde sobre blanco: con fondo teñido no alcanzarían 4,5:1 */
+.error {
+  background: var(--color-superficie);
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+.vivo {
+  background: var(--color-superficie);
+  border-color: var(--color-vivo);
+  color: var(--color-vivo);
+}

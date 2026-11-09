@@ -1,0 +1,51 @@
+.tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-16);
+  min-width: 0;
+  padding: var(--card-padding);
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radius-cards);
+}
+
+.elevada {
+  box-shadow: var(--shadow-elevado);
+}
+
+.sinRelleno {
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+}
+
+.sinRelleno > .encabezado {
+  padding: var(--card-padding) var(--card-padding) var(--spacing-12);
+}
+
+.encabezado {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-12);
+  flex-wrap: wrap;
+}
+
+.titulo {
+  font-size: var(--text-subheading);
+  line-height: var(--leading-subheading);
+}
+
+.descripcion {
+  margin-top: var(--spacing-4);
+  font-size: var(--text-body-sm);
+  line-height: var(--leading-body-sm);
+  color: var(--color-texto-secundario);
+}
+
+.acciones {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  flex-wrap: wrap;
+}

@@ -1,0 +1,66 @@
+.pasos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-16);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.paso {
+  display: grid;
+  grid-template-columns: 28px 24px 1fr;
+  align-items: start;
+  gap: var(--spacing-12);
+}
+
+.numeroPaso {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-accion-suave);
+  color: var(--color-accion-texto);
+  font-size: var(--text-body-sm);
+  font-weight: var(--peso-fuerte);
+}
+
+.iconoPaso {
+  margin-top: 4px;
+  color: var(--color-texto-secundario);
+}
+
+.textoPaso {
+  font-size: var(--text-body-sm);
+  color: var(--color-texto-secundario);
+}
+
+.operaciones {
+  margin: 0;
+  padding: 0 var(--card-padding) var(--spacing-8);
+  list-style: none;
+}
+
+.operacion {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-12);
+  padding: var(--spacing-16) 0;
+  border-top: 1px solid var(--color-borde);
+}
+
+.queHizo {
+  flex: 1;
+  min-width: 0;
+}
+
+.detalleOperacion {
+  font-size: var(--text-caption);
+  line-height: var(--leading-caption);
+  color: var(--color-texto-secundario);
+}
+
+.pesos {
+  white-space: nowrap;
+}
