@@ -60,4 +60,6 @@ for (const senal of ["SIGTERM", "SIGINT"] as const) {
   });
 }
 
-await app.listen({ port: puerto, host: "0.0.0.0" });
+// En el contenedor se escucha en todas las interfaces (Nginx llega por la
+// red de Docker); npm run dev usa ESCUCHAR_EN=127.0.0.1 para no exponerse a la red.
+await app.listen({ port: puerto, host: process.env.ESCUCHAR_EN ?? "0.0.0.0" });

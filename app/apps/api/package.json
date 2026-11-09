@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "node --watch src/cli/desarrollo.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p ."
   },
