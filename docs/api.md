@@ -108,6 +108,7 @@ editarlo).
 | Método y ruta | Roles | Entrada | Notas |
 |---|---|---|---|
 | `GET /api/catalogo` | C S A | — | Casa, moneda base, divisas (con `decimales` y `decimalesTasa`), sucursales, cajas, categorías de gasto y de cliente, parámetros. Pedirlo una vez al entrar. |
+| `GET /api/personal` | C S A | — | `[{ id, nombre }]` de todo el personal, también el inactivo. Para mostrar el nombre donde llega un id (`usuarioId`, `confirmadaPor`, `reversadaPor`...). Sin correo ni RUT. |
 | `GET /api/pizarra` | C S A | `?sucursalId=` | Por divisa: `compraE6`, `ventaE6`, `referenciaE6`, márgenes, `vigenteDesde`, `vencida`. |
 | `POST /api/cotizaciones` | A | `{ monedaCodigo, referenciaE6, margenCompraE6, margenVentaE6, tipoMargen? }` | Publica una tasa nueva. `tipoMargen`: `PORCENTAJE` (por defecto) o `MONTO_FIJO`. |
 
@@ -122,8 +123,8 @@ editarlo).
 | `POST /api/operaciones/:id/autorizar` | S A | `{}` | Autoriza una tasa preferencial. |
 | `POST /api/operaciones/:id/confirmar` | C S A | `{}` | Recalcula con la pizarra vigente, valida folio y ficha, y mueve la caja. Si la pizarra cambió desde el borrador, falla. |
 | `POST /api/operaciones/:id/reversar` | S A | `{ motivo }` | Movimientos inversos; la operación queda REVERSADA. |
-| `GET /api/operaciones` | C S A | `?estado=&monedaCodigo=&turnoId=&cajaId=&usuarioId=&desde=&hasta=&limite=` | De la más reciente a la más antigua. |
-| `GET /api/operaciones/:id` | C S A | — | |
+| `GET /api/operaciones` | C S A | `?estado=&monedaCodigo=&turnoId=&cajaId=&usuarioId=&desde=&hasta=&limite=` | De la más reciente a la más antigua. Cada una con `clienteNombre` (null si es anónima). |
+| `GET /api/operaciones/:id` | C S A | — | Con `clienteNombre`. |
 
 Entrada para crear una operación:
 
@@ -157,7 +158,7 @@ Entrada para crear una operación:
 
 | Método y ruta | Roles | Entrada | Notas |
 |---|---|---|---|
-| `GET /api/clientes` | C S A | `?q=texto&limite=` | Busca en nombre y documento. `q` es obligatorio. |
+| `GET /api/clientes` | C S A | `?q=texto&limite=` | Busca en nombre y documento. `q` es obligatorio. Cada ficha trae `faltantesUaf`. |
 | `GET /api/clientes/:id` | C S A | — | Ficha y `faltantesUaf` (lo que falta para cumplir con la UAF). |
 | `POST /api/clientes` | C S A | `{ tipoDocumento, numeroDocumento, nombre, nacionalidad?, oficio?, paisResidencia?, domicilio?, telefono?, email?, relacionPermanente?, categoriaId? }` | `tipoDocumento`: RUT, PASAPORTE, DNI u OTRO. Países en ISO de 2 letras. |
 | `PATCH /api/clientes/:id` | C S A | Los campos que cambian | |

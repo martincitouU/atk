@@ -12,17 +12,18 @@ import {
   editarBorrador,
   eliminarBorrador,
   listarOperaciones,
-  obtenerOperacion,
   previsualizarOperacion,
   reversarOperacion,
+  verOperacion,
 } from "../servicios/operaciones.ts";
 import { idDe } from "./comun.ts";
 
 
 export function rutasOperaciones(api: FastifyInstance, ctx: Contexto) {
+  // Las dos lecturas traen el nombre del cliente (clienteNombre)
   api.get("/operaciones", (request) => listarOperaciones(ctx.db, filtrosOperaciones.parse(request.query)));
 
-  api.get("/operaciones/:id", (request) => obtenerOperacion(ctx.db, idDe(request)));
+  api.get("/operaciones/:id", (request) => verOperacion(ctx.db, idDe(request)));
 
   /** Cálculo de precio, montos y si exigirá ficha UAF, sin guardar nada. */
   api.post("/operaciones/previsualizar", (request) =>

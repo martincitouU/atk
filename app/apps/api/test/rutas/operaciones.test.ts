@@ -114,8 +114,24 @@ describe("RF-01, RF-02, RF-07: operaciones por HTTP", () => {
     expect((await pedir("CAJERO", "GET", "/api/operaciones?estado=OTRO")).statusCode).toBe(400);
   });
 
+  it("la lista y el detalle traen el nombre del cliente (null si la operación es anónima)", async () => {
+    const { pedir } = conTurno();
+    const conCliente = (await pedir("CAJERO", "POST", "/api/operaciones", { ...VENTA_USD_100, clienteId: 1 })).json();
+    const anonima = (await pedir("CAJERO", "POST", "/api/operaciones", VENTA_USD_100)).json();
+
+    const lista = (await pedir("CAJERO", "GET", "/api/operaciones")).json();
+
+    expect(lista.map((o: { id: number; clienteNombre: string | null }) => [o.id, o.clienteNombre])).toEqual([
+      [anonima.id, null],
+      [conCliente.id, "Cliente Completo de Prueba"],
+    ]);
+    const detalle = (await pedir("CAJERO", "GET", `/api/operaciones/${conCliente.id}`)).json();
+    expect(detalle).toMatchObject({ id: conCliente.id, clienteId: 1, clienteNombre: "Cliente Completo de Prueba", montoBase: "95410" });
+  });
+
   it("una operación inexistente responde 404", async () => {
     const { pedir } = apiDePrueba();
     expect((await pedir("CAJERO", "POST", "/api/operaciones/999/confirmar")).statusCode).toBe(404);
+    expect((await pedir("CAJERO", "GET", "/api/operaciones/999")).json().error.codigo).toBe("OPERACION_NO_EXISTE");
   });
 });

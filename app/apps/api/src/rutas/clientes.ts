@@ -15,10 +15,10 @@ import { ErrorNegocio, type Contexto } from "../servicios/contexto.ts";
 import { idDe } from "./comun.ts";
 
 export function rutasClientes(api: FastifyInstance, ctx: Contexto) {
-  /** Busca por nombre o número de documento (?q=perez). */
+  /** Busca por nombre o número de documento (?q=perez). Cada uno con lo que le falta a su ficha. */
   api.get("/clientes", (request) => {
     const { q, limite } = filtrosClientes.parse(request.query);
-    return buscarClientes(ctx.db, q, limite);
+    return buscarClientes(ctx.db, q, limite).map((c) => ({ ...c, faltantesUaf: faltantesFicha(c) }));
   });
 
   /** La ficha, con lo que le falta para cumplir con la UAF. */

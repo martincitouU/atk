@@ -24,7 +24,7 @@ import { rutaRegistro, rutasCuentasCliente, rutasPortal } from "./rutas/cuentas.
 import { rutasGastos } from "./rutas/gastos.ts";
 import { rutasCotizaciones } from "./rutas/cotizaciones.ts";
 import { rutasOperaciones } from "./rutas/operaciones.ts";
-import { rutasUsuarios } from "./rutas/usuarios.ts";
+import { rutaPersonal, rutasUsuarios } from "./rutas/usuarios.ts";
 import { rutasYo } from "./rutas/yo.ts";
 import { crearContexto } from "./servicios/contexto.ts";
 
@@ -105,6 +105,7 @@ export function construirServidor({ sqlite, db }: Conexion, opciones: OpcionesSe
         rutasGastos(personal, ctx);
         rutasConsultas(personal, ctx);
         rutasCuentasCliente(personal, ctx);
+        rutaPersonal(personal, ctx);
         if (auth) rutasUsuarios(personal, ctx, auth);
       });
 
