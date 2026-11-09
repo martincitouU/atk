@@ -19,8 +19,11 @@ function montar() {
   return userEvent.setup();
 }
 
-/** El bloque de conteo de una moneda (una región con su código y su nombre). */
-const bloque = (codigo: string) => screen.findByRole("region", { name: new RegExp(`^${codigo} `) });
+/** El conteo por billete de una moneda: se elige en la grilla y queda su región (código y nombre). */
+async function bloque(u: ReturnType<typeof userEvent.setup>, codigo: string) {
+  await u.click(await screen.findByRole("button", { name: `Contar ${codigo}` }));
+  return screen.findByRole("region", { name: new RegExp(`^${codigo} `) });
+}
 
 /** El valor de una fila del pie del bloque («Contado», «En sistema», «Diferencia»). */
 function pie(region: HTMLElement, rotulo: string) {
@@ -40,7 +43,7 @@ afterEach(() => vi.useRealTimers());
 describe("Cierre del día", () => {
   it("contar USD con 4 × 100 + 1 × 50 da 450,00, y la diferencia aparece contra el teórico de la semilla", async () => {
     const u = montar();
-    const usd = await bloque("USD");
+    const usd = await bloque(u, "USD");
     await u.type(within(usd).getByLabelText("Cantidad de billetes de US$ 100"), "4");
     await u.type(within(usd).getByLabelText("Cantidad de billetes de US$ 50"), "1");
 
@@ -55,7 +58,7 @@ describe("Cierre del día", () => {
 
   it("el total sin contar billetes se lee con coma decimal y miles con punto", async () => {
     const u = montar();
-    const eur = await bloque("EUR");
+    const eur = await bloque(u, "EUR");
     await u.click(within(eur).getByRole("button", { name: "Ingresar el total sin contar billetes" }));
     await u.type(within(eur).getByLabelText(/Total contado en EUR/), "1.450,00");
     expect(pie(eur, "Contado")).toHaveTextContent("€ 1.450,00");
@@ -82,7 +85,7 @@ describe("Cierre del día", () => {
       ["EUR", "1450"],
       ["CLP", "3482150"],
     ] as const) {
-      const region = await bloque(codigo);
+      const region = await bloque(u, codigo);
       await u.click(within(region).getByRole("button", { name: "Ingresar el total sin contar billetes" }));
       await u.type(within(region).getByLabelText(new RegExp(`Total contado en ${codigo}`)), total);
       expect(await within(region).findByText("Cuadra")).toBeInTheDocument();

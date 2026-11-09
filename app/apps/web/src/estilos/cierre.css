@@ -27,7 +27,7 @@
 .cierre {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
 }
 
 /* ------------------------------------------------------------------ */
@@ -50,14 +50,14 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
-  gap: 4px 16px;
-  padding: 12px 22px 13px;
+  gap: 2px 16px;
+  padding: 8px 18px 9px;
   border: 3px solid var(--cierre-letrero-tinta);
   border-radius: 10px;
 }
 
 .cierre-letrero h1 {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 900;
   letter-spacing: 0.04em;
   line-height: 1.1;
@@ -134,7 +134,104 @@
 }
 
 /* ------------------------------------------------------------------ */
-/* El conteo: un bloque por moneda */
+/* El conteo (vuelta 3): la grilla por divisa a la izquierda, el conteo por
+   billete de la elegida a la derecha y, bajo la grilla, la barra que cierra */
+
+.conteo-mesa {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  grid-template-areas:
+    "resumen detalle"
+    "barra detalle";
+  grid-template-rows: auto 1fr;
+  align-items: start;
+  gap: 14px;
+}
+
+.conteo-resumen {
+  grid-area: resumen;
+}
+
+.conteo-detalle {
+  grid-area: detalle;
+}
+
+.conteo-mesa .cierre-barra {
+  grid-area: barra;
+}
+
+.conteo-resumen table:focus-visible {
+  outline-offset: -3px;
+}
+
+.conteo-resumen tbody tr {
+  cursor: pointer;
+}
+
+.conteo-resumen tbody tr:hover {
+  background: var(--lamina);
+}
+
+.conteo-resumen tbody tr[aria-selected="true"] {
+  outline: 2px solid var(--amarillo);
+  outline-offset: -2px;
+  background: var(--fila-elegida);
+}
+
+.conteo-resumen tbody tr.descuadra:not([aria-selected="true"]) {
+  background: var(--aviso-fondo);
+}
+
+/* La divisa de la fila: un botón que se lee como texto de la grilla */
+.conteo-elegir {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--tinta);
+  font-size: 13px;
+  text-align: left;
+}
+
+.conteo-elegir i {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.conteo-elegir b {
+  font-weight: 800;
+}
+
+.conteo-elegir span {
+  color: var(--suave);
+  font-weight: 600;
+}
+
+.conteo-resumen .sin {
+  color: var(--suave);
+  font-family: var(--familia);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.conteo-resumen .dif {
+  padding: 1px 7px;
+}
+
+/* El panel de detalle: los billetes de la moneda elegida */
+.conteo-detalle .arqueo > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* ------------------------------------------------------------------ */
+/* El conteo por billete */
 
 .cierre-conteo {
   display: flex;
@@ -200,8 +297,8 @@
 .arqueo-filas {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 12px 16px 14px;
+  gap: 5px;
+  padding: 10px 14px 12px;
 }
 
 /* cantidad × billete = subtotal */
@@ -213,8 +310,8 @@
 }
 
 .arqueo input {
-  min-height: 40px;
-  padding: 6px 10px;
+  min-height: 34px;
+  padding: 4px 10px;
   font: 700 16px var(--familia-num);
   font-variant-numeric: tabular-nums;
   text-align: right;
@@ -569,7 +666,7 @@
 
 /* ------------------------------------------------------------------ */
 
-/* Bajo 1280 px los bloques de conteo van de a dos */
+/* Bajo 1280 px los bloques de espera van de a dos */
 @media (max-width: 1279.98px) {
   .arqueos {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -577,6 +674,14 @@
 }
 
 @media (max-width: 1199.98px) {
+  .conteo-mesa {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "resumen"
+      "detalle"
+      "barra";
+  }
+
   .cierre-movs {
     grid-template-columns: minmax(0, 1fr);
   }

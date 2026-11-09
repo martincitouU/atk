@@ -1,7 +1,7 @@
 import { aBigint, type Moneda, type Operacion, type Turno } from "../../api/esquemas.ts";
 import { formatearMonto } from "@atk/shared/dinero";
 import { ArrowRightIcon, CheckCircleIcon, WarningIcon } from "@phosphor-icons/react";
-import { useEffect, useId, useState, type KeyboardEvent as TeclaReact } from "react";
+import { useEffect, useId, useImperativeHandle, useRef, useState, type KeyboardEvent as TeclaReact, type Ref } from "react";
 import { Link } from "react-router";
 import { z } from "zod";
 import { ErrorNegocio } from "../../api/cliente.ts";
@@ -61,18 +61,64 @@ function useConteos(turnoId: number) {
 
 // ---------------------------------------------------------------------------
 
+export type ConteoApi = {
+  /** «Cerrar turno» de la cinta: cierra si todo está listo; si no, lleva a la barra que dice qué falta. */
+  cerrar: () => void;
+  /** «Contar billetes»: el foco en el primer campo de la moneda elegida. */
+  contar: () => void;
+  /** «Elegir divisa»: el foco en la grilla del conteo, para moverse con ↑/↓. */
+  elegir: () => void;
+};
+
 /**
- * Con turno: los borradores que bloquean el cierre, un bloque de conteo por
- * moneda (las divisas y los pesos) y la barra que cierra el turno.
+ * Con turno: los borradores que bloquean el cierre, la grilla del conteo por
+ * moneda (las divisas y los pesos), el conteo por billete de la moneda
+ * elegida y la barra que cierra el turno (vuelta 3: como una planilla con su
+ * panel de detalle).
  */
-export function ConteoTurno({ turno, zona, onCerrado }: { turno: Turno; zona: string; onCerrado: (cierre: RespuestaCierre) => void }) {
+export function ConteoTurno({
+  turno,
+  zona,
+  onCerrado,
+  ref,
+}: {
+  turno: Turno;
+  zona: string;
+  onCerrado: (cierre: RespuestaCierre) => void;
+  ref?: Ref<ConteoApi>;
+}) {
   const { data: catalogo } = useCatalogo();
   const saldos = useSaldos(turno.cajaId);
   const libro = useLibroDelDia();
   const cerrar = useCerrarTurno();
   const [conteos, setConteos] = useConteos(turno.id);
   const [fallo, setFallo] = useState<string | null>(null);
+  const [elegida, setElegida] = useState<string | null>(null);
+  const [enfocar, setEnfocar] = useState(0);
   const idEstado = useId();
+  const idGrilla = useId();
+  const contar = useRef<HTMLDivElement>(null);
+  const grilla = useRef<HTMLTableElement>(null);
+  const barra = useRef<HTMLParagraphElement>(null);
+  const cerrarRef = useRef<() => void>(() => undefined);
+
+  // Al elegir otra moneda desde el teclado o la cinta, el foco va a su primer campo
+  useEffect(() => {
+    if (enfocar === 0) return;
+    const campo = contar.current?.querySelector<HTMLInputElement>("input");
+    campo?.focus();
+    campo?.select();
+  }, [enfocar]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      cerrar: () => cerrarRef.current(),
+      contar: () => setEnfocar((n) => n + 1),
+      elegir: () => grilla.current?.focus(),
+    }),
+    [],
+  );
 
   if (!catalogo) {
     return (
@@ -103,6 +149,9 @@ export function ConteoTurno({ turno, zona, onCerrado }: { turno: Turno; zona: st
   const descuadres = saldos.data
     ? lecturas.filter((l) => l.lectura.estado === "contado" && l.lectura.monto !== (teoricos.get(l.moneda.codigo) ?? 0n)).length
     : null;
+  const contadas = lecturas.filter((l) => l.lectura.estado === "contado").length;
+  const codigoElegido = monedas.some((m) => m.codigo === elegida) ? (elegida as string) : (monedas[0]?.codigo ?? "");
+  const actual = lecturas.find((l) => l.moneda.codigo === codigoElegido);
 
   let estado: string;
   if (borradores.length > 0) estado = `Antes de cerrar: ${plural(borradores.length, "borrador pendiente", "borradores pendientes")} (arriba).`;
@@ -136,55 +185,163 @@ export function ConteoTurno({ turno, zona, onCerrado }: { turno: Turno; zona: st
     }
   }
 
-  // Enter en un campo del conteo pasa al siguiente: se cuenta fila por fila sin soltar el teclado.
+  // «Cerrar turno» desde la cinta: lo mismo que el botón, o la barra que dice qué falta
+  cerrarRef.current = () => {
+    if (listo) void cerrarTurno();
+    else barra.current?.focus();
+  };
+
+  // Enter en un campo del conteo pasa al siguiente; en el último, a la moneda que sigue:
+  // se cuenta fila por fila sin soltar el teclado.
   function alPulsar(e: TeclaReact<HTMLDivElement>) {
     if (e.key !== "Enter" || !(e.target instanceof HTMLInputElement)) return;
     e.preventDefault();
     const campos = [...e.currentTarget.querySelectorAll<HTMLInputElement>("input")];
     const siguiente = campos[campos.indexOf(e.target) + 1];
-    siguiente?.focus();
-    siguiente?.select();
+    if (siguiente) {
+      siguiente.focus();
+      siguiente.select();
+      return;
+    }
+    const proxima = monedas[monedas.findIndex((m) => m.codigo === codigoElegido) + 1];
+    if (proxima) {
+      setElegida(proxima.codigo);
+      setEnfocar((n) => n + 1);
+    }
+  }
+
+  // ↑/↓ en la grilla: la moneda elegida; Enter, a contar sus billetes
+  function alPulsarGrilla(e: TeclaReact<HTMLTableElement>) {
+    const i = monedas.findIndex((m) => m.codigo === codigoElegido);
+    let siguiente: MonedaCatalogo | undefined;
+    if (e.key === "ArrowDown") siguiente = monedas[Math.min(monedas.length - 1, i + 1)];
+    else if (e.key === "ArrowUp") siguiente = monedas[Math.max(0, i - 1)];
+    else if (e.key === "Enter") {
+      e.preventDefault();
+      setEnfocar((n) => n + 1);
+      return;
+    } else return;
+    e.preventDefault();
+    if (siguiente) setElegida(siguiente.codigo);
   }
 
   return (
     <>
       <Borradores ops={borradores} monedas={monedas} zona={zona} />
 
-      <section className="cierre-conteo" aria-labelledby="conteo-titulo">
-        <div className="cierre-cab">
-          <h2 id="conteo-titulo">Conteo de la caja</h2>
-          <span className="hint">
-            Cantidad de billetes por denominación
-            <span className="solo-teclado">
-              <Sep />
-              <Kbd>Enter</Kbd> pasa a la fila siguiente
+      <div className="conteo-mesa">
+        <section className="panel conteo-resumen" aria-labelledby="conteo-titulo">
+          <header>
+            <h2 id="conteo-titulo">Conteo por divisa</h2>
+            <span className="hint">
+              {contadas} de {monedas.length} contadas
+              {descuadres !== null && descuadres > 0 && (
+                <>
+                  <Sep />
+                  {plural(descuadres, "no cuadra", "no cuadran")}
+                </>
+              )}
+              <span className="solo-teclado">
+                <Sep />
+                <Kbd>↑↓</Kbd> elige
+                <Sep />
+                <Kbd>Enter</Kbd> cuenta
+              </span>
             </span>
-          </span>
-        </div>
-        {saldos.isError && (
-          <Aviso tono="advertencia" rol="status">
-            <p>
-              Sin el saldo del sistema: {saldos.error instanceof ErrorNegocio ? saldos.error.message : "no se pudo leer."} La diferencia
-              se calcula al cerrar.
-            </p>
-          </Aviso>
-        )}
-        <div className="arqueos" onKeyDown={alPulsar}>
-          {lecturas.map(({ moneda, lectura }) => (
+          </header>
+          {saldos.isError && (
+            <Aviso tono="advertencia" rol="status">
+              <p>
+                Sin el saldo del sistema: {saldos.error instanceof ErrorNegocio ? saldos.error.message : "no se pudo leer."} La diferencia se calcula
+                al cerrar.
+              </p>
+            </Aviso>
+          )}
+          <table
+            ref={grilla}
+            role="grid"
+            aria-labelledby="conteo-titulo"
+            aria-readonly="true"
+            tabIndex={0}
+            aria-activedescendant={`${idGrilla}-${codigoElegido}`}
+            onKeyDown={alPulsarGrilla}
+          >
+            <thead>
+              <tr>
+                <th scope="col">Divisa</th>
+                <th scope="col" className="r">
+                  En sistema
+                </th>
+                <th scope="col" className="r">
+                  Contado
+                </th>
+                <th scope="col" className="r">
+                  Diferencia
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {lecturas.map(({ moneda, lectura }) => {
+                const teorico = saldos.isSuccess ? (teoricos.get(moneda.codigo) ?? 0n) : null;
+                const contado = lectura.estado === "contado" ? lectura.monto : null;
+                return (
+                  <tr
+                    key={moneda.codigo}
+                    id={`${idGrilla}-${moneda.codigo}`}
+                    aria-selected={moneda.codigo === codigoElegido}
+                    className={contado !== null && teorico !== null && contado !== teorico ? "descuadra" : undefined}
+                    onClick={() => setElegida(moneda.codigo)}
+                  >
+                    <td>
+                      <button
+                        type="button"
+                        className="conteo-elegir"
+                        aria-label={`Contar ${moneda.codigo}`}
+                        onClick={() => setElegida(moneda.codigo)}
+                      >
+                        <i aria-hidden="true" style={{ background: `var(--${moneda.codigo.toLowerCase()}, var(--neutro))` }} />
+                        <b>{moneda.codigo}</b>
+                        <span>{moneda.nombre}</span>
+                      </button>
+                    </td>
+                    <td className="r num">{teorico === null ? "—" : conSimbolo(teorico, moneda)}</td>
+                    <td className="r num">
+                      {contado !== null ? (
+                        conSimbolo(contado, moneda)
+                      ) : (
+                        <span className="sin">{lectura.estado === "invalido" ? "Revise el monto" : "Sin contar"}</span>
+                      )}
+                    </td>
+                    <td className="r">
+                      {contado !== null && teorico !== null ? (
+                        <Diferencia diferencia={contado - teorico} moneda={moneda} />
+                      ) : (
+                        <span className="sin">—</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </section>
+
+        <div className="conteo-detalle" ref={contar} onKeyDown={alPulsar}>
+          {actual && (
             <BloqueConteo
-              key={moneda.codigo}
-              moneda={moneda}
-              denominaciones={denominaciones(moneda.codigo)}
-              conteo={conteos[moneda.codigo] ?? conteoVacio()}
-              lectura={lectura}
-              teorico={saldos.isSuccess ? (teoricos.get(moneda.codigo) ?? 0n) : null}
-              onCambiar={(c) => cambiar(moneda.codigo, c)}
+              key={actual.moneda.codigo}
+              moneda={actual.moneda}
+              denominaciones={denominaciones(actual.moneda.codigo)}
+              conteo={conteos[actual.moneda.codigo] ?? conteoVacio()}
+              lectura={actual.lectura}
+              teorico={saldos.isSuccess ? (teoricos.get(actual.moneda.codigo) ?? 0n) : null}
+              onCambiar={(c) => cambiar(actual.moneda.codigo, c)}
             />
-          ))}
+          )}
         </div>
 
         <div className="cierre-barra">
-          <p id={idEstado} className={`cierre-estado${listo ? " listo" : ""}`} role="status">
+          <p id={idEstado} ref={barra} tabIndex={-1} className={`cierre-estado${listo ? " listo" : ""}`} role="status">
             {estado}
           </p>
           <button
@@ -202,7 +359,7 @@ export function ConteoTurno({ turno, zona, onCerrado }: { turno: Turno; zona: st
             </Aviso>
           )}
         </div>
-      </section>
+      </div>
     </>
   );
 }
@@ -235,9 +392,9 @@ function BloqueConteo({
       <header>
         <h3 id={`${id}-t`}>
           <i aria-hidden="true" style={{ background: `var(--${moneda.codigo.toLowerCase()}, var(--neutro))` }} />
-          {moneda.codigo}{" "}
-          <span>{moneda.nombre}</span>
+          {moneda.codigo} <span>{moneda.nombre}</span>
         </h3>
+        <span className="hint">Contar billetes</span>
       </header>
 
       {conteo.modo === "billetes" ? (
@@ -255,15 +412,15 @@ function BloqueConteo({
                   maxLength={5}
                   aria-label={`Cantidad de billetes de ${rotulo}`}
                   value={cantidad}
-                  onChange={(e) =>
-                    onCambiar({ ...conteo, cantidades: { ...conteo.cantidades, [d.toString()]: e.target.value.replace(/\D/g, "") } })
-                  }
+                  onChange={(e) => onCambiar({ ...conteo, cantidades: { ...conteo.cantidades, [d.toString()]: e.target.value.replace(/\D/g, "") } })}
                 />
                 <span className="por" aria-hidden="true">
                   ×
                 </span>
                 <span className="den">{rotulo}</span>
-                <output className={parcial === null ? "num nada" : "num"}>{parcial === null ? "—" : formatearMonto(parcial, moneda.decimales)}</output>
+                <output className={parcial === null ? "num nada" : "num"}>
+                  {parcial === null ? "—" : formatearMonto(parcial, moneda.decimales)}
+                </output>
               </div>
             );
           })}

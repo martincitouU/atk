@@ -1,6 +1,6 @@
 import { aBigint, type Gasto } from "../../api/esquemas.ts";
 import { CheckCircleIcon } from "@phosphor-icons/react";
-import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useImperativeHandle, useRef, useState, type FormEvent, type Ref } from "react";
 import { ErrorNegocio } from "../../api/cliente.ts";
 import { useCatalogo, useCategoriasGasto, useGastos, useMovimientoCaja, useRegistrarGasto, useReversarGasto } from "../../api/consultas.ts";
 import { usePuede } from "../../api/permisos.ts";
@@ -11,7 +11,7 @@ import { conSimbolo, montoEn, pesos } from "../../comun.ts";
 import type { MonedaCatalogo } from "./Conteo.tsx";
 import { leerMonto } from "./conteo.ts";
 
-type Tipo = "GASTO" | "RETIRO" | "INGRESO";
+export type Tipo = "GASTO" | "RETIRO" | "INGRESO";
 type Medio = Gasto["medioPago"];
 
 const TIPOS: readonly (readonly [Tipo, string])[] = [
@@ -28,11 +28,16 @@ const MEDIOS: readonly (readonly [Medio, string])[] = [
 
 const MEDIO = Object.fromEntries(MEDIOS) as Record<Medio, string>;
 
+export type MovimientosApi = {
+  /** «Gasto», «Retiro» o «Ingreso» de la cinta: elige el tipo y lleva el foco al primer campo. */
+  elegir: (tipo: Tipo) => void;
+};
+
 /** Gastos, retiros e ingresos de la caja: el formulario corto y los gastos del día. */
-export function Movimientos({ hoy }: { hoy: string }) {
+export function Movimientos({ hoy, ref }: { hoy: string; ref?: Ref<MovimientosApi> }) {
   return (
     <div className="cierre-movs">
-      <Formulario />
+      <Formulario ref={ref} />
       <GastosDelDia hoy={hoy} />
     </div>
   );
@@ -40,7 +45,7 @@ export function Movimientos({ hoy }: { hoy: string }) {
 
 type Errores = Partial<Record<"categoria" | "monto" | "descripcion", string>>;
 
-function Formulario() {
+function Formulario({ ref }: { ref?: Ref<MovimientosApi> }) {
   const { data: catalogo } = useCatalogo();
   const categorias = useCategoriasGasto();
   const registrar = useRegistrarGasto();
@@ -72,6 +77,18 @@ function Formulario() {
     setFallo(null);
   }
 
+  useImperativeHandle(
+    ref,
+    () => ({
+      elegir(t: Tipo) {
+        elegirTipo(t);
+        // Después de dibujar los campos del tipo elegido
+        requestAnimationFrame(() => campos.current?.querySelector<HTMLElement>(".mov-campos select, .mov-campos input")?.focus());
+      },
+    }),
+    [],
+  );
+
   async function enviar(e: FormEvent) {
     e.preventDefault();
     if (ocupado) return;
@@ -82,7 +99,8 @@ function Formulario() {
     if (tipo === "GASTO" && !categoriaId) nuevos.categoria = "Elija la categoría del gasto.";
     if (!monto.trim()) nuevos.monto = "Indique el monto.";
     else if (valor === null)
-      nuevos.monto = moneda.decimales > 0 ? `Escriba el monto con coma decimal, hasta ${moneda.decimales} decimales.` : "Escriba el monto sin decimales.";
+      nuevos.monto =
+        moneda.decimales > 0 ? `Escriba el monto con coma decimal, hasta ${moneda.decimales} decimales.` : "Escriba el monto sin decimales.";
     if (!descripcion.trim()) nuevos.descripcion = tipo === "GASTO" ? "Describa el gasto." : `Indique el motivo del ${nombre.toLowerCase()}.`;
     setErrores(nuevos);
     const primero = (["categoria", "monto", "descripcion"] as const).find((k) => nuevos[k]);
@@ -93,7 +111,12 @@ function Formulario() {
 
     try {
       if (tipo === "GASTO") {
-        const g = await registrar.mutateAsync({ categoriaId: Number(categoriaId), descripcion: descripcion.trim(), monto: valor.toString(), medioPago: medio });
+        const g = await registrar.mutateAsync({
+          categoriaId: Number(categoriaId),
+          descripcion: descripcion.trim(),
+          monto: valor.toString(),
+          medioPago: medio,
+        });
         const categoria = categorias.data?.find((c) => c.id === g.categoriaId)?.nombre;
         setHecho(`Gasto registrado: ${pesos(aBigint(g.monto), base.decimales)}${categoria ? ` · ${categoria}` : ""}.`);
       } else {
@@ -107,8 +130,7 @@ function Formulario() {
     }
   }
 
-  const error = (campo: keyof Errores) =>
-    errores[campo] ? { "aria-invalid": true as const, "aria-describedby": `${id}-${campo}` } : {};
+  const error = (campo: keyof Errores) => (errores[campo] ? { "aria-invalid": true as const, "aria-describedby": `${id}-${campo}` } : {});
 
   return (
     <section className="panel cierre-form" aria-labelledby={`${id}-t`}>
@@ -191,7 +213,9 @@ function Formulario() {
           <input
             data-campo="descripcion"
             autoComplete="off"
-            placeholder={tipo === "GASTO" ? "Resma de papel, flete, cuenta de luz…" : tipo === "RETIRO" ? "Depósito en el banco…" : "Fondo de la mañana…"}
+            placeholder={
+              tipo === "GASTO" ? "Resma de papel, flete, cuenta de luz…" : tipo === "RETIRO" ? "Depósito en el banco…" : "Fondo de la mañana…"
+            }
             value={descripcion}
             onChange={(e) => setDescripcion(e.target.value)}
             {...error("descripcion")}
@@ -391,7 +415,14 @@ function ReversoGasto({ gasto, categoria, onCerrar }: { gasto: Gasto; categoria:
       <form onSubmit={(e) => void enviar(e)}>
         <label>
           Motivo del reverso
-          <textarea ref={texto} required rows={3} value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Se registró dos veces, el monto era otro…" />
+          <textarea
+            ref={texto}
+            required
+            rows={3}
+            value={motivo}
+            onChange={(e) => setMotivo(e.target.value)}
+            placeholder="Se registró dos veces, el monto era otro…"
+          />
         </label>
         <p className="hint">
           {gasto.medioPago === "EFECTIVO" ? "El dinero vuelve a la caja del turno. " : ""}El reverso queda en la auditoría con su motivo.

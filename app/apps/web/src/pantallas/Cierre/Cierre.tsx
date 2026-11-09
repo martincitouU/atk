@@ -1,15 +1,26 @@
 import { aBigint } from "../../api/esquemas.ts";
-import { CheckCircleIcon } from "@phosphor-icons/react";
-import { useState } from "react";
+import {
+  ArrowsDownUpIcon,
+  CheckCircleIcon,
+  CurrencyCircleDollarIcon,
+  HandDepositIcon,
+  HandWithdrawIcon,
+  LockKeyIcon,
+  MoneyIcon,
+  ReceiptIcon,
+} from "@phosphor-icons/react";
+import { useRef, useState } from "react";
+import { useNavigate } from "react-router";
 import { ErrorNegocio } from "../../api/cliente.ts";
 import { useAbrirTurno, useCatalogo, useParametros, useSesion } from "../../api/consultas.ts";
 import type { Cierre as RespuestaCierre } from "../../api/esquemas.ts";
 import { Aviso } from "../../componentes/Aviso.tsx";
+import { useCinta, type GrupoCinta } from "../../componentes/Cinta.tsx";
 import { Sep, separar } from "../../componentes/Sep.tsx";
 import { conSimbolo, DATOS_DE_EJEMPLO, diaLargo, fechaEn, hora, useAhora, ZONA_CASA } from "../../comun.ts";
 import "../../estilos/cierre.css";
-import { ConteoTurno, Diferencia, type MonedaCatalogo } from "./Conteo.tsx";
-import { Movimientos } from "./Movimientos.tsx";
+import { ConteoTurno, Diferencia, type ConteoApi, type MonedaCatalogo } from "./Conteo.tsx";
+import { Movimientos, type MovimientosApi } from "./Movimientos.tsx";
 
 /**
  * El Cierre del día: abrir el turno, contar la caja por denominación y
@@ -23,6 +34,53 @@ export function Cierre() {
   const hoy = fechaEn(useAhora(60_000), zona);
   const [ultimo, setUltimo] = useState<RespuestaCierre | null>(null);
   const turno = sesion.data?.turno ?? null;
+  const conteo = useRef<ConteoApi>(null);
+  const movimientos = useRef<MovimientosApi>(null);
+  const navegar = useNavigate();
+
+  // La cinta del Cierre: llama a lo mismo que los botones de la pantalla
+  const grupos: GrupoCinta[] = [
+    {
+      nombre: "Turno",
+      comandos: turno
+        ? [{ id: "cerrar", etiqueta: "Cerrar turno", Icono: LockKeyIcon, grande: true, tono: "verde", alPulsar: () => conteo.current?.cerrar() }]
+        : [],
+      nota: turno ? [`Abierto desde ${hora(turno.abiertoEn, zona)}`, `Caja ${turno.cajaId}`] : ["Sin turno abierto"],
+    },
+    {
+      nombre: "Movimientos de caja",
+      comandos: [
+        { id: "gasto", etiqueta: "Gasto", Icono: ReceiptIcon, grande: true, alPulsar: () => movimientos.current?.elegir("GASTO") },
+        { id: "retiro", etiqueta: "Retiro", Icono: HandWithdrawIcon, grande: true, alPulsar: () => movimientos.current?.elegir("RETIRO") },
+        { id: "ingreso", etiqueta: "Ingreso", Icono: HandDepositIcon, grande: true, alPulsar: () => movimientos.current?.elegir("INGRESO") },
+      ],
+    },
+    ...(turno
+      ? [
+          {
+            nombre: "Conteo",
+            comandos: [
+              { id: "contar", etiqueta: "Contar billetes", Icono: MoneyIcon, grande: true, alPulsar: () => conteo.current?.contar() },
+              { id: "elegir", etiqueta: "Elegir divisa", Icono: ArrowsDownUpIcon, tecla: "↑↓", alPulsar: () => conteo.current?.elegir() },
+            ],
+          },
+        ]
+      : []),
+    {
+      nombre: "Ir a",
+      comandos: [
+        {
+          id: "ventanilla",
+          etiqueta: "Ventanilla",
+          Icono: CurrencyCircleDollarIcon,
+          tecla: "F1",
+          grande: true,
+          alPulsar: () => void navegar("/ventanilla"),
+        },
+      ],
+    },
+  ];
+  useCinta(grupos);
 
   return (
     <div className="cierre">
@@ -62,7 +120,7 @@ export function Cierre() {
       )}
       {sesion.isSuccess &&
         (turno ? (
-          <ConteoTurno turno={turno} zona={zona} onCerrado={setUltimo} />
+          <ConteoTurno ref={conteo} turno={turno} zona={zona} onCerrado={setUltimo} />
         ) : (
           <>
             {ultimo && <ArqueoCerrado cierre={ultimo} zona={zona} />}
@@ -70,7 +128,7 @@ export function Cierre() {
           </>
         ))}
 
-      <Movimientos hoy={hoy} />
+      <Movimientos ref={movimientos} hoy={hoy} />
 
       <p className="cierre-nota">Las diferencias no se ajustan solas: un supervisor registra un ajuste.</p>
     </div>
@@ -134,9 +192,7 @@ function AbrirTurno() {
 /** Lo que quedó guardado al cerrar: el arqueo por moneda, con su diferencia. */
 function ArqueoCerrado({ cierre, zona }: { cierre: RespuestaCierre; zona: string }) {
   const { data: catalogo } = useCatalogo();
-  const monedas = new Map<string, MonedaCatalogo>(
-    catalogo ? [catalogo.monedaBase, ...catalogo.divisas].map((m) => [m.codigo, m]) : [],
-  );
+  const monedas = new Map<string, MonedaCatalogo>(catalogo ? [catalogo.monedaBase, ...catalogo.divisas].map((m) => [m.codigo, m]) : []);
   const conDiferencia = cierre.arqueo.filter((f) => f.diferencia !== "0").length;
   return (
     <section className="panel cierre-cerrado" aria-labelledby="cerrado-titulo">
