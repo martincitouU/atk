@@ -179,12 +179,22 @@ La app debe:
 - Lecturas con `<ConDatos consulta={...}>` (cargando, error con "Reintentar"
   o los datos). Un 404 se muestra como "Esta página no existe".
 - Formularios: react-hook-form con los esquemas zod de `@atk/shared` (los
-  mismos que valida la API); lo que la API rechaza va junto a su campo.
-- Fases: F1 esqueleto y F2 lectura con la API están hechas. **F3 pendiente**:
-  los formularios que guardan (turnos, movimientos, operaciones con
-  `previsualizar`, clientes, cuentas, gastos, pizarra, usuarios, contraseña),
-  la prueba de punta a punta y el despliegue. Hasta F3 esos botones no hacen
-  nada: no desplegar antes.
+  mismos que valida la API); lo que la API rechaza va junto a su campo
+  (`errorEnFormulario` en `lib/formularios.ts`). Los montos se escriben como
+  se ven ("150,25") y se convierten al enviar (`reglaMonto`, `leerMonto`):
+  más decimales que la moneda es un error, nunca se redondea.
+- Escrituras: una acción por ruta en `src/api/acciones.ts` (useMutation).
+  Cada una dice qué temas de la caché refrescar al terminar; la auditoría se
+  refresca siempre. Lo irreversible (confirmar, reversar, cerrar turno,
+  verificar) pide confirmación en un diálogo.
+- Confirmar una operación: si falta el folio, el diálogo lo pide y lo guarda
+  antes (PATCH). Si con eso cambian los montos (la pizarra cambió), no
+  confirma y muestra los nuevos. Si la API responde `PIZARRA_CAMBIO`, ofrece
+  "Recalcular" (PATCH `{}`).
+- El cálculo de una operación (`previsualizar`) se pide 300 ms después de la
+  última tecla (`useDemorado`); el front no calcula montos.
+- Fases: F1 (esqueleto), F2 (lectura) y F3 (escritura y prueba de punta a
+  punta, `docs/prueba-punta-a-punta.md`) están hechas. Falta desplegar.
 - Tests en `apps/web/test/` (Vitest + Testing Library, jsdom). La API se
   simula con `test/apiFalsa.tsx` (`usarApi`, `rutasDe(sesion)`, `abrir(ruta)`).
 
@@ -203,6 +213,9 @@ La app debe:
 - `DESIGN.md`: guía visual de todas las vistas.
 - `docs/api.md`: contrato de la API para el front. Si una ruta cambia, se
   actualiza en el mismo PR.
+- `docs/prueba-punta-a-punta.md`: un día completo de la casa, desde una base
+  vacía con la imagen real. Se hace antes de desplegar cambios en cómo se
+  opera, nunca en producción.
 - `docs/casa_cambio_schema_postgres.sql`: diseño original del modelo, solo
   referencia.
 - `infra/README.md`: guía paso a paso para desplegar.
