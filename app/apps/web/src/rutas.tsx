@@ -9,7 +9,7 @@ import { MarcoCliente, MarcoPersonal, MarcoPublico, SoloRoles } from "./marcos/M
 import { MiCuenta } from "./vistas/cliente/MiCuenta.tsx";
 import { NoEncontrada } from "./vistas/NoEncontrada.tsx";
 import { Perfil } from "./vistas/Perfil.tsx";
-import { Administracion, Auditoria, Usuarios } from "./vistas/personal/Administracion.tsx";
+import { Administracion, Auditoria, Fidelizacion, Usuarios } from "./vistas/personal/Administracion.tsx";
 import { Caja, Gastos, TurnoYCaja } from "./vistas/personal/Caja.tsx";
 import { Clientes, CuentasWeb, DetalleCliente, EditarCliente, Fichas, NuevoCliente } from "./vistas/personal/Clientes.tsx";
 import { DetalleOperacion } from "./vistas/personal/DetalleOperacion.tsx";
@@ -74,6 +74,7 @@ export const rutas: RouteObject[] = [
             children: [
               { index: true, element: <Navigate to="usuarios" replace /> },
               { path: "usuarios", element: <Usuarios /> },
+              { path: "fidelizacion", element: <Fidelizacion /> },
               { path: "auditoria", element: <Auditoria /> },
             ],
           },
