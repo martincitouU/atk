@@ -356,10 +356,26 @@ export function editarBorrador(ctx: Contexto, actor: Actor, id: number, cambios:
     validarDatos(tx, entrada, id);
     const ahora = ctx.ahora();
     const calculo = calcular(tx, ctx, parametros, entrada, elTurno);
+    const campos = camposDe(entrada, calculo, actor, ahora);
+
+    // La autorización de una tasa preferencial vale para el precio y el monto
+    // que vio el supervisor. Si la edición no los cambia (por ejemplo, solo
+    // agrega el folio de la boleta al confirmar), se conserva; si los cambia,
+    // hay que autorizar de nuevo.
+    const mismoPrecio =
+      calculo.esPreferencial &&
+      calculo.tasaAplicadaE6 === actual.tasaAplicadaE6 &&
+      entrada.montoDivisa === actual.montoDivisa &&
+      entrada.tipo === actual.tipo &&
+      entrada.monedaCodigo === actual.monedaCodigo;
+    if (mismoPrecio && campos.autorizadoPor === null && actual.autorizadoPor !== null) {
+      campos.autorizadoPor = actual.autorizadoPor;
+      campos.autorizadoEn = actual.autorizadoEn;
+    }
 
     const editada = tx
       .update(operacion)
-      .set(camposDe(entrada, calculo, actor, ahora))
+      .set(campos)
       .where(eq(operacion.id, id))
       .returning()
       .get();

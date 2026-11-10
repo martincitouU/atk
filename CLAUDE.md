@@ -271,6 +271,9 @@ sudo docker compose -f /srv/atk/compose.yaml exec app node apps/api/src/cli/inic
   una hora.
 - Confirmar recalcula con la pizarra vigente: si cambió desde el borrador,
   no se confirma (el cliente vería un precio y pagaría otro).
+- Editar un borrador lo recalcula. La autorización de una tasa preferencial
+  vale para el precio y el monto que vio el supervisor: se conserva si la
+  edición no los cambia (agregar el folio al confirmar) y se pierde si sí.
 - Cambiar un margen cierra la regla de spread y crea otra: cada operación
   conserva la regla con que se cobró.
 - La divisa siempre es efectivo; `medio_pago` es cómo se pagan los pesos.

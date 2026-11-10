@@ -118,7 +118,7 @@ editarlo).
 |---|---|---|---|
 | `POST /api/operaciones/previsualizar` | C S A | Igual que crear | Calcula precio, montos y `requiereFicha` sin guardar. Para mostrar mientras se escribe. |
 | `POST /api/operaciones` | C S A | Ver abajo | 201 con el borrador. Exige turno abierto. |
-| `PATCH /api/operaciones/:id` | Quien lo registró | Los campos que cambian | Solo borradores. |
+| `PATCH /api/operaciones/:id` | Quien lo registró | Los campos que cambian | Solo borradores. Recalcula con la pizarra vigente (`{}` solo recalcula). La autorización de una tasa preferencial se conserva si el precio y el monto no cambian (por ejemplo, al agregar el folio). |
 | `DELETE /api/operaciones/:id` | Quien lo registró | — | 204. Solo borradores. |
 | `POST /api/operaciones/:id/autorizar` | S A | `{}` | Autoriza una tasa preferencial. |
 | `POST /api/operaciones/:id/confirmar` | C S A | `{}` | Recalcula con la pizarra vigente, valida folio y ficha, y mueve la caja. Si la pizarra cambió desde el borrador, falla. |

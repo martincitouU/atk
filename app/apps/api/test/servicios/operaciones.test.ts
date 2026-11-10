@@ -272,13 +272,28 @@ describe("tasa preferencial", () => {
     expect(confirmarOperacion(ctx, CAJERO, op.id)).toMatchObject({ estado: "CONFIRMADA", autorizadoPor: SUPERVISOR.id });
   });
 
-  it("editar el borrador quita la autorización", () => {
+  it("cambiar el monto o la tasa pedida quita la autorización: el supervisor aprobó otro precio", () => {
     const { ctx } = escenario();
     abrirConFondos(ctx, CAJERO, 1, FONDOS);
     const op = crearBorrador(ctx, CAJERO, { ...VENTA_USD_100, tasaSolicitadaE6: 950_000_000n });
-    autorizarTasa(ctx, SUPERVISOR, op.id);
 
+    autorizarTasa(ctx, SUPERVISOR, op.id);
     expect(editarBorrador(ctx, CAJERO, op.id, { montoDivisa: 20_000n })).toMatchObject({ esPreferencial: true, autorizadoPor: null });
+
+    autorizarTasa(ctx, SUPERVISOR, op.id);
+    expect(editarBorrador(ctx, CAJERO, op.id, { tasaSolicitadaE6: 951_000_000n })).toMatchObject({ esPreferencial: true, autorizadoPor: null });
+  });
+
+  it("agregar el folio al confirmar conserva la autorización: el precio no cambió", () => {
+    const { ctx, folio } = escenario();
+    abrirConFondos(ctx, CAJERO, 1, FONDOS);
+    const op = crearBorrador(ctx, CAJERO, { ...VENTA_USD_100, tasaSolicitadaE6: 950_000_000n });
+    const autorizada = autorizarTasa(ctx, SUPERVISOR, op.id);
+
+    const conFolio = editarBorrador(ctx, CAJERO, op.id, { ...folio(), observacion: "Boleta emitida al final" });
+
+    expect(conFolio).toMatchObject({ autorizadoPor: SUPERVISOR.id, autorizadoEn: autorizada.autorizadoEn, montoBase: 95_000n });
+    expect(confirmarOperacion(ctx, CAJERO, op.id)).toMatchObject({ estado: "CONFIRMADA", autorizadoPor: SUPERVISOR.id });
   });
 
   it("no se aleja de la pizarra más que la desviación máxima", () => {
