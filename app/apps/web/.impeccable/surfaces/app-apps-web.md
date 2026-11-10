@@ -32,3 +32,11 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 ## Vuelta 3 (sesión 057): profesional tipo Office — elegida la B y aplicada
 
 Alonso pide estructura de software de escritorio sin perder la temática: paneles con título y recuadro (grupos rotulados), grillas tipo Excel (líneas, encabezado fijo, cebra, fila elegida con contorno amarillo), barra de estado abajo (turno, caja, usuario, conexión, vigencia de la pizarra, hora) y barra de comandos arriba con los atajos. La pizarra pasa a ser una tabla dentro del letrero verde: Divisa | Compra | Venta | Cambio, con la fila que cambió contorneada en amarillo. Comps en `.impeccable/mocks/office/` (A riel + barra, B pestañas de cinta —recomendado—, C pizarra acoplada) y la lámina `comparacion.png`. El portal `/mi` no cambia. Alonso eligió la **B** (pestañas de cinta), la densidad compacta (filas de 32 px), el teléfono igual que antes y el radio de panel de 6 px; está aplicada en todas las pantallas del personal (rama `front`). El FIRST VIEWPORT de escritorio es ahora: barra de título y pestañas sobre asfalto, la cinta, la pizarra-tabla a todo el ancho, el registro de 400 px y el libro, y la barra de estado. Usuarios y Auditoría quedan como pestañas solo para el administrador.
+
+## Vuelta 3, sesión 059 (2026-11-09): letreros apagados (A3) e IBM Plex (B1)
+
+Alonso prefirió nuestro front frente al de Martín, pero los colores de los letreros por pestaña le parecieron «impertinentes» y pidió opciones de fuente (lámina `.impeccable/review/opciones-color-fuente/`). Eligió:
+- **A3**: cada letrero conserva el tono de su función, con la croma baja y tinta y filete blancos (`--letrero-*` en `tokens.css`). El cierre pasa a ocre (H78), porque el H85 del amarillo apagado se ve caqui. El amarillo queda para los avisos (foco, la tasa que cambió y el descuadre, que de noche sigue siendo una placa amarilla).
+- **B1**: IBM Plex Sans + IBM Plex Mono (`@fontsource`, latin). Llegan a 700, así que los 800/900 pasan a 700.
+
+Esto reemplaza, en OWN-WORLD, «verde vial en la pizarra», «amarillo Cierre» y «Overpass y Overpass Mono». Antes y después: `.impeccable/review/aplicado-a3-b1/`.

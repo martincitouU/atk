@@ -9,15 +9,20 @@
       "usd-letrero": { "role": "secondary", "displayName": "Punto USD en el letrero", "canonical": "#58c47f", "oscuro": "#58c47f", "tonalRamp": null, "uso": "punto de la divisa dentro de la pizarra verde, con anillo blanco (vuelta 3)" },
       "ars-letrero": { "role": "secondary", "displayName": "Punto ARS en el letrero", "canonical": "#6cb8ec", "oscuro": "#6cb8ec", "tonalRamp": null, "uso": "punto de la divisa dentro de la pizarra verde, con anillo blanco (vuelta 3)" },
       "eur-letrero": { "role": "secondary", "displayName": "Punto EUR en el letrero", "canonical": "#8f9ef5", "oscuro": "#8f9ef5", "tonalRamp": null, "uso": "punto de la divisa dentro de la pizarra verde, con anillo blanco (vuelta 3)" },
+      "letrero-ventanilla": { "role": "secondary", "displayName": "Verde Pizarra", "canonical": "#37584a", "oscuro": "#37584a", "tonalRamp": null, "uso": "letrero de la Ventanilla (pizarra) y cuadro de su pestaña (vuelta 3, A3: tono de función con croma baja; tinta y filete blancos 7,9:1)" },
+      "letrero-cierre": { "role": "secondary", "displayName": "Ocre", "canonical": "#7b5e2e", "oscuro": "#7b5e2e", "tonalRamp": null, "uso": "letrero del Cierre y cuadro de su pestaña; H78, no el H85 del amarillo, que apagado se vuelve caqui (vuelta 3, A3: tono de función con croma baja; tinta y filete blancos 6,0:1)" },
+      "letrero-jornada": { "role": "secondary", "displayName": "Café", "canonical": "#624a3c", "oscuro": "#624a3c", "tonalRamp": null, "uso": "letrero de la Jornada y cuadro de su pestaña (vuelta 3, A3: tono de función con croma baja; tinta y filete blancos 8,2:1)" },
+      "letrero-clientes": { "role": "secondary", "displayName": "Azul Pizarra", "canonical": "#40506c", "oscuro": "#40506c", "tonalRamp": null, "uso": "cartel de Clientes y cuadro de su pestaña; subtítulo #d6dfec (vuelta 3, A3: tono de función con croma baja; tinta y filete blancos 8,1:1)" },
+      "letrero-config": { "role": "secondary", "displayName": "Gris", "canonical": "#4f575b", "oscuro": "#4f575b", "tonalRamp": null, "uso": "cartel de Configuración, Usuarios y Auditoría; subtítulo #e1e5e7 (vuelta 3, A3: tono de función con croma baja; tinta y filete blancos 7,4:1)" },
       "vial": { "role": "primary", "displayName": "Verde Vial", "canonical": "#005c45", "oscuro": "#005c45", "tonalRamp": ["#00261c", "#003d2e", "#005c45", "#0b7a5d", "#3c9a7f", "#7fbfa9", "#c3e2d6", "#e1efe9"] },
       "vial-hi": { "role": "primary", "displayName": "Verde Vial Encendido", "canonical": "#0b7a5d", "oscuro": "#0b7a5d" },
       "amarillo": { "role": "secondary", "displayName": "Amarillo de Advertencia", "canonical": "#f2b705", "oscuro": "#f2b705", "tonalRamp": ["#3a2c02", "#6b5103", "#a07804", "#e3aa05", "#f2b705", "#ffd54a", "#fcf1cd", "#fff4cc"] },
       "reflejo": { "role": "tertiary", "displayName": "Reflejo", "canonical": "#ffd54a" },
       "faena": { "role": "tertiary", "displayName": "Naranja de Faena", "canonical": "#e06a1b", "oscuro": "#e06a1b" },
       "pare": { "role": "tertiary", "displayName": "Rojo PARE", "canonical": "#c8102e", "oscuro": "#f5596b" },
-      "servicios": { "role": "secondary", "displayName": "Azul Servicios", "canonical": "#1e4fa0", "oscuro": "#5b8be0", "note": "El cartel de Clientes queda en #1e4fa0 en los dos modos (--clientes-letrero)." },
-      "turismo": { "role": "secondary", "displayName": "Café Turismo", "canonical": "#7a4a2a", "oscuro": "#b98057", "note": "El letrero de la Jornada queda en #7a4a2a en los dos modos (--jornada-letrero)." },
-      "neutro": { "role": "secondary", "displayName": "Gris Neutro", "canonical": "#6b7378", "oscuro": "#7a8287", "note": "Cartel de Configuración: #5d666c claro, #4f575c oscuro (--config-letrero)." },
+      "servicios": { "role": "secondary", "displayName": "Azul Servicios", "canonical": "#1e4fa0", "oscuro": "#5b8be0", "note": "Desde la vuelta 3 (A3) el cartel de Clientes usa letrero-clientes (#40506c)." },
+      "turismo": { "role": "secondary", "displayName": "Café Turismo", "canonical": "#7a4a2a", "oscuro": "#b98057", "note": "Sigue para el riel; desde la vuelta 3 (A3) el letrero de la Jornada usa letrero-jornada (#624a3c)." },
+      "neutro": { "role": "secondary", "displayName": "Gris Neutro", "canonical": "#6b7378", "oscuro": "#7a8287", "note": "Divisa sin color propio (CLP); desde la vuelta 3 (A3) el cartel de Configuración usa letrero-config (#4f575b)." },
       "usd": { "role": "divisa", "displayName": "Destino USD", "canonical": "#2f7d4f", "oscuro": "#4fb477" },
       "ars": { "role": "divisa", "displayName": "Destino ARS", "canonical": "#3e8fc9", "oscuro": "#3e8fc9" },
       "eur": { "role": "divisa", "displayName": "Destino EUR", "canonical": "#2d3f9e", "oscuro": "#7b8cf0" },
@@ -64,7 +69,7 @@
       "codigo-divisa": { "displayName": "Código de divisa", "purpose": "USD, ARS, EUR en la pizarra." },
       "title": { "displayName": "Title", "purpose": "Cabecera de panel." },
       "body": { "displayName": "Body", "purpose": "Texto general." },
-      "control": { "displayName": "Control", "purpose": "Inputs, selects y botones (botones en 800)." },
+      "control": { "displayName": "Control", "purpose": "Inputs, selects y botones (botones en 700)." },
       "label": { "displayName": "Label", "purpose": "Cabeceras de tabla, chips de estado, rótulos de placa y pizarra, en mayúsculas." },
       "cifra-letrero": { "displayName": "Cifra de pizarra", "purpose": "Compra y venta en la pizarra." },
       "cifra-monto": { "displayName": "Cifra de monto", "purpose": "El campo de monto del registro." },
@@ -98,7 +103,7 @@
       "refersTo": "letrero",
       "description": "La pizarra de la Ventanilla: lámina verde vial con filete blanco y destinos con sus tasas.",
       "html": "<section class=\"ds-letrero\"><div class=\"ds-letrero-in\"><h2>Pizarra · pesos por unidad</h2><div class=\"ds-dest\"><b class=\"ds-cod\">USD</b><span class=\"ds-nom\">Dólar</span><span class=\"ds-t\"><span>Compra</span><b>935,00</b></span><span class=\"ds-t\"><span>Venta</span><b>952,00</b></span></div><div class=\"ds-dest ds-cambio\"><b class=\"ds-cod\">EUR</b><span class=\"ds-nom\">Euro</span><span class=\"ds-t\"><span>Compra</span><b>1.018,00</b></span><span class=\"ds-t\"><span>Venta</span><b>1.046,00</b></span><em>Cambió hace 2 min</em></div></div></section>",
-      "css": ".ds-letrero { padding: 6px; border-radius: 14px; background: var(--vial, #005c45); box-shadow: 0 2px 0 rgb(0 0 0 / 0.08), 0 10px 24px -14px rgb(0 40 30 / 0.55); color: #fff; font-family: Overpass, system-ui, sans-serif; } .ds-letrero-in { display: grid; gap: 6px; padding: 14px 22px 12px; border: 3px solid #fff; border-radius: 10px; } .ds-letrero h2 { margin: 0; font-size: 12px; font-weight: 800; letter-spacing: 0.14em; opacity: 0.85; text-transform: uppercase; } .ds-dest { display: grid; grid-template-columns: auto minmax(0,1fr) auto auto; align-items: baseline; gap: 0 12px; padding: 8px 10px; border-radius: 8px; } .ds-cod { font-size: 26px; font-weight: 900; letter-spacing: 0.02em; line-height: 1; } .ds-nom { font-size: 13px; font-weight: 600; opacity: 0.85; } .ds-t { text-align: right; } .ds-t > span { display: block; font-size: 10px; font-weight: 800; letter-spacing: 0.14em; opacity: 0.8; text-transform: uppercase; } .ds-t b { font: 700 21px/1.05 'Overpass Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; } .ds-cambio { outline: 3px solid #f2b705; outline-offset: -1px; background: rgb(242 183 5 / 0.12); cursor: pointer; } .ds-cambio:hover { background: rgb(242 183 5 / 0.18); } .ds-cambio:focus-visible { outline-color: #fff; box-shadow: 0 0 0 5px #1d2226; } .ds-cambio em { grid-column: 1 / -1; color: #ffd54a; font-style: normal; font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }"
+      "css": ".ds-letrero { padding: 6px; border-radius: 14px; background: var(--letrero-ventanilla, #37584a); box-shadow: 0 2px 0 rgb(0 0 0 / 0.08), 0 10px 24px -14px rgb(0 40 30 / 0.55); color: #fff; font-family: \"IBM Plex Sans\", system-ui, sans-serif; } .ds-letrero-in { display: grid; gap: 6px; padding: 14px 22px 12px; border: 3px solid #fff; border-radius: 10px; } .ds-letrero h2 { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.14em; opacity: 0.85; text-transform: uppercase; } .ds-dest { display: grid; grid-template-columns: auto minmax(0,1fr) auto auto; align-items: baseline; gap: 0 12px; padding: 8px 10px; border-radius: 8px; } .ds-cod { font-size: 26px; font-weight: 700; letter-spacing: 0.02em; line-height: 1; } .ds-nom { font-size: 13px; font-weight: 600; opacity: 0.85; } .ds-t { text-align: right; } .ds-t > span { display: block; font-size: 10px; font-weight: 700; letter-spacing: 0.14em; opacity: 0.8; text-transform: uppercase; } .ds-t b { font: 700 21px/1.05 'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; } .ds-cambio { outline: 3px solid #f2b705; outline-offset: -1px; background: rgb(242 183 5 / 0.12); cursor: pointer; } .ds-cambio:hover { background: rgb(242 183 5 / 0.18); } .ds-cambio:focus-visible { outline-color: #fff; box-shadow: 0 0 0 5px #1d2226; } .ds-cambio em { grid-column: 1 / -1; color: #ffd54a; font-style: normal; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }"
     },
     {
       "name": "Placa",
@@ -106,7 +111,7 @@
       "refersTo": "placa",
       "description": "La vista previa invertida que Rolando le lee al cliente.",
       "html": "<div class=\"ds-placa\"><div><span>Tasa</span><b>952,00</b></div><div><span>Cliente paga</span><b class=\"ds-total\">$428.400</b></div><div><span>Margen</span><b>$3.825</b></div></div>",
-      "css": ".ds-placa { display: grid; grid-template-columns: 0.9fr 1.3fr 0.9fr; gap: 6px; padding: 14px 16px; border-radius: 10px; background: var(--placa, #1d2226); color: var(--placa-tinta, #fff); } .ds-placa span { color: var(--placa-suave, #aeb6ba); font: 800 10px Overpass, system-ui, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; } .ds-placa b { display: block; font: 700 19px 'Overpass Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; } .ds-placa b.ds-total { font-size: 24px; }"
+      "css": ".ds-placa { display: grid; grid-template-columns: 0.9fr 1.3fr 0.9fr; gap: 6px; padding: 14px 16px; border-radius: 10px; background: var(--placa, #1d2226); color: var(--placa-tinta, #fff); } .ds-placa span { color: var(--placa-suave, #aeb6ba); font: 700 10px \"IBM Plex Sans\", system-ui, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; } .ds-placa b { display: block; font: 700 19px 'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; } .ds-placa b.ds-total { font-size: 24px; }"
     },
     {
       "name": "Botón principal",
@@ -114,7 +119,7 @@
       "refersTo": "button-primary",
       "description": "Confirmar, Entrar, Cerrar turno; lleva su tecla.",
       "html": "<button class=\"ds-btn ds-btn-prim\">Confirmar <kbd class=\"ds-kbd\">Enter</kbd></button>",
-      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 11px 16px; border: 2px solid var(--trazo, #1d2226); border-radius: 8px; background: var(--panel, #fff); color: var(--tinta, #1d2226); font: 800 15px Overpass, system-ui, sans-serif; cursor: pointer; transition: background-color 0.15s ease-out, border-color 0.15s ease-out; } .ds-btn-prim { border-color: var(--vial, #005c45); background: var(--vial, #005c45); color: #fff; } .ds-btn-prim:hover { border-color: var(--vial-hi, #0b7a5d); background: var(--vial-hi, #0b7a5d); } .ds-btn:focus-visible { outline: 3px solid #f2b705; outline-offset: 0; box-shadow: 0 0 0 5px #1d2226; } .ds-kbd { font: 700 11px/1.3 'Overpass Mono', ui-monospace, monospace; border: 1px solid #3c9a7f; border-bottom-width: 2px; border-radius: 4px; padding: 1px 5px; background: var(--vial-hi, #0b7a5d); color: #fff; }"
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 11px 16px; border: 2px solid var(--trazo, #1d2226); border-radius: 8px; background: var(--panel, #fff); color: var(--tinta, #1d2226); font: 700 15px \"IBM Plex Sans\", system-ui, sans-serif; cursor: pointer; transition: background-color 0.15s ease-out, border-color 0.15s ease-out; } .ds-btn-prim { border-color: var(--vial, #005c45); background: var(--vial, #005c45); color: #fff; } .ds-btn-prim:hover { border-color: var(--vial-hi, #0b7a5d); background: var(--vial-hi, #0b7a5d); } .ds-btn:focus-visible { outline: 3px solid #f2b705; outline-offset: 0; box-shadow: 0 0 0 5px #1d2226; } .ds-kbd { font: 700 11px/1.3 'IBM Plex Mono', ui-monospace, monospace; border: 1px solid #3c9a7f; border-bottom-width: 2px; border-radius: 4px; padding: 1px 5px; background: var(--vial-hi, #0b7a5d); color: #fff; }"
     },
     {
       "name": "Botón secundario",
@@ -122,7 +127,7 @@
       "refersTo": "button-secondary",
       "description": "Borrador, Limpiar y acciones de apoyo.",
       "html": "<button class=\"ds-btn-sec\">Borrador <kbd class=\"ds-kbd-sec\">B</kbd></button>",
-      "css": ".ds-btn-sec { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 11px 16px; border: 2px solid var(--trazo, #1d2226); border-radius: 8px; background: var(--panel, #fff); color: var(--tinta, #1d2226); font: 800 15px Overpass, system-ui, sans-serif; cursor: pointer; transition: background-color 0.15s ease-out; } .ds-btn-sec:hover { background: var(--lamina, #f4f4ef); } .ds-btn-sec:focus-visible { outline: 3px solid #f2b705; box-shadow: 0 0 0 5px #1d2226; } .ds-kbd-sec { font: 700 11px/1.3 'Overpass Mono', ui-monospace, monospace; border: 1px solid #c7cac1; border-bottom-width: 2px; border-radius: 4px; padding: 1px 5px; background: #f7f7f3; color: #1d2226; }"
+      "css": ".ds-btn-sec { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 11px 16px; border: 2px solid var(--trazo, #1d2226); border-radius: 8px; background: var(--panel, #fff); color: var(--tinta, #1d2226); font: 700 15px \"IBM Plex Sans\", system-ui, sans-serif; cursor: pointer; transition: background-color 0.15s ease-out; } .ds-btn-sec:hover { background: var(--lamina, #f4f4ef); } .ds-btn-sec:focus-visible { outline: 3px solid #f2b705; box-shadow: 0 0 0 5px #1d2226; } .ds-kbd-sec { font: 700 11px/1.3 'IBM Plex Mono', ui-monospace, monospace; border: 1px solid #c7cac1; border-bottom-width: 2px; border-radius: 4px; padding: 1px 5px; background: #f7f7f3; color: #1d2226; }"
     },
     {
       "name": "Botón de reverso",
@@ -130,7 +135,7 @@
       "refersTo": "button-peligro",
       "description": "La única acción en rojo PARE: reversar una operación.",
       "html": "<button class=\"ds-btn-peligro\">Reversar operación</button>",
-      "css": ".ds-btn-peligro { min-height: 44px; padding: 11px 16px; border: 2px solid var(--peligro-fondo, #c8102e); border-radius: 8px; background: var(--peligro-fondo, #c8102e); color: var(--peligro-tinta, #fff); font: 800 15px Overpass, system-ui, sans-serif; cursor: pointer; } .ds-btn-peligro:hover { filter: brightness(0.92); } .ds-btn-peligro:focus-visible { outline: 3px solid #f2b705; box-shadow: 0 0 0 5px #1d2226; }"
+      "css": ".ds-btn-peligro { min-height: 44px; padding: 11px 16px; border: 2px solid var(--peligro-fondo, #c8102e); border-radius: 8px; background: var(--peligro-fondo, #c8102e); color: var(--peligro-tinta, #fff); font: 700 15px \"IBM Plex Sans\", system-ui, sans-serif; cursor: pointer; } .ds-btn-peligro:hover { filter: brightness(0.92); } .ds-btn-peligro:focus-visible { outline: 3px solid #f2b705; box-shadow: 0 0 0 5px #1d2226; }"
     },
     {
       "name": "Segmentado Compra/Venta",
@@ -138,7 +143,7 @@
       "refersTo": "segmentado-activo",
       "description": "Dos mitades con su tecla; la activa en asfalto.",
       "html": "<div class=\"ds-seg\"><button aria-pressed=\"false\">Compra</button><button aria-pressed=\"true\">Venta</button></div>",
-      "css": ".ds-seg { display: grid; grid-template-columns: 1fr 1fr; overflow: hidden; border: 2px solid var(--trazo, #1d2226); border-radius: 8px; } .ds-seg button { min-height: 40px; padding: 9px; border: 0; background: var(--panel, #fff); color: var(--tinta, #1d2226); font: 800 15px Overpass, system-ui, sans-serif; cursor: pointer; transition: background-color 0.15s ease-out; } .ds-seg button:hover { background: var(--lamina, #f4f4ef); } .ds-seg button[aria-pressed=\"true\"] { background: var(--activo-fondo, #1d2226); color: var(--activo-tinta, #fff); } .ds-seg button:focus-visible { outline: 3px solid #f2b705; outline-offset: -5px; box-shadow: inset 0 0 0 2px #1d2226; }"
+      "css": ".ds-seg { display: grid; grid-template-columns: 1fr 1fr; overflow: hidden; border: 2px solid var(--trazo, #1d2226); border-radius: 8px; } .ds-seg button { min-height: 40px; padding: 9px; border: 0; background: var(--panel, #fff); color: var(--tinta, #1d2226); font: 700 15px \"IBM Plex Sans\", system-ui, sans-serif; cursor: pointer; transition: background-color 0.15s ease-out; } .ds-seg button:hover { background: var(--lamina, #f4f4ef); } .ds-seg button[aria-pressed=\"true\"] { background: var(--activo-fondo, #1d2226); color: var(--activo-tinta, #fff); } .ds-seg button:focus-visible { outline: 3px solid #f2b705; outline-offset: -5px; box-shadow: inset 0 0 0 2px #1d2226; }"
     },
     {
       "name": "Campo de monto",
@@ -146,7 +151,7 @@
       "refersTo": "input-monto",
       "description": "El monto del registro: cifra Mono de 28 px a la derecha, con borde de trazo.",
       "html": "<label class=\"ds-label\">Monto en dólares<input class=\"ds-monto\" inputmode=\"decimal\" value=\"450,00\"></label>",
-      "css": ".ds-label { display: flex; flex-direction: column; gap: 5px; color: var(--suave, #5d666c); font: 700 12px Overpass, system-ui, sans-serif; letter-spacing: 0.02em; } .ds-monto { min-height: 44px; padding: 8px 12px; border: 2px solid var(--trazo, #1d2226); border-radius: 8px; background: var(--panel, #fff); color: var(--tinta, #1d2226); font: 700 28px 'Overpass Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; text-align: right; } .ds-monto:focus-visible { outline: 3px solid #f2b705; outline-offset: 0; box-shadow: 0 0 0 5px #1d2226; } .ds-monto[aria-invalid=\"true\"] { border-color: var(--pare, #c8102e); }"
+      "css": ".ds-label { display: flex; flex-direction: column; gap: 5px; color: var(--suave, #5d666c); font: 700 12px \"IBM Plex Sans\", system-ui, sans-serif; letter-spacing: 0.02em; } .ds-monto { min-height: 44px; padding: 8px 12px; border: 2px solid var(--trazo, #1d2226); border-radius: 8px; background: var(--panel, #fff); color: var(--tinta, #1d2226); font: 700 28px 'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; text-align: right; } .ds-monto:focus-visible { outline: 3px solid #f2b705; outline-offset: 0; box-shadow: 0 0 0 5px #1d2226; } .ds-monto[aria-invalid=\"true\"] { border-color: var(--pare, #c8102e); }"
     },
     {
       "name": "Chips de estado",
@@ -154,15 +159,15 @@
       "refersTo": "estado-ok",
       "description": "Confirmada, borrador y reversada en el libro y la Jornada.",
       "html": "<span class=\"ds-est ds-ok\">Confirmada</span> <span class=\"ds-est ds-obra\">Borrador</span> <span class=\"ds-est ds-rev\">Reversada</span>",
-      "css": ".ds-est { display: inline-block; padding: 3px 8px; border-radius: 4px; font: 800 11px Overpass, system-ui, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; } .ds-ok { background: var(--ok-fondo, #e1efe9); color: var(--ok-tinta, #005c45); } .ds-obra { background: var(--obra-fondo, #fce9da); color: var(--obra-tinta, #8a3d0b); } .ds-rev { background: var(--rev-fondo, #fbe3e6); color: var(--rev-tinta, #c8102e); }"
+      "css": ".ds-est { display: inline-block; padding: 3px 8px; border-radius: 4px; font: 700 11px \"IBM Plex Sans\", system-ui, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; } .ds-ok { background: var(--ok-fondo, #e1efe9); color: var(--ok-tinta, #005c45); } .ds-obra { background: var(--obra-fondo, #fce9da); color: var(--obra-tinta, #8a3d0b); } .ds-rev { background: var(--rev-fondo, #fbe3e6); color: var(--rev-tinta, #c8102e); }"
     },
     {
       "name": "Riel",
       "kind": "nav",
       "refersTo": "riel",
       "description": "Navegación de asfalto con cuadro de color de función y tecla por sección.",
-      "html": "<nav class=\"ds-riel\"><a href=\"#\" aria-current=\"page\"><i style=\"background:#005c45\"></i>Ventanilla<kbd>F1</kbd></a><a href=\"#\"><i style=\"background:#f2b705\"></i>Cierre del día<kbd>F2</kbd></a><a href=\"#\"><i style=\"background:#7a4a2a\"></i>Jornada<kbd>F3</kbd></a><a href=\"#\"><i style=\"background:#1e4fa0\"></i>Clientes<kbd>F4</kbd></a></nav>",
-      "css": ".ds-riel { display: flex; flex-direction: column; gap: 2px; width: 208px; padding: 14px 0; background: #1d2226; color: #e9eae4; font-family: Overpass, system-ui, sans-serif; } .ds-riel a { display: flex; align-items: center; gap: 12px; padding: 11px 22px; color: inherit; font-size: 14px; font-weight: 700; letter-spacing: 0.02em; text-decoration: none; transition: background-color 0.15s ease-out; } .ds-riel a:hover, .ds-riel a[aria-current=\"page\"] { background: #2a3035; } .ds-riel a[aria-current=\"page\"] { color: #fff; } .ds-riel a:focus-visible { outline: 3px solid #f2b705; outline-offset: -5px; box-shadow: inset 0 0 0 2px #1d2226; } .ds-riel i { flex: none; width: 14px; height: 14px; border: 2px solid #e9eae4; border-radius: 3px; } .ds-riel a[aria-current=\"page\"] i { outline: 2px solid #e9eae4; outline-offset: 2px; } .ds-riel kbd { margin-left: auto; font: 600 11px/1.3 'Overpass Mono', ui-monospace, monospace; border: 1px solid #c7cac1; border-bottom-width: 2px; border-radius: 4px; padding: 1px 5px; background: #e2e4de; color: #3f474c; }"
+      "html": "<nav class=\"ds-riel\"><a href=\"#\" aria-current=\"page\"><i style=\"background:#37584a\"></i>Ventanilla<kbd>F1</kbd></a><a href=\"#\"><i style=\"background:#7b5e2e\"></i>Cierre del día<kbd>F2</kbd></a><a href=\"#\"><i style=\"background:#624a3c\"></i>Jornada<kbd>F3</kbd></a><a href=\"#\"><i style=\"background:#40506c\"></i>Clientes<kbd>F4</kbd></a></nav>",
+      "css": ".ds-riel { display: flex; flex-direction: column; gap: 2px; width: 208px; padding: 14px 0; background: #1d2226; color: #e9eae4; font-family: \"IBM Plex Sans\", system-ui, sans-serif; } .ds-riel a { display: flex; align-items: center; gap: 12px; padding: 11px 22px; color: inherit; font-size: 14px; font-weight: 700; letter-spacing: 0.02em; text-decoration: none; transition: background-color 0.15s ease-out; } .ds-riel a:hover, .ds-riel a[aria-current=\"page\"] { background: #2a3035; } .ds-riel a[aria-current=\"page\"] { color: #fff; } .ds-riel a:focus-visible { outline: 3px solid #f2b705; outline-offset: -5px; box-shadow: inset 0 0 0 2px #1d2226; } .ds-riel i { flex: none; width: 14px; height: 14px; border: 2px solid #e9eae4; border-radius: 3px; } .ds-riel a[aria-current=\"page\"] i { outline: 2px solid #e9eae4; outline-offset: 2px; } .ds-riel kbd { margin-left: auto; font: 600 11px/1.3 'IBM Plex Mono', ui-monospace, monospace; border: 1px solid #c7cac1; border-bottom-width: 2px; border-radius: 4px; padding: 1px 5px; background: #e2e4de; color: #3f474c; }"
     },
     {
       "name": "Panel",
@@ -170,31 +175,31 @@
       "refersTo": "panel",
       "description": "Contenedor blanco plano con cabecera: registro, libro, saldos.",
       "html": "<section class=\"ds-panel\"><header><h2>Libro del día</h2><span>6 operaciones</span></header><p>Contenido</p></section>",
-      "css": ".ds-panel { border: 1px solid var(--linea, #d9dbd3); border-radius: 10px; background: var(--panel, #fff); color: var(--tinta, #1d2226); font-family: Overpass, system-ui, sans-serif; } .ds-panel header { display: flex; justify-content: space-between; align-items: baseline; gap: 4px 12px; padding: 14px 18px 10px; border-bottom: 1px solid var(--linea, #d9dbd3); } .ds-panel h2 { margin: 0; font-size: 15px; font-weight: 800; letter-spacing: 0.01em; } .ds-panel header span { color: var(--suave, #5d666c); font-size: 12px; font-weight: 600; } .ds-panel p { margin: 0; padding: 14px 18px; font-size: 14px; }"
+      "css": ".ds-panel { border: 1px solid var(--linea, #d9dbd3); border-radius: 10px; background: var(--panel, #fff); color: var(--tinta, #1d2226); font-family: \"IBM Plex Sans\", system-ui, sans-serif; } .ds-panel header { display: flex; justify-content: space-between; align-items: baseline; gap: 4px 12px; padding: 14px 18px 10px; border-bottom: 1px solid var(--linea, #d9dbd3); } .ds-panel h2 { margin: 0; font-size: 15px; font-weight: 700; letter-spacing: 0.01em; } .ds-panel header span { color: var(--suave, #5d666c); font-size: 12px; font-weight: 600; } .ds-panel p { margin: 0; padding: 14px 18px; font-size: 14px; }"
     }
   ],
   "narrative": {
     "northStar": "La Carretera Austral",
-    "overview": "La aplicación de la ventanilla se lee como la señalética vial chilena. Cada sección tiene su letrero: una lámina de color plano con un filete interior blanco (o de tinta) redondeado, letras Overpass gruesas y cifras en Overpass Mono tabular. Las divisas son destinos, con un color fijo cada una, y sus tasas son las distancias, legibles de un vistazo. Alrededor del letrero todo es lámina gris clara, paneles blancos con líneas finas y un riel de asfalto a la izquierda: sin tarjetas de KPI, sin acento azul genérico, sin gradientes.\n\nLa densidad es la de una herramienta de trabajo: 80 a 150 operaciones al día por teclado. Cada acción tiene su tecla visible (`kbd`), los montos se alinean en columnas tabulares y la vista previa es una placa invertida que se lee en voz alta al cliente. De noche son letreros bajo los focos: el asfalto se hunde, los letreros conservan su color y los blancos reflejan; la placa, la única lámina invertida, se aclara.",
+    "overview": "La aplicación de la ventanilla se lee como la señalética vial chilena. Cada sección tiene su letrero: una lámina en el tono apagado de su función con un filete interior blanco redondeado, letras IBM Plex Sans en negrita y cifras en IBM Plex Mono tabular. Las divisas son destinos, con un color fijo cada una, y sus tasas son las distancias, legibles de un vistazo. Alrededor del letrero todo es lámina gris clara, paneles blancos con líneas finas y un riel de asfalto a la izquierda: sin tarjetas de KPI, sin acento azul genérico, sin gradientes.\n\nLa densidad es la de una herramienta de trabajo: 80 a 150 operaciones al día por teclado. Cada acción tiene su tecla visible (`kbd`), los montos se alinean en columnas tabulares y la vista previa es una placa invertida que se lee en voz alta al cliente. De noche son letreros bajo los focos: el asfalto se hunde, los letreros conservan su color y los blancos reflejan; la placa, la única lámina invertida, se aclara.",
     "keyCharacteristics": [
-      "Un letrero por sección en su color de función, con filete interior y radio de 14 px.",
-      "Overpass para palabras y Overpass Mono tabular para toda cifra de dinero.",
+      "Un letrero por sección en el tono apagado de su función, con filete interior blanco y radio de 14 px.",
+      "IBM Plex Sans para palabras e IBM Plex Mono tabular para toda cifra de dinero.",
       "Un color fijo por divisa, siempre como un punto de 9–10 px junto al código.",
       "Amarillo para lo que cambió o no cuadra, naranja de faena para borradores, rojo PARE para el reverso.",
       "Plano por defecto: la sombra solo la llevan los letreros y lo que flota (reverso, diálogo).",
       "Foco amarillo con canto de asfalto, visible sobre cualquier superficie."
     ],
     "rules": [
-      { "name": "The Letrero Rule", "body": "El café turismo, el azul servicios y el gris de Configuración aparecen solo en el letrero de su sección y en su cuadro del riel. El verde vial y el amarillo suman únicamente los papeles listados arriba (botón principal y confirmada; advertencia, foco y selección). Ningún color de función tiñe paneles, fondos ni encabezados.", "section": "colors" },
+      { "name": "The Letrero Rule", "body": "Los tonos letrero-* aparecen solo en el letrero de su sección y en el cuadro de su pestaña. El verde vial y el amarillo suman únicamente los papeles listados arriba (botón principal y confirmada; advertencia, foco y selección). Ningún color de función tiñe paneles, fondos ni encabezados.", "section": "colors" },
       { "name": "The Destino Rule", "body": "Cada divisa tiene un solo color, en todas las pantallas, siempre como punto o barra junto a su código. Una divisa nueva sin token cae en `neutro`.", "section": "colors" },
       { "name": "The Señal de Estado Rule", "body": "Amarillo = cambió o no cuadra; naranja de faena = borrador; rojo PARE = reversado o error. El color nunca va solo: cada aviso lleva ícono o texto que dice el tono.", "section": "colors" },
-      { "name": "The Cifra Tabular Rule", "body": "Todo monto, tasa, folio u hora va en Overpass Mono con `tabular-nums` y alineado a la derecha en tablas. Ninguna cifra de dinero va en Overpass.", "section": "typography" },
+      { "name": "The Cifra Tabular Rule", "body": "Todo monto, tasa, folio u hora va en IBM Plex Mono con `tabular-nums` y alineado a la derecha en tablas. Ninguna cifra de dinero va en IBM Plex Sans.", "section": "typography" },
       { "name": "The Leyenda Vial Rule", "body": "Las mayúsculas espaciadas son leyenda de letrero o cabecera de columna: rotulan una cifra o una columna que está ahí mismo. No van sobre un título como antetítulo.", "section": "typography" },
       { "name": "The Flat Panel Rule", "body": "Los paneles, tablas, campos y botones no llevan sombra. La profundidad se marca con el borde y el cambio de superficie.", "section": "elevation" }
     ],
     "dos": [
-      "Do abrir cada pantalla con su letrero en su color de función, con filete interior y la sombra del letrero.",
-      "Do escribir toda cifra de dinero en Overpass Mono tabular, con `formatearMonto`/`formatearTasa`.",
+      "Do abrir cada pantalla con su letrero en el tono apagado de su función, con filete interior y la sombra del letrero.",
+      "Do escribir toda cifra de dinero en IBM Plex Mono tabular, con `formatearMonto`/`formatearTasa`.",
       "Do mostrar la tecla de cada acción con `kbd` junto a su rótulo.",
       "Do usar el foco amarillo con canto de asfalto (3 px + 5 px) y medir 3:1 en cada superficie donde aparezca.",
       "Do acompañar cada color de estado con ícono o palabra (Phosphor en SVG, peso bold, 14–18 px).",

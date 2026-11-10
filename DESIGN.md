@@ -11,6 +11,11 @@ colors:
   servicios: "#1e4fa0"
   turismo: "#7a4a2a"
   neutro: "#6b7378"
+  letrero-ventanilla: "#37584a"
+  letrero-cierre: "#7b5e2e"
+  letrero-jornada: "#624a3c"
+  letrero-clientes: "#40506c"
+  letrero-config: "#4f575b"
   usd: "#2f7d4f"
   ars: "#3e8fc9"
   eur: "#2d3f9e"
@@ -43,60 +48,60 @@ colors:
   kbd-borde: "#c7cac1"
 typography:
   marca:
-    fontFamily: "Overpass, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
     fontSize: "46px"
-    fontWeight: 900
+    fontWeight: 700
     lineHeight: 1
     letterSpacing: "0.04em"
   letrero:
-    fontFamily: "Overpass, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
     fontSize: "24px"
-    fontWeight: 900
+    fontWeight: 700
     lineHeight: 1.1
     letterSpacing: "0.04em"
   codigo-divisa:
-    fontFamily: "Overpass, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
     fontSize: "26px"
-    fontWeight: 900
+    fontWeight: 700
     lineHeight: 1
     letterSpacing: "0.02em"
   title:
-    fontFamily: "Overpass, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
     fontSize: "15px"
-    fontWeight: 800
+    fontWeight: 700
     letterSpacing: "0.01em"
   body:
-    fontFamily: "Overpass, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
     fontSize: "14px"
     fontWeight: 400
     lineHeight: 1.4
   control:
-    fontFamily: "Overpass, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
     fontSize: "15px"
     fontWeight: 600
   label:
-    fontFamily: "Overpass, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
     fontSize: "11px"
-    fontWeight: 800
+    fontWeight: 700
     letterSpacing: "0.1em"
   cifra-letrero:
-    fontFamily: "Overpass Mono, ui-monospace, monospace"
+    fontFamily: "IBM Plex Mono, ui-monospace, monospace"
     fontSize: "21px"
     fontWeight: 700
     lineHeight: 1.05
     fontFeature: "tnum"
   cifra-monto:
-    fontFamily: "Overpass Mono, ui-monospace, monospace"
+    fontFamily: "IBM Plex Mono, ui-monospace, monospace"
     fontSize: "28px"
     fontWeight: 700
     fontFeature: "tnum"
   cifra:
-    fontFamily: "Overpass Mono, ui-monospace, monospace"
+    fontFamily: "IBM Plex Mono, ui-monospace, monospace"
     fontSize: "17px"
     fontWeight: 700
     fontFeature: "tnum"
   tecla:
-    fontFamily: "Overpass Mono, ui-monospace, monospace"
+    fontFamily: "IBM Plex Mono, ui-monospace, monospace"
     fontSize: "11px"
     fontWeight: 700
     lineHeight: 1.3
@@ -119,7 +124,7 @@ spacing:
   registro: "400px"
 components:
   letrero:
-    backgroundColor: "{colors.vial}"
+    backgroundColor: "{colors.letrero-ventanilla}"
     textColor: "#ffffff"
     rounded: "{rounded.letrero}"
     padding: "6px"
@@ -220,13 +225,13 @@ Fuente normativa: `app/apps/web/src/estilos/tokens.css` (claro en `:root`, oscur
 
 **Creative North Star: "La Carretera Austral"**
 
-La aplicación de la ventanilla se lee como la señalética vial chilena. Cada sección tiene su letrero: una lámina de color plano con un filete interior blanco (o de tinta) redondeado, letras Overpass gruesas y cifras en Overpass Mono tabular. Las divisas son destinos, con un color fijo cada una, y sus tasas son las distancias, legibles de un vistazo. Alrededor del letrero todo es lámina gris clara y paneles blancos con líneas finas, dentro de la estructura de un programa de escritorio (vuelta 3, 2026-11-08): barra de título y pestañas de sección sobre asfalto, una cinta de comandos con grupos rotulados, paneles con barra de título, grillas compactas como una planilla y una barra de estado al pie. Sin tarjetas de KPI, sin acento azul genérico, sin gradientes; cada dato va rotulado y enmarcado.
+La aplicación de la ventanilla se lee como la señalética vial chilena. Cada sección tiene su letrero: una lámina en el tono de su función, apagado (croma baja; vuelta 3, A3), con un filete interior blanco redondeado, letras IBM Plex Sans en negrita y cifras en IBM Plex Mono tabular. Las divisas son destinos, con un color fijo cada una, y sus tasas son las distancias, legibles de un vistazo. Alrededor del letrero todo es lámina gris clara y paneles blancos con líneas finas, dentro de la estructura de un programa de escritorio (vuelta 3, 2026-11-08): barra de título y pestañas de sección sobre asfalto, una cinta de comandos con grupos rotulados, paneles con barra de título, grillas compactas como una planilla y una barra de estado al pie. Sin tarjetas de KPI, sin acento azul genérico, sin gradientes; cada dato va rotulado y enmarcado.
 
 La densidad es la de una herramienta de trabajo: 80 a 150 operaciones al día por teclado. Cada acción tiene su tecla visible (`kbd`), los montos se alinean en columnas tabulares y la vista previa es una placa invertida que se lee en voz alta al cliente. De noche son letreros bajo los focos: el asfalto se hunde, los letreros conservan su color y los blancos reflejan; la placa, la única lámina invertida, se aclara.
 
 **Key Characteristics:**
-- Un letrero por sección en su color de función, con filete interior y radio de 14 px.
-- Overpass para palabras y Overpass Mono tabular para toda cifra de dinero.
+- Un letrero por sección en el tono apagado de su función, con filete interior blanco y radio de 14 px.
+- IBM Plex Sans para palabras e IBM Plex Mono tabular para toda cifra de dinero.
 - Un color fijo por divisa, siempre como un punto de 9–10 px junto al código.
 - Amarillo para lo que cambió o no cuadra, naranja de faena para borradores, rojo PARE para el reverso.
 - Plano por defecto: la sombra solo la llevan los letreros y lo que flota (reverso, diálogo).
@@ -234,18 +239,18 @@ La densidad es la de una herramienta de trabajo: 80 a 150 operaciones al día po
 
 ## Colors
 
-Pintura de señalética sobre lámina gris: colores planos y saturados para la información vial, neutros cálidos para el trabajo.
+Pintura de señalética sobre lámina gris: colores planos para la información vial, neutros cálidos para el trabajo. Desde la vuelta 3 (A3, 2026-11-09) los letreros llevan el tono de su función con la croma baja: el código por pestaña se mantiene sin estridencia; los colores saturados quedan para los avisos.
 
 ### Primary
-- **Verde Vial** (`vial`): la pizarra de la Ventanilla, el letrero de la entrada, el botón principal («Confirmar», «Entrar», «Cerrar turno») y el cuadro de la pestaña de la Ventanilla. No cambia de valor en oscuro. Su hover es **Verde Vial Encendido** (`vial-hi`), que también es el cursor de texto en claro.
+- **Verde Vial** (`vial`): el letrero de la entrada y el botón principal («Confirmar», «Entrar», «Cerrar turno»). No cambia de valor en oscuro. Su hover es **Verde Vial Encendido** (`vial-hi`), que también es el cursor de texto en claro.
 
 ### Secondary: los colores de función
-Cada sección se reconoce por su color en el cuadro de su pestaña y en su letrero:
-- **Verde Vial** (`vial`): Ventanilla.
-- **Amarillo de Advertencia** (`amarillo`): Cierre del día; su letrero lleva tinta de asfalto y filete de asfalto. También es el foco, la selección de texto y el borde de la tasa que cambió.
-- **Café Turismo** (`turismo`): Jornada. El letrero queda en #7a4a2a en los dos modos; el token de la pestaña sube de luz de noche.
-- **Azul Servicios** (`servicios`): Clientes. El cartel queda en #1e4fa0 en los dos modos.
-- **Gris Neutro** (`neutro`): Configuración (cartel #5d666c) y la divisa sin color propio, como CLP.
+Cada sección se reconoce por su tono apagado en el cuadro de su pestaña y en su letrero (vuelta 3, A3). Todos llevan tinta y filete blancos y no cambian de noche:
+- **Verde Pizarra** (`letrero-ventanilla`, #37584a, 7,9:1): Ventanilla (la pizarra).
+- **Ocre** (`letrero-cierre`, #7b5e2e, 6,0:1): Cierre del día. Va en H78 y no en el H85 del amarillo, que con la croma baja se vuelve caqui. El **Amarillo de Advertencia** (`amarillo`) deja el letrero y queda para el foco, la selección de texto, el borde de la tasa que cambió y el descuadre.
+- **Café** (`letrero-jornada`, #624a3c, 8,2:1): Jornada. `turismo` sigue para el riel y sube de luz de noche.
+- **Azul Pizarra** (`letrero-clientes`, #40506c, 8,1:1; subtítulo #d6dfec, 6,1:1): Clientes.
+- **Gris** (`letrero-config`, #4f575b, 7,4:1; subtítulo #e1e5e7, 5,8:1): Configuración, Usuarios y Auditoría. `neutro` sigue para la divisa sin color propio, como CLP.
 
 ### Tertiary: los estados
 - **Reflejo** (`reflejo`): el aviso «cambió hace N min» dentro de la pizarra verde; el amarillo de señal no alcanzaba 4,5:1 sobre el verde teñido.
@@ -266,7 +271,7 @@ Cada sección se reconoce por su color en el cuadro de su pestaña y en su letre
 - **Destacador** (`fila-elegida`) y **aviso** (`aviso-fondo`): la fila elegida del libro y el fondo del aviso amarillo.
 
 ### Named Rules
-**The Letrero Rule.** El café turismo, el azul servicios y el gris de Configuración aparecen solo en el letrero de su sección y en el cuadro de su pestaña. El verde vial y el amarillo suman únicamente los papeles listados arriba (botón principal y confirmada; advertencia, foco y selección). Ningún color de función tiñe paneles, fondos ni encabezados.
+**The Letrero Rule.** Los tonos `letrero-*` aparecen solo en el letrero de su sección y en el cuadro de su pestaña. El verde vial y el amarillo suman únicamente los papeles listados arriba (botón principal y confirmada; advertencia, foco y selección). Ningún color de función tiñe paneles, fondos ni encabezados.
 
 **The Destino Rule.** Cada divisa tiene un solo color, en todas las pantallas, siempre como punto o barra junto a su código. Una divisa nueva sin token cae en `neutro`.
 
@@ -274,23 +279,23 @@ Cada sección se reconoce por su color en el cuadro de su pestaña y en su letre
 
 ## Typography
 
-**Display Font:** Overpass (con system-ui, sans-serif), pesos 400, 600, 700, 800 y 900, autohospedada (subconjunto latino).
-**Label/Mono Font:** Overpass Mono (con ui-monospace), pesos 500 y 700, con `tabular-nums`.
+**Display Font:** IBM Plex Sans (con system-ui, sans-serif), pesos 400, 600 y 700, autohospedada con `@fontsource` (subconjunto latino). Elegida por Alonso en la vuelta 3 (B1, 2026-11-09); antes, Overpass.
+**Label/Mono Font:** IBM Plex Mono (con ui-monospace), pesos 500 y 700, con `tabular-nums`; avanza 0,6 em por carácter.
 
-**Character:** Overpass viene de la tipografía de señalización vial: gruesa, abierta y legible a distancia. Overpass Mono pone las cifras en columnas que cuadran.
+**Character:** IBM Plex es sobria y «de software», de lectura clara en pantalla; Plex Mono pone las cifras en columnas que cuadran. Llega a 700: la jerarquía la hacen el tamaño, las mayúsculas espaciadas y el paso 400 → 600 → 700, no los pesos 800 y 900 de antes.
 
 ### Hierarchy
-- **Marca** (900, 46px, 1, 0.04em): solo «ATK» en el letrero de la entrada. En la barra de título, 17px.
-- **Letrero** (900, 22–24px, 1.1, 0.04em, mayúsculas en Cierre y Jornada): el título de cada letrero de sección.
-- **Código de divisa** (900, 26px, 1): USD, ARS, EUR en la pizarra (22px bajo 900 px).
-- **Title** (800, 15px; 17px para un título suelto fuera de panel; 18px en diálogos): cabecera de panel.
+- **Marca** (700, 46px, 1, 0.04em): solo «ATK» en el letrero de la entrada. En la barra de título, 17px.
+- **Letrero** (700, 22–24px, 1.1, 0.04em, mayúsculas en Cierre y Jornada): el título de cada letrero de sección.
+- **Código de divisa** (700, 26px, 1): USD, ARS, EUR en la pizarra (22px bajo 900 px).
+- **Title** (700, 15px; 17px para un título suelto fuera de panel; 18px en diálogos): cabecera de panel.
 - **Body** (400, 14px, 1.4): texto general. Los controles van en 600, 15px; los rótulos de campo en 700, 12px, en `suave`.
-- **Label** (800, 10–11px, 0.06–0.14em, mayúsculas): cabeceras de tabla, chips de estado, rótulos de la placa y de la pizarra («COMPRA», «VENTA»), la leyenda de un letrero.
-- **Cifras** (Overpass Mono 700, tabulares): 21px en la pizarra, 28px en el campo de monto (alineado a la derecha), 19px y 24px (total) en la placa, 17px en los totales del pie, 13.5px en el libro.
-- **Tecla** (Overpass Mono 700, 11px): cada `kbd`.
+- **Label** (700, 10–11px, 0.06–0.14em, mayúsculas): cabeceras de tabla, chips de estado, rótulos de la placa y de la pizarra («COMPRA», «VENTA»), la leyenda de un letrero.
+- **Cifras** (IBM Plex Mono 700, tabulares): 21px en la pizarra, 28px en el campo de monto (alineado a la derecha), 19px y 24px (total) en la placa, 17px en los totales del pie, 13.5px en el libro.
+- **Tecla** (IBM Plex Mono 700, 11px): cada `kbd`.
 
 ### Named Rules
-**The Cifra Tabular Rule.** Todo monto, tasa, folio u hora va en Overpass Mono con `tabular-nums` y alineado a la derecha en tablas. Ninguna cifra de dinero va en Overpass.
+**The Cifra Tabular Rule.** Todo monto, tasa, folio u hora va en IBM Plex Mono con `tabular-nums` y alineado a la derecha en tablas. Ninguna cifra de dinero va en IBM Plex Sans.
 
 **The Leyenda Vial Rule.** Las mayúsculas espaciadas son leyenda de letrero o cabecera de columna: rotulan una cifra o una columna que está ahí mismo. No van sobre un título como antetítulo.
 
@@ -330,7 +335,7 @@ Los bordes son el lenguaje de forma: 1 px para paneles y filas, 2 px para contro
 ## Components
 
 ### Letrero (componente firma)
-La pieza de identidad de cada pantalla. Lámina del color de función, filete interior del color de la tinta (blanco, o asfalto en el amarillo del Cierre), `--sombra-letrero`. En la Ventanilla es la pizarra, **como tabla** (vuelta 3): una cabecera con «Pizarra · pesos por unidad», la vigencia y «Actualizar pizarra», y una fila por divisa con sus columnas rotuladas (Divisa, Compra, Venta, Cambio), separadas por líneas blancas al 22 % como las divisiones de un letrero de destinos. La divisa lleva su punto en su tono de letrero (`usd-letrero`, `ars-letrero`, `eur-letrero`, con anillo blanco), el código en 21 px y el nombre; las tasas, en Mono de 21 px. El letrero no lleva la cebra de las grillas.
+La pieza de identidad de cada pantalla. Lámina del tono apagado de su función, filete interior blanco, `--sombra-letrero`. En la Ventanilla es la pizarra, **como tabla** (vuelta 3): una cabecera con «Pizarra · pesos por unidad», la vigencia y «Actualizar pizarra», y una fila por divisa con sus columnas rotuladas (Divisa, Compra, Venta, Cambio), separadas por líneas blancas al 22 % como las divisiones de un letrero de destinos. La divisa lleva su punto en su tono de letrero (`usd-letrero`, `ars-letrero`, `eur-letrero`, con anillo blanco), el código en 21 px y el nombre; las tasas, en Mono de 21 px. El letrero no lleva la cebra de las grillas.
 - **La tasa que cambió:** la fila queda encendida con un contorno amarillo de 3 px y fondo `rgb(242 183 5 / 0.12)`; su celda «Cambio» es el aviso en `reflejo` (con el diamante de advertencia) y es el botón que la marca como vista. Al llegar, el contorno destella blanco y amarillo una vez (1.3s, `cubic-bezier(0.16, 1, 0.3, 1)`). Al mirarlo se apaga. Con foco, el anillo del botón es blanco. Las demás dicen «Sin cambios desde las …».
 - **Botón sobre letrero:** contorno blanco de 2 px, fondo transparente, hover con blanco al 12–14 %.
 
@@ -338,7 +343,7 @@ La pieza de identidad de cada pantalla. Lámina del color de función, filete in
 La vista previa invertida: tres columnas (tasa, cliente paga, margen), rótulos de 10 px en mayúsculas y cifras de 19/24 px. Asfalto con tinta blanca en claro; lámina clara con tinta de asfalto en oscuro. Si la tasa quedó desfasada, las cifras bajan al 60 %.
 
 ### Buttons
-- **Shape:** 8 px de radio, 44 px de alto mínimo, borde de 2 px, Overpass 800 15px.
+- **Shape:** 8 px de radio, 44 px de alto mínimo, borde de 2 px, IBM Plex Sans 700 15px.
 - **Primary:** verde vial con texto blanco; la tecla dentro va en `vial-hi`. Se estira en la fila de acciones.
 - **Hover / Focus:** hover a `vial-hi` (0.15s ease-out); foco con el anillo global.
 - **Secondary:** panel blanco con borde de trazo; hover a `lamina`.
@@ -349,7 +354,7 @@ La vista previa invertida: tres columnas (tasa, cliente paga, margen), rótulos 
 Compra/Venta y gasto/retiro/ingreso: dos mitades dentro de un borde de trazo de 2 px. La activa en asfalto con tinta blanca (en oscuro, trazo claro con tinta oscura); cada mitad lleva su tecla.
 
 ### Chips de estado
-Overpass 800, 11px, 0.06em, mayúsculas, 4 px de radio: CONFIRMADA (ok), BORRADOR (obra), REVERSADA (rev).
+IBM Plex Sans 700, 11px, 0.06em, mayúsculas, 4 px de radio: CONFIRMADA (ok), BORRADOR (obra), REVERSADA (rev).
 
 ### Cards / Containers
 - **Corner Style:** 6 px.
@@ -394,7 +399,7 @@ Barras grises del tamaño de lo que viene, con un pulso de opacidad de 1.2s; sin
 
 ### Do:
 - **Do** abrir cada pantalla con su letrero en su color de función, con filete interior y la sombra del letrero.
-- **Do** escribir toda cifra de dinero en Overpass Mono tabular, con `formatearMonto`/`formatearTasa`.
+- **Do** escribir toda cifra de dinero en IBM Plex Mono tabular, con `formatearMonto`/`formatearTasa`.
 - **Do** mostrar la tecla de cada acción con `kbd` junto a su rótulo.
 - **Do** usar el foco amarillo con canto de asfalto (3 px + 5 px) y medir 3:1 en cada superficie donde aparezca.
 - **Do** acompañar cada color de estado con ícono o palabra (Phosphor en SVG, peso bold, 14–18 px).

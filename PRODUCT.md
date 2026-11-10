@@ -63,7 +63,7 @@ Es un producto configurable para casas de cambio chilenas pequeñas: las divisas
 - El nombre es **ATK**. La interfaz va en español de Chile.
 - Las referencias visuales las fijó el equipo: **el libro contable, la pizarra de tasas, la caja registradora densa (con el teclado primero) y la identidad patagónica**. Van en **claro y en oscuro**.
 - Evitar el look típico de una app hecha con IA.
-- **La estructura de un programa de escritorio, como los de Office** (decisión del 2026-11-08, vuelta 3): barra de título, pestañas de sección con su tecla, una cinta de comandos con grupos rotulados, paneles con barra de título, grillas compactas tipo planilla y una barra de estado. La identidad «Carretera Austral» vive en el color, los letreros y Overpass. Cada dato va rotulado y enmarcado: nada «suelto».
+- **La estructura de un programa de escritorio, como los de Office** (decisión del 2026-11-08, vuelta 3): barra de título, pestañas de sección con su tecla, una cinta de comandos con grupos rotulados, paneles con barra de título, grillas compactas tipo planilla y una barra de estado. La identidad «Carretera Austral» vive en el color y los letreros (desde la vuelta 3, en tonos apagados y con IBM Plex como fuente). Cada dato va rotulado y enmarcado: nada «suelto».
 
 ## Evidence on Hand
 
