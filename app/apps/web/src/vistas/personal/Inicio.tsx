@@ -6,8 +6,7 @@ import { ArrowRight, Plus, Wallet } from "lucide-react";
 import { Link } from "react-router";
 import { useCatalogo, useMonedaBase, useOperaciones, useOrdenMonedas, usePizarra, useResumen } from "../../api/consultas.ts";
 import type { Turno } from "../../api/tipos.ts";
-import { Boton, EnlaceBoton } from "../../componentes/Boton.tsx";
-import { Seleccion } from "../../componentes/Campo.tsx";
+import { EnlaceBoton } from "../../componentes/Boton.tsx";
 import { DivisaCompacta } from "../../componentes/Divisa.tsx";
 import { EncabezadoPagina } from "../../componentes/EncabezadoPagina.tsx";
 import { ConDatos, Vacio } from "../../componentes/Estados.tsx";
@@ -20,6 +19,7 @@ import { Tarjeta } from "../../componentes/Tarjeta.tsx";
 import { formatearDia, formatearHora, hoy } from "../../lib/fechas.ts";
 import { ESTADO_OPERACION, TIPO_OPERACION } from "../../lib/textos.ts";
 import { usePersonal } from "../../sesion/Sesion.tsx";
+import { AbrirTurno } from "./Caja.tsx";
 import css from "./Personal.module.css";
 
 export function Inicio() {
@@ -73,22 +73,7 @@ function MiTurno({ turno }: { turno: Turno | null }) {
     );
   }
 
-  return (
-    <Tarjeta elevada titulo="No tienes un turno abierto" descripcion="Para operar, abre un turno en una caja. Después registra el fondo inicial.">
-      <form className={css.abrirTurno} onSubmit={(e) => e.preventDefault()}>
-        <Seleccion etiqueta="Caja" defaultValue={cajas[0]?.id}>
-          {cajas.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.nombre}
-            </option>
-          ))}
-        </Seleccion>
-        <Boton type="submit" variante="primario">
-          Abrir turno
-        </Boton>
-      </form>
-    </Tarjeta>
-  );
+  return <AbrirTurno titulo="No tienes un turno abierto" descripcion="Para operar, abre un turno en una caja. Después registra el fondo inicial." />;
 }
 
 /** Cifras del día para supervisores y admin. */
