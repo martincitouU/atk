@@ -27,11 +27,12 @@ export function Dialogo({ abierto, alCerrar, titulo, descripcion, acciones, chil
     const dialogo = ref.current;
     if (!dialogo) return;
     if (abierto && !dialogo.open) {
-      // showModal no existe en el entorno de los tests (jsdom)
+      // showModal y close no existen en el entorno de los tests (jsdom)
       if (typeof dialogo.showModal === "function") dialogo.showModal();
       else dialogo.setAttribute("open", "");
     } else if (!abierto && dialogo.open) {
-      dialogo.close();
+      if (typeof dialogo.close === "function") dialogo.close();
+      else dialogo.removeAttribute("open");
     }
   }, [abierto]);
 

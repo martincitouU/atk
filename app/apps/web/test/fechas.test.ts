@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { diaSiguiente, formatearDia, formatearFechaHora, formatearHora, hoy, inicioDelDia, inicioDelMes } from "../src/lib/fechas.ts";
+import { diaSiguiente, formatearDia, formatearFechaHora, formatearHora, hoy, inicioDelDia, inicioDelMes, instanteDeHora } from "../src/lib/fechas.ts";
 
 describe("días para los filtros de la API", () => {
   it("un día empieza a medianoche de Coyhaique, también en invierno", () => {
@@ -14,6 +14,10 @@ describe("días para los filtros de la API", () => {
     expect(diaSiguiente("2026-11-30")).toBe("2026-12-01");
     expect(diaSiguiente("2026-12-31")).toBe("2027-01-01");
     expect(diaSiguiente("2028-02-28")).toBe("2028-02-29");
+  });
+
+  it("una hora del día, para el registro diferido", () => {
+    expect(instanteDeHora("2026-11-08", "14:05")).toBe("2026-11-08T14:05:00-03:00");
   });
 
   it("el inicio del mes", () => {

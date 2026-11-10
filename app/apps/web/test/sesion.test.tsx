@@ -163,3 +163,40 @@ describe("registro de clientes", () => {
     expect(mensaje).toBeTruthy();
   });
 });
+
+describe("cambiar la contraseña", () => {
+  async function cambiar(actual: string) {
+    const usuario = userEvent.setup();
+    await usuario.type(await screen.findByLabelText("Contraseña actual"), actual);
+    await usuario.type(screen.getByLabelText("Nueva contraseña"), "una clave nueva larga");
+    await usuario.type(screen.getByLabelText("Repite la nueva contraseña"), "una clave nueva larga");
+    await usuario.click(screen.getByRole("button", { name: "Cambiar contraseña" }));
+  }
+
+  it("la actual equivocada aparece junto a su campo, sin cerrar la sesión", async () => {
+    usarApi({
+      ...rutasDe("cajero"),
+      "POST /api/auth/change-password": respuesta(400, { message: "Invalid password", code: "INVALID_PASSWORD" }),
+    });
+    abrir("/perfil");
+
+    await cambiar("no es la actual");
+
+    expect(await screen.findByText("La contraseña actual no es correcta")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Mi perfil" })).toBeTruthy();
+  });
+
+  it("envía lo que pide Better Auth y confirma el cambio", async () => {
+    const api = usarApi({ ...rutasDe("cajero"), "POST /api/auth/change-password": { status: true } });
+    abrir("/perfil");
+
+    await cambiar("la clave actual");
+
+    expect(await screen.findByText(/Contraseña cambiada/)).toBeTruthy();
+    expect(api.a("POST /api/auth/change-password")[0]?.cuerpo).toEqual({
+      currentPassword: "la clave actual",
+      newPassword: "una clave nueva larga",
+      revokeOtherSessions: true,
+    });
+  });
+});

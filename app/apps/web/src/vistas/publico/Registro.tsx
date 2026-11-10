@@ -12,12 +12,13 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router";
 import { z } from "zod";
-import { enviar, ErrorApi, mensajeDe } from "../../api/cliente.ts";
+import { enviar } from "../../api/cliente.ts";
 import { Aviso } from "../../componentes/Aviso.tsx";
 import { Boton, EnlaceBoton } from "../../componentes/Boton.tsx";
 import { Entrada } from "../../componentes/Campo.tsx";
 import { useTituloPestana } from "../../componentes/EncabezadoPagina.tsx";
 import { Tarjeta } from "../../componentes/Tarjeta.tsx";
+import { errorEnFormulario } from "../../lib/formularios.ts";
 import css from "./Publico.module.css";
 
 // Lo de la API y, solo en el formulario, repetir la contraseña
@@ -27,7 +28,7 @@ const esquema = registroCliente
 
 type Valores = z.input<typeof esquema>;
 type Campo = keyof Valores;
-const CAMPOS: readonly string[] = ["nombre", "rut", "email", "contrasena"];
+const CAMPOS: readonly Campo[] = ["nombre", "rut", "email", "contrasena"];
 
 /** Los errores de la API que corresponden a un campo. */
 const CAMPO_DEL_CODIGO: Record<string, Campo> = { CORREO_EN_USO: "email", CONTRASENA_CORTA: "contrasena" };
@@ -49,12 +50,7 @@ export function Registro() {
       await enviar("/api/registro", datos);
       setCreada(true);
     } catch (e) {
-      if (!(e instanceof ErrorApi)) return setError(mensajeDe(e));
-      const campo = CAMPO_DEL_CODIGO[e.codigo];
-      if (campo) return marcarCampo(campo, { message: e.message });
-      const conCampo = e.detalles.filter((d) => CAMPOS.includes(d.campo));
-      for (const d of conCampo) marcarCampo(d.campo as Campo, { message: d.mensaje });
-      if (conCampo.length === 0) setError(e.message);
+      setError(errorEnFormulario(e, marcarCampo, CAMPOS, { porCodigo: CAMPO_DEL_CODIGO }));
     }
   });
 
