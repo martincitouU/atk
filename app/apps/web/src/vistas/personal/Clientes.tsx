@@ -4,15 +4,21 @@
 // carnet EN PERSONA y la cuenta se enlaza con la ficha del mismo RUT. Sin
 // eso, cualquiera podría registrarse con un RUT ajeno y ver sus operaciones.
 //
-// Lee de la API las fichas y las cuentas. Guardar fichas y verificar o
-// rechazar cuentas se conecta en F3.
+// Si no hay ficha con el RUT de la cuenta, la API no deja verificar: se
+// ofrece crearla con el RUT y el nombre ya escritos (van en el estado de la
+// navegación, no en la dirección: son datos personales).
 
+import { zodResolver } from "@hookform/resolvers/zod";
+import { entradaCliente, rutValido } from "@atk/shared";
 import { Plus, Search, UserCheck } from "lucide-react";
 import { useState } from "react";
-import { Link, Outlet, useParams } from "react-router";
-import { esNoExiste } from "../../api/cliente.ts";
+import { useForm } from "react-hook-form";
+import { Link, Outlet, useLocation, useNavigate, useParams } from "react-router";
+import { z } from "zod";
+import { useCrearCliente, useEditarCliente, useRechazarCuenta, useVerificarCuenta } from "../../api/acciones.ts";
+import { ErrorApi, esNoExiste, mensajeDe } from "../../api/cliente.ts";
 import { MINIMO_BUSQUEDA, useCatalogo, useCliente, useClientes, useCuentasCliente } from "../../api/consultas.ts";
-import type { CuentaCliente, TipoDocumento } from "../../api/tipos.ts";
+import type { CategoriaCliente, CuentaCliente, FichaCliente, TipoDocumento } from "../../api/tipos.ts";
 import { Aviso } from "../../componentes/Aviso.tsx";
 import { Boton, EnlaceBoton } from "../../componentes/Boton.tsx";
 import { AreaTexto, Entrada, FilaCampos, Seleccion } from "../../componentes/Campo.tsx";
@@ -27,6 +33,7 @@ import { Tabla } from "../../componentes/Tabla.tsx";
 import { Tarjeta } from "../../componentes/Tarjeta.tsx";
 import { formatearFechaHora } from "../../lib/fechas.ts";
 import { formatearPorcentaje } from "../../lib/montos.ts";
+import { errorEnFormulario } from "../../lib/formularios.ts";
 import { formatearRut } from "../../lib/rut.ts";
 import { ESTADO_CUENTA, TIPO_DOCUMENTO } from "../../lib/textos.ts";
 import { NoEncontrada } from "../NoEncontrada.tsx";
@@ -190,33 +197,103 @@ export function CuentasWeb() {
         </ConDatos>
       </Tarjeta>
 
-      <Dialogo
-        abierto={verificando !== null}
-        alCerrar={() => setVerificando(null)}
-        titulo={`Verificar a ${verificando?.nombre ?? ""}`}
-        descripcion={`Confirma que revisaste el carnet y que el RUT ${formatearRut(verificando?.rut ?? "")} es suyo. Queda registrado quién verificó y cuándo.`}
-        acciones={
-          <>
-            <Boton onClick={() => setVerificando(null)}>Cancelar</Boton>
-            <Boton variante="primario">Sí, revisé el carnet</Boton>
-          </>
-        }
-      />
-      <Dialogo
-        abierto={rechazando !== null}
-        alCerrar={() => setRechazando(null)}
-        titulo={`Rechazar la cuenta de ${rechazando?.nombre ?? ""}`}
-        descripcion="El cliente verá el motivo en su portal."
-        acciones={
-          <>
-            <Boton onClick={() => setRechazando(null)}>Cancelar</Boton>
-            <Boton variante="primario">Rechazar cuenta</Boton>
-          </>
-        }
-      >
-        <AreaTexto etiqueta="Motivo" placeholder="El carnet no coincide con el RUT registrado" />
-      </Dialogo>
+      <DialogoVerificar cuenta={verificando} alCerrar={() => setVerificando(null)} />
+      <DialogoRechazar cuenta={rechazando} alCerrar={() => setRechazando(null)} />
     </>
+  );
+}
+
+/** El cajero confirma que revisó el carnet. Sin ficha con ese RUT, ofrece crearla. */
+function DialogoVerificar({ cuenta, alCerrar }: { cuenta: CuentaCliente | null; alCerrar: () => void }) {
+  const verificar = useVerificarCuenta();
+  const navegar = useNavigate();
+  const cerrar = () => {
+    verificar.reset();
+    alCerrar();
+  };
+  const sinFicha = verificar.error instanceof ErrorApi && verificar.error.codigo === "SIN_FICHA";
+
+  return (
+    <Dialogo
+      abierto={cuenta !== null}
+      alCerrar={cerrar}
+      titulo={`Verificar a ${cuenta?.nombre ?? ""}`}
+      descripcion={`Confirma que revisaste el carnet y que el RUT ${formatearRut(cuenta?.rut ?? "")} es suyo. Queda registrado quién verificó y cuándo.`}
+      acciones={
+        <>
+          <Boton onClick={cerrar}>Cancelar</Boton>
+          <Boton variante="primario" cargando={verificar.isPending} onClick={() => cuenta && verificar.mutate(cuenta.id, { onSuccess: cerrar })}>
+            Sí, revisé el carnet
+          </Boton>
+        </>
+      }
+    >
+      {verificar.isError && (
+        <Aviso
+          tono="error"
+          acciones={
+            sinFicha && cuenta ? (
+              <Boton tamano="chico" onClick={() => navegar("/clientes/nuevo", { state: { rut: cuenta.rut, nombre: cuenta.nombre } })}>
+                Crear la ficha
+              </Boton>
+            ) : undefined
+          }
+        >
+          {mensajeDe(verificar.error)}
+        </Aviso>
+      )}
+    </Dialogo>
+  );
+}
+
+function DialogoRechazar({ cuenta, alCerrar }: { cuenta: CuentaCliente | null; alCerrar: () => void }) {
+  const rechazar = useRechazarCuenta();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<{ motivo: string }>({ defaultValues: { motivo: "" } });
+  const cerrar = () => {
+    reset();
+    rechazar.reset();
+    alCerrar();
+  };
+  const alEnviar = handleSubmit(async ({ motivo }) => {
+    if (!cuenta) return;
+    try {
+      await rechazar.mutateAsync({ id: cuenta.id, motivo: motivo.trim() });
+      cerrar();
+    } catch {
+      // el mensaje queda en rechazar.error
+    }
+  });
+
+  return (
+    <Dialogo
+      abierto={cuenta !== null}
+      alCerrar={cerrar}
+      titulo={`Rechazar la cuenta de ${cuenta?.nombre ?? ""}`}
+      descripcion="El cliente verá el motivo en su portal."
+      acciones={
+        <>
+          <Boton onClick={cerrar}>Cancelar</Boton>
+          <Boton type="submit" form="rechazar-cuenta" variante="primario" cargando={isSubmitting}>
+            Rechazar cuenta
+          </Boton>
+        </>
+      }
+    >
+      <form id="rechazar-cuenta" className={css.formulario} onSubmit={alEnviar} noValidate>
+        {rechazar.isError && <Aviso tono="error">{mensajeDe(rechazar.error)}</Aviso>}
+        <AreaTexto
+          etiqueta="Motivo"
+          placeholder="El carnet no coincide con el RUT registrado"
+          error={errors.motivo?.message}
+          {...register("motivo", { validate: (m) => m.trim() !== "" || "Escribe el motivo del rechazo" })}
+        />
+      </form>
+    </Dialogo>
   );
 }
 
@@ -239,7 +316,7 @@ export function DetalleCliente() {
         titulo={cliente.nombre}
         descripcion={`${TIPO_DOCUMENTO[cliente.tipoDocumento]} ${cliente.tipoDocumento === "RUT" ? formatearRut(cliente.numeroDocumento) : cliente.numeroDocumento}`}
         volver={{ a: "/clientes", texto: "Clientes" }}
-        acciones={<Boton>Editar ficha</Boton>}
+        acciones={<EnlaceBoton to={`/clientes/${cliente.id}/editar`}>Editar ficha</EnlaceBoton>}
       />
       {cliente.faltantesUaf.length > 0 && (
         <Aviso tono="atencion" titulo="Ficha incompleta para la UAF">
@@ -273,10 +350,38 @@ export function DetalleCliente() {
   );
 }
 
-// ---- Nuevo cliente ------------------------------------------------------------
+// ---- Nueva ficha y editar ------------------------------------------------------
+
+/** Vacío en un campo opcional es "sin dato" (null), como lo guarda la API. */
+const vacioANull = (valor: unknown) => (typeof valor === "string" && valor.trim() === "" ? null : valor);
+
+// El mismo esquema que valida la API, y el RUT revisado antes de enviar
+const esquemaCliente = entradaCliente.superRefine((c, ctx) => {
+  if (c.tipoDocumento === "RUT" && !rutValido(c.numeroDocumento)) {
+    ctx.addIssue({ code: "custom", path: ["numeroDocumento"], message: "RUT inválido: revisa el número y el dígito verificador" });
+  }
+});
+
+type ValoresCliente = z.input<typeof esquemaCliente>;
+const CAMPOS_CLIENTE = [
+  "tipoDocumento",
+  "numeroDocumento",
+  "nombre",
+  "nacionalidad",
+  "oficio",
+  "paisResidencia",
+  "domicilio",
+  "telefono",
+  "email",
+  "categoriaId",
+] as const satisfies readonly (keyof ValoresCliente)[];
 
 export function NuevoCliente() {
-  const { data: catalogo } = useCatalogo();
+  const catalogo = useCatalogo();
+  const crear = useCrearCliente();
+  const navegar = useNavigate();
+  // Desde una cuenta del portal sin ficha: el RUT y el nombre ya escritos
+  const desdeCuenta = useLocation().state as { rut?: string; nombre?: string } | null;
   return (
     <Pagina angosta>
       <EncabezadoPagina
@@ -284,49 +389,176 @@ export function NuevoCliente() {
         descripcion="Los datos que pide la UAF. Puedes completarlos después."
         volver={{ a: "/clientes", texto: "Clientes" }}
       />
-      <Tarjeta>
-        <form className={css.formulario} onSubmit={(e) => e.preventDefault()}>
-          <FilaCampos>
-            <Seleccion etiqueta="Tipo de documento" defaultValue="RUT">
-              {(Object.keys(TIPO_DOCUMENTO) as TipoDocumento[]).map((t) => (
-                <option key={t} value={t}>
-                  {TIPO_DOCUMENTO[t]}
-                </option>
-              ))}
-            </Seleccion>
-            <Entrada etiqueta="Número de documento" placeholder="12.345.678-5" />
-          </FilaCampos>
-          <Entrada etiqueta="Nombre completo" autoComplete="off" />
-          <FilaCampos>
-            <Entrada etiqueta="Nacionalidad" placeholder="CL" maxLength={2} ayuda="Código de 2 letras: CL, AR, BR…" />
-            <Entrada etiqueta="País de residencia" placeholder="CL" maxLength={2} />
-          </FilaCampos>
-          <Entrada etiqueta="Oficio o profesión" />
-          <Entrada etiqueta="Domicilio" />
-          <FilaCampos>
-            <Entrada etiqueta="Teléfono" type="tel" />
-            <Entrada etiqueta="Correo" type="email" />
-          </FilaCampos>
-          <Seleccion etiqueta="Categoría de fidelización" defaultValue="">
-            <option value="">Sin categoría</option>
-            {catalogo?.categoriasCliente.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nombre}
+      {desdeCuenta?.rut && <Aviso tono="info">Después de guardar la ficha, vuelve a Cuentas del portal para verificar la cuenta.</Aviso>}
+      <ConDatos consulta={catalogo}>
+        {(datos) => (
+          <FormularioCliente
+            categorias={datos.categoriasCliente}
+            inicial={{
+              tipoDocumento: "RUT",
+              numeroDocumento: desdeCuenta?.rut ?? "",
+              nombre: desdeCuenta?.nombre ?? "",
+              relacionPermanente: false,
+              categoriaId: null,
+            }}
+            textoGuardar="Guardar cliente"
+            cancelarA="/clientes"
+            guardar={async (entrada) => {
+              const creado = await crear.mutateAsync(entrada);
+              navegar(`/clientes/${creado.id}`);
+            }}
+          />
+        )}
+      </ConDatos>
+    </Pagina>
+  );
+}
+
+export function EditarCliente() {
+  const id = Number(useParams().id);
+  const consulta = useCliente(id);
+  const catalogo = useCatalogo();
+  const editar = useEditarCliente(id);
+  const navegar = useNavigate();
+
+  if (!Number.isInteger(id) || id <= 0 || esNoExiste(consulta.error)) return <NoEncontrada />;
+  if (consulta.isError) return <ErrorDeCarga error={consulta.error} alReintentar={() => void consulta.refetch()} />;
+  if (consulta.isPending) return <Cargando texto="Cargando la ficha…" />;
+  const cliente = consulta.data;
+
+  return (
+    <Pagina angosta>
+      <EncabezadoPagina titulo={`Editar ficha de ${cliente.nombre}`} volver={{ a: `/clientes/${id}`, texto: "Volver a la ficha" }} />
+      <ConDatos consulta={catalogo}>
+        {(datos) => (
+          <FormularioCliente
+            categorias={datos.categoriasCliente}
+            inicial={valoresDeFicha(cliente)}
+            textoGuardar="Guardar cambios"
+            cancelarA={`/clientes/${id}`}
+            guardar={async (entrada) => {
+              await editar.mutateAsync(entrada);
+              navegar(`/clientes/${id}`);
+            }}
+          />
+        )}
+      </ConDatos>
+    </Pagina>
+  );
+}
+
+function valoresDeFicha(c: FichaCliente): ValoresCliente {
+  return {
+    tipoDocumento: c.tipoDocumento,
+    numeroDocumento: c.tipoDocumento === "RUT" ? formatearRut(c.numeroDocumento) : c.numeroDocumento,
+    nombre: c.nombre,
+    nacionalidad: c.nacionalidad,
+    oficio: c.oficio,
+    paisResidencia: c.paisResidencia,
+    domicilio: c.domicilio,
+    telefono: c.telefono,
+    email: c.email,
+    relacionPermanente: c.relacionPermanente,
+    categoriaId: c.categoriaId,
+  };
+}
+
+function FormularioCliente({
+  categorias,
+  inicial,
+  textoGuardar,
+  cancelarA,
+  guardar,
+}: {
+  categorias: CategoriaCliente[];
+  inicial: ValoresCliente;
+  textoGuardar: string;
+  cancelarA: string;
+  guardar: (entrada: z.output<typeof esquemaCliente>) => Promise<void>;
+}) {
+  const [error, setError] = useState<string | null>(null);
+  const {
+    register,
+    handleSubmit,
+    setError: marcar,
+    formState: { errors, isSubmitting },
+  } = useForm<ValoresCliente, unknown, z.output<typeof esquemaCliente>>({ resolver: zodResolver(esquemaCliente), defaultValues: inicial });
+  const opcional = { setValueAs: vacioANull };
+
+  const alEnviar = handleSubmit(async (entrada) => {
+    setError(null);
+    try {
+      await guardar(entrada);
+    } catch (e) {
+      setError(
+        errorEnFormulario(e, marcar, CAMPOS_CLIENTE, {
+          porCodigo: { CLIENTE_DUPLICADO: "numeroDocumento", RUT_INVALIDO: "numeroDocumento", CATEGORIA_INVALIDA: "categoriaId" },
+        }),
+      );
+    }
+  });
+
+  return (
+    <Tarjeta>
+      {error && <Aviso tono="error">{error}</Aviso>}
+      <form className={css.formulario} onSubmit={alEnviar} noValidate>
+        <FilaCampos>
+          <Seleccion etiqueta="Tipo de documento" error={errors.tipoDocumento?.message} {...register("tipoDocumento")}>
+            {(Object.keys(TIPO_DOCUMENTO) as TipoDocumento[]).map((t) => (
+              <option key={t} value={t}>
+                {TIPO_DOCUMENTO[t]}
               </option>
             ))}
           </Seleccion>
-          <label className={css.casilla}>
-            <input type="checkbox" />
-            Relación permanente con la casa (siempre exige ficha completa)
-          </label>
-          <div className={css.acciones}>
-            <EnlaceBoton to="/clientes">Cancelar</EnlaceBoton>
-            <Boton type="submit" variante="primario">
-              Guardar cliente
-            </Boton>
-          </div>
-        </form>
-      </Tarjeta>
-    </Pagina>
+          <Entrada etiqueta="Número de documento" placeholder="12.345.678-5" error={errors.numeroDocumento?.message} {...register("numeroDocumento")} />
+        </FilaCampos>
+        <Entrada etiqueta="Nombre completo" autoComplete="off" error={errors.nombre?.message} {...register("nombre")} />
+        <FilaCampos>
+          <Entrada
+            etiqueta="Nacionalidad"
+            placeholder="CL"
+            maxLength={2}
+            ayuda="Código de 2 letras: CL, AR, BR…"
+            error={errors.nacionalidad?.message}
+            {...register("nacionalidad", opcional)}
+          />
+          <Entrada
+            etiqueta="País de residencia"
+            placeholder="CL"
+            maxLength={2}
+            error={errors.paisResidencia?.message}
+            {...register("paisResidencia", opcional)}
+          />
+        </FilaCampos>
+        <Entrada etiqueta="Oficio o profesión" error={errors.oficio?.message} {...register("oficio", opcional)} />
+        <Entrada etiqueta="Domicilio" error={errors.domicilio?.message} {...register("domicilio", opcional)} />
+        <FilaCampos>
+          <Entrada etiqueta="Teléfono" type="tel" error={errors.telefono?.message} {...register("telefono", opcional)} />
+          <Entrada etiqueta="Correo" type="email" error={errors.email?.message} {...register("email", opcional)} />
+        </FilaCampos>
+        <Seleccion
+          etiqueta="Categoría de fidelización"
+          error={errors.categoriaId?.message}
+          {...register("categoriaId", { setValueAs: (v: unknown) => (v === "" || v === null || v === undefined ? null : Number(v)) })}
+        >
+          <option value="">Sin categoría</option>
+          {categorias.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.nombre} ({formatearPorcentaje(c.descuentoMargenPctE6)} menos de margen)
+            </option>
+          ))}
+        </Seleccion>
+        <label className={css.casilla}>
+          <input type="checkbox" {...register("relacionPermanente")} />
+          Relación permanente con la casa (siempre exige ficha completa)
+        </label>
+        <div className={css.acciones}>
+          <EnlaceBoton to={cancelarA}>Cancelar</EnlaceBoton>
+          <Boton type="submit" variante="primario" cargando={isSubmitting}>
+            {textoGuardar}
+          </Boton>
+        </div>
+      </form>
+    </Tarjeta>
   );
 }
