@@ -46,7 +46,7 @@
 
 .letrero h2 {
   font-size: 14px;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -149,7 +149,7 @@ table.tasas .col-cambio {
 table.tasas .cod {
   margin-right: 10px;
   font-size: 21px;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.02em;
   vertical-align: -2px;
 }
@@ -409,7 +409,7 @@ table.tasas tr.vencida td.cifra {
   padding: 0 0 4px;
   color: var(--suave);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -458,7 +458,7 @@ fieldset.campo-divisa {
   color: var(--tinta);
   cursor: pointer;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0;
   transition: border-color 0.15s ease-out;
 }
@@ -532,7 +532,7 @@ input.monto[aria-invalid="true"] {
 
 /* Cada cifra mide su columna: el monto se achica para caber en una línea y
    nunca se parte («$5.712.000», no «$5.712.00 / 0»). --cifras lo pone el
-   componente; Overpass Mono avanza 0,616 em por carácter (se usa 0,64). */
+   componente; IBM Plex Mono avanza 0,6 em por carácter (se usa 0,64: queda aire). */
 .placa > div {
   min-width: 0;
   container-type: inline-size;
@@ -541,7 +541,7 @@ input.monto[aria-invalid="true"] {
 .placa span {
   color: var(--placa-suave);
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
@@ -589,7 +589,7 @@ input.monto[aria-invalid="true"] {
 
 /* La ficha de la UAF dentro del aviso amarillo */
 .ficha .ficha-titulo {
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .ficha label {
@@ -630,13 +630,13 @@ input.monto[aria-invalid="true"] {
 }
 
 .crear-ficha {
-  font-weight: 800;
+  font-weight: 700;
 }
 
 /* Dentro del «Ficha incompleta» rojo: el enlace va en la tinta del aviso */
 .completar-ficha {
   color: var(--tinta);
-  font-weight: 800;
+  font-weight: 700;
   white-space: nowrap;
 }
 
@@ -780,7 +780,7 @@ input.monto[aria-invalid="true"] {
 .pie dt {
   color: var(--suave);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -812,7 +812,7 @@ input.monto[aria-invalid="true"] {
 .dialogo-cab h2 {
   margin-bottom: 4px;
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .reglas {
@@ -837,7 +837,7 @@ input.monto[aria-invalid="true"] {
 .regla legend {
   padding: 0 6px;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .regla input,

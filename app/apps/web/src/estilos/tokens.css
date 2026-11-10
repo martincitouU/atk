@@ -129,8 +129,9 @@
   --radio-control: 8px;
   --sombra-letrero: 0 2px 0 rgb(0 0 0 / 0.08), 0 10px 24px -14px rgb(0 40 30 / 0.55);
 
-  --familia: "Overpass", system-ui, sans-serif;
-  --familia-num: "Overpass Mono", ui-monospace, monospace;
+  /* IBM Plex (vuelta 3, B1): llega a 700, el peso más alto de toda la app */
+  --familia: "IBM Plex Sans", system-ui, sans-serif;
+  --familia-num: "IBM Plex Mono", ui-monospace, monospace;
 }
 
 @media (prefers-color-scheme: dark) {

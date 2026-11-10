@@ -1,11 +1,9 @@
 /* Fuentes autohospedadas (solo el subconjunto latino: el español cabe entero). */
-@import "@fontsource/overpass/latin-400.css";
-@import "@fontsource/overpass/latin-600.css";
-@import "@fontsource/overpass/latin-700.css";
-@import "@fontsource/overpass/latin-800.css";
-@import "@fontsource/overpass/latin-900.css";
-@import "@fontsource/overpass-mono/latin-500.css";
-@import "@fontsource/overpass-mono/latin-700.css";
+@import "@fontsource/ibm-plex-sans/latin-400.css";
+@import "@fontsource/ibm-plex-sans/latin-600.css";
+@import "@fontsource/ibm-plex-sans/latin-700.css";
+@import "@fontsource/ibm-plex-mono/latin-500.css";
+@import "@fontsource/ibm-plex-mono/latin-700.css";
 
 /* Reset */
 *,
@@ -110,7 +108,7 @@ kbd {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-weight: 800;
+  font-weight: 700;
   font-size: 12px;
 }
 
@@ -136,7 +134,7 @@ th {
   background: var(--cabecera);
   color: var(--suave);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.1em;
   text-align: left;
   text-transform: uppercase;
@@ -238,7 +236,7 @@ button {
   border-radius: var(--radio-control);
   background: var(--panel);
   color: var(--tinta);
-  font: 800 15px var(--familia);
+  font: 700 15px var(--familia);
   transition:
     background-color 0.15s ease-out,
     border-color 0.15s ease-out;
@@ -284,7 +282,7 @@ button {
   background: none;
   color: inherit;
   font: inherit;
-  font-weight: 800;
+  font-weight: 700;
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 0.2em;
@@ -375,7 +373,7 @@ textarea {
 
 .panel h2 {
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.01em;
 }
 
@@ -392,7 +390,7 @@ fieldset.grupo > legend {
   padding: 0 6px;
   color: var(--suave);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -409,8 +407,9 @@ fieldset.grupo > legend {
   font-weight: 600;
 }
 
-/* El separador «·» (componentes/Sep.tsx). El «·» de Overpass es una marca de
-   ancho cero; el de Overpass Mono es un glifo normal, centrado en su celda
+/* El separador «·» (componentes/Sep.tsx). Va en la fuente mono, donde es un
+   glifo normal centrado en su celda (en Overpass, la fuente anterior, era una
+   marca de ancho cero)
    (el mismo margen a cada lado). Va entre dos espacios iguales, sin espaciado
    de letras propio (si no, el aire de la derecha crece), y el margen negativo
    simétrico le quita el exceso de la celda: ~0,3 em de aire por lado. Es un
@@ -432,7 +431,7 @@ fieldset.grupo > legend {
   background: transparent;
   color: #fff;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.02em;
   transition: background-color 0.15s ease-out;
 }
@@ -460,7 +459,7 @@ fieldset.grupo > legend {
   border: 0;
   background: var(--panel);
   color: var(--tinta);
-  font: 800 15px var(--familia);
+  font: 700 15px var(--familia);
   transition: background-color 0.15s ease-out;
 }
 
@@ -546,7 +545,7 @@ fieldset.grupo > legend {
   padding: 3px 8px;
   border-radius: 4px;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -609,7 +608,7 @@ fieldset.grupo > legend {
 
 .reverso h3 {
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .reverso-datos {
@@ -618,7 +617,7 @@ fieldset.grupo > legend {
   gap: 6px 20px;
   color: var(--suave);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }

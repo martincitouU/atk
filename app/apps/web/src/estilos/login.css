@@ -47,7 +47,7 @@
 
 .login-marca {
   font-size: 46px;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.04em;
   line-height: 1;
 }
@@ -56,7 +56,7 @@
   margin-top: 8px;
   color: var(--login-letrero-suave);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
@@ -74,7 +74,7 @@
 
 .login-panel h1 {
   font-size: 17px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.01em;
 }
 

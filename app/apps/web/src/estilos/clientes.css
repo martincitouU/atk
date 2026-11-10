@@ -67,7 +67,7 @@
 
 .cartel-titulo h1 {
   font-size: 22px;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.02em;
   line-height: 1.15;
 }
@@ -75,7 +75,7 @@
 .cartel-titulo p {
   color: var(--cartel-suave);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -96,7 +96,7 @@
   background: transparent;
   color: #fff;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.01em;
   transition: background-color 0.15s ease-out;
 }
@@ -190,7 +190,7 @@
 
 .cuenta-datos b {
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .cuenta-datos > span {
@@ -335,7 +335,7 @@
   background: none;
   color: var(--tinta);
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.35;
   text-align: left;
   text-decoration: underline;
@@ -458,7 +458,7 @@
   background: var(--obra-fondo);
   color: var(--obra-tinta);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.02em;
 }
 
@@ -516,7 +516,7 @@
   padding: 0;
   color: var(--tinta);
   font-size: 12.5px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 /* La casilla: el label de base es una columna; aquí, casilla y texto en fila */
@@ -552,7 +552,7 @@
   display: block;
   color: var(--tinta);
   font-size: 13.5px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .clientes-acciones {
@@ -589,7 +589,7 @@
   gap: 6px;
   align-items: center;
   margin-left: auto;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 /* ------------------------------------------------------------------ */
@@ -603,7 +603,7 @@
   padding: 4px 8px;
   color: var(--cartel-suave);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -665,7 +665,7 @@
 
 .config-valor {
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .config-para {

@@ -1,6 +1,6 @@
 /*
  * El portal de clientes (/mi): «Carretera Austral, versión teléfono».
- * La misma identidad que la ventanilla (el letrero verde, Overpass, el color
+ * La misma identidad que la ventanilla (el letrero verde, IBM Plex, el color
  * por divisa), más tranquila: una columna, una acción por pantalla, y la
  * jerarquía plana: espacio, tipografía y divisores, sin cajas dentro de cajas.
  * Comp aprobado: .impeccable/mocks/portal/portal-390.png.
@@ -49,7 +49,7 @@
 
 .portal-marca {
   font-size: 24px;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.04em;
   line-height: 1;
 }
@@ -59,7 +59,7 @@
   margin-top: 6px;
   color: #d6e6e0;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -73,7 +73,7 @@
 /* El título de cada pantalla: grande, con su bajada; sin rótulo encima */
 .portal-titulo h1 {
   font-size: 25px;
-  font-weight: 900;
+  font-weight: 700;
   line-height: 1.15;
   text-wrap: balance;
 }
@@ -132,7 +132,7 @@
   border-radius: 6px 6px 2px 2px;
   background: var(--panel);
   color: var(--tinta);
-  font: 800 15px var(--familia-num);
+  font: 700 15px var(--familia-num);
 }
 
 /* La franja del poste */
@@ -207,7 +207,7 @@
   background: var(--vial);
   color: #fff;
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.01em;
   transition: background-color 0.15s ease-out;
 }
@@ -233,7 +233,7 @@
   margin-block: -12px;
   padding: 12px 4px;
   color: var(--tinta);
-  font-weight: 800;
+  font-weight: 700;
   text-underline-offset: 3px;
 }
 
@@ -347,7 +347,7 @@
   background: var(--cabecera);
   color: var(--suave);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -373,7 +373,7 @@
   gap: 4px 9px;
   align-items: center;
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .punto {
@@ -484,7 +484,7 @@
   background: none;
   color: var(--suave);
   font-size: 12.5px;
-  font-weight: 800;
+  font-weight: 700;
   text-decoration: none;
 }
 

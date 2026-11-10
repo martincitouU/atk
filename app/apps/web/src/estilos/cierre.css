@@ -54,7 +54,7 @@
 
 .cierre-letrero h1 {
   font-size: 20px;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.04em;
   line-height: 1.1;
   text-transform: uppercase;
@@ -62,7 +62,7 @@
 
 .cierre-dia {
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
   text-align: right;
 }
 
@@ -91,7 +91,7 @@
 
 .cierre-cab h2 {
   font-size: 17px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.01em;
 }
 
@@ -199,7 +199,7 @@
 }
 
 .conteo-elegir b {
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .conteo-elegir span {
@@ -267,7 +267,7 @@
   gap: 8px;
   min-width: 0;
   font-size: 20px;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.02em;
   line-height: 1.1;
 }
@@ -320,7 +320,7 @@
 
 .billete .den {
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   white-space: nowrap;
 }
 
@@ -432,7 +432,7 @@
   border-radius: 4px;
   font-family: var(--familia);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
@@ -600,7 +600,7 @@
 }
 
 .gasto-cat {
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .gasto-monto {
