@@ -2,18 +2,30 @@
 // cierre con arqueo) y los gastos. Supervisores y admin ven además los
 // turnos abiertos y pueden registrar ajustes.
 //
-// Lee de la API: saldos, libro de caja, turnos abiertos y gastos. Los
-// formularios (abrir y cerrar el turno, movimientos, ajustes y gastos) se
-// conectan en F3.
+// El cierre responde el arqueo (sistema, contado, diferencia). Se muestra
+// arriba de la vista aunque el turno ya esté cerrado: las diferencias no se
+// corrigen solas, un supervisor registra el ajuste.
 
 import { Lock } from "lucide-react";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { Outlet } from "react-router";
+import {
+  useAbrirTurno,
+  useAjusteCaja,
+  useCerrarTurno,
+  useMovimientoCaja,
+  useRegistrarGasto,
+  useReversarGasto,
+  type ResultadoCierre,
+} from "../../api/acciones.ts";
+import { mensajeDe } from "../../api/cliente.ts";
 import {
   useCasa,
   useCatalogo,
   useGastos,
   useMonedaBase,
+  useMonedas,
   useMovimientos,
   useNombres,
   useOrdenMonedas,
@@ -21,14 +33,14 @@ import {
   useTurnosAbiertos,
   type FiltrosGastos,
 } from "../../api/consultas.ts";
-import type { EstadoGasto, MedioPago, Turno } from "../../api/tipos.ts";
+import type { EstadoGasto, Gasto, MedioPago, Saldo, Turno } from "../../api/tipos.ts";
 import { Aviso } from "../../componentes/Aviso.tsx";
 import { Boton } from "../../componentes/Boton.tsx";
 import { AreaTexto, Entrada, FilaCampos, Seleccion } from "../../componentes/Campo.tsx";
 import { Dialogo } from "../../componentes/Dialogo.tsx";
 import { DivisaCompacta } from "../../componentes/Divisa.tsx";
 import { EncabezadoPagina } from "../../componentes/EncabezadoPagina.tsx";
-import { ConDatos, Vacio } from "../../componentes/Estados.tsx";
+import { Cargando, ConDatos, Vacio } from "../../componentes/Estados.tsx";
 import { Etiqueta } from "../../componentes/Etiqueta.tsx";
 import { GrillaIndicadores, Indicador } from "../../componentes/Indicador.tsx";
 import { Monto } from "../../componentes/Monto.tsx";
@@ -38,6 +50,8 @@ import { Segmentado } from "../../componentes/Segmentado.tsx";
 import { Tabla } from "../../componentes/Tabla.tsx";
 import { Tarjeta } from "../../componentes/Tarjeta.tsx";
 import { formatearDia, formatearHora, hoy, inicioDelMes } from "../../lib/fechas.ts";
+import { errorEnFormulario, reglaMonto } from "../../lib/formularios.ts";
+import { leerMonto, leerMontoConSigno, leerTasa } from "../../lib/montos.ts";
 import { ESTADO_GASTO, MEDIO_PAGO, TIPO_MOVIMIENTO } from "../../lib/textos.ts";
 import { usePersonal } from "../../sesion/Sesion.tsx";
 import css from "./Personal.module.css";
@@ -47,6 +61,14 @@ function useMonedasDeCaja(): string[] {
   const { data } = useCasa();
   return [data?.monedaBase?.codigo ?? "CLP", ...(data?.divisas.filter((d) => d.activa).map((d) => d.codigo) ?? [])];
 }
+
+/** Decimales de una moneda (2 mientras no llega /api/casa). */
+function useDecimales() {
+  const monedas = useMonedas();
+  return (codigo: string) => monedas?.get(codigo)?.decimales ?? 2;
+}
+
+const MOTIVO_OBLIGATORIO = (texto: string) => texto.trim() !== "" || "Escribe el motivo";
 
 export function Caja() {
   return (
@@ -69,36 +91,57 @@ export function Caja() {
 export function TurnoYCaja() {
   const { usuario, turnoAbierto } = usePersonal();
   const esSupervisor = usuario.rol !== "CAJERO";
+  // El arqueo del turno recién cerrado (el turno ya no está abierto)
+  const [cierre, setCierre] = useState<ResultadoCierre | null>(null);
 
   return (
     <>
-      {turnoAbierto ? <TurnoAbierto turno={turnoAbierto} /> : <AbrirTurno />}
+      {cierre && <Arqueo cierre={cierre} alTerminar={() => setCierre(null)} />}
+      {turnoAbierto ? (
+        <TurnoAbierto turno={turnoAbierto} alCerrar={setCierre} />
+      ) : (
+        <AbrirTurno titulo="Abre tu turno" descripcion="Elige la caja. Después registra el fondo inicial de cada moneda como un ingreso." />
+      )}
       {esSupervisor && <VistaSupervisor />}
     </>
   );
 }
 
-function AbrirTurno() {
-  const { data: catalogo } = useCatalogo();
+/** Abrir el turno en una caja. Lo usan Caja e Inicio; es el botón magenta de la vista. */
+export function AbrirTurno({ titulo, descripcion }: { titulo: string; descripcion: string }) {
+  const catalogo = useCatalogo();
   return (
-    <Tarjeta elevada titulo="Abre tu turno" descripcion="Elige la caja. Después registra el fondo inicial de cada moneda como un ingreso.">
-      <form className={css.abrirTurno} onSubmit={(e) => e.preventDefault()}>
-        <Seleccion etiqueta="Caja" defaultValue={catalogo?.cajas[0]?.id}>
-          {catalogo?.cajas.map((c) => (
+    <Tarjeta elevada titulo={titulo} descripcion={descripcion}>
+      <ConDatos consulta={catalogo}>{(datos) => <FormularioAbrirTurno cajas={datos.cajas} />}</ConDatos>
+    </Tarjeta>
+  );
+}
+
+function FormularioAbrirTurno({ cajas }: { cajas: { id: number; nombre: string }[] }) {
+  const abrir = useAbrirTurno();
+  const { register, handleSubmit } = useForm<{ cajaId: string }>({ defaultValues: { cajaId: String(cajas[0]?.id ?? "") } });
+
+  if (cajas.length === 0) return <Aviso tono="atencion">La casa no tiene cajas activas.</Aviso>;
+  return (
+    <>
+      {abrir.isError && <Aviso tono="error">{mensajeDe(abrir.error)}</Aviso>}
+      <form className={css.abrirTurno} onSubmit={handleSubmit(({ cajaId }) => abrir.mutate({ cajaId: Number(cajaId) }))}>
+        <Seleccion etiqueta="Caja" {...register("cajaId")}>
+          {cajas.map((c) => (
             <option key={c.id} value={c.id}>
               {c.nombre}
             </option>
           ))}
         </Seleccion>
-        <Boton type="submit" variante="primario">
+        <Boton type="submit" variante="primario" cargando={abrir.isPending}>
           Abrir turno
         </Boton>
       </form>
-    </Tarjeta>
+    </>
   );
 }
 
-function TurnoAbierto({ turno }: { turno: Turno }) {
+function TurnoAbierto({ turno, alCerrar }: { turno: Turno; alCerrar: (cierre: ResultadoCierre) => void }) {
   const { data: catalogo } = useCatalogo();
   const saldos = useSaldos(turno.cajaId);
   const movimientos = useMovimientos(turno.id);
@@ -116,7 +159,7 @@ function TurnoAbierto({ turno }: { turno: Turno }) {
               {caja?.nombre ?? `Caja ${turno.cajaId}`}, desde las {formatearHora(turno.abiertoEn)}
             </p>
           </div>
-          <Boton icono={<Lock size={18} aria-hidden />} onClick={() => setCerrando(true)}>
+          <Boton icono={<Lock size={18} aria-hidden />} onClick={() => setCerrando(true)} disabled={!saldos.data}>
             Cerrar turno
           </Boton>
         </div>
@@ -182,18 +225,62 @@ function TurnoAbierto({ turno }: { turno: Turno }) {
         </Tarjeta>
       </Columnas>
 
-      <CerrarTurno abierto={cerrando} alCerrar={() => setCerrando(false)} monedas={ordenar(saldos.data ?? []).map((s) => s.monedaCodigo)} />
+      {saldos.data && <CerrarTurno turno={turno} saldos={ordenar(saldos.data)} abierto={cerrando} alCancelar={() => setCerrando(false)} alCerrar={alCerrar} />}
     </>
   );
 }
 
+type ValoresMovimiento = { tipo: "INGRESO" | "RETIRO"; moneda: string; monto: string; motivo: string; costo: string };
+
 function IngresoORetiro() {
-  const [tipo, setTipo] = useState<"INGRESO" | "RETIRO">("INGRESO");
   const monedas = useMonedasDeCaja();
+  const monedaBase = useMonedaBase();
+  const decimalesDe = useDecimales();
+  const movimiento = useMovimientoCaja();
+  const [listo, setListo] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    reset,
+    setError: marcar,
+    formState: { errors, isSubmitting },
+  } = useForm<ValoresMovimiento>({ defaultValues: { tipo: "INGRESO", moneda: monedaBase, monto: "", motivo: "", costo: "" } });
+
+  const tipo = watch("tipo");
+  const moneda = watch("moneda") || monedaBase;
+  const conCosto = tipo === "INGRESO" && moneda !== monedaBase;
+
+  const alEnviar = handleSubmit(async (v) => {
+    setListo(null);
+    setError(null);
+    try {
+      await movimiento.mutateAsync({
+        tipo: v.tipo,
+        monedaCodigo: moneda,
+        monto: leerMonto(v.monto, decimalesDe(moneda)) ?? "",
+        motivo: v.motivo.trim(),
+        costoE6: conCosto && v.costo.trim() ? leerTasa(v.costo) : null,
+      });
+      reset({ ...v, monto: "", motivo: "", costo: "" });
+      setListo(`${v.tipo === "INGRESO" ? "Ingreso" : "Retiro"} registrado.`);
+    } catch (e) {
+      setError(
+        errorEnFormulario(e, marcar, ["monto", "motivo"], {
+          nombres: { costoE6: "costo" },
+          porCodigo: { MONTO_INVALIDO: "monto", SALDO_INSUFICIENTE: "monto", FALTA_MOTIVO: "motivo", TASA_INVALIDA: "costo" },
+        }),
+      );
+    }
+  });
 
   return (
     <Tarjeta titulo="Ingreso o retiro" descripcion="Fondo inicial, reposición o retiro de dinero, con su motivo.">
-      <form className={css.formulario} onSubmit={(e) => e.preventDefault()}>
+      {listo && <Aviso tono="exito">{listo}</Aviso>}
+      {error && <Aviso tono="error">{error}</Aviso>}
+      <form className={css.formulario} onSubmit={alEnviar} noValidate>
         <Segmentado
           etiqueta="Tipo de movimiento"
           opciones={[
@@ -201,22 +288,38 @@ function IngresoORetiro() {
             { valor: "RETIRO", texto: "Retiro" },
           ]}
           valor={tipo}
-          alCambiar={setTipo}
+          alCambiar={(valor) => setValue("tipo", valor)}
           anchoCompleto
         />
         <FilaCampos>
-          <Seleccion etiqueta="Moneda">
+          <Seleccion etiqueta="Moneda" {...register("moneda")}>
             {monedas.map((m) => (
               <option key={m}>{m}</option>
             ))}
           </Seleccion>
-          <Entrada etiqueta="Monto" inputMode="decimal" placeholder="0" />
+          <Entrada
+            etiqueta="Monto"
+            inputMode="decimal"
+            placeholder="0"
+            sufijo={moneda}
+            error={errors.monto?.message}
+            {...register("monto", { validate: (texto) => reglaMonto(decimalesDe(moneda))(texto) })}
+          />
         </FilaCampos>
-        <Entrada etiqueta="Motivo" placeholder="Fondo inicial" />
-        {tipo === "INGRESO" && (
-          <Entrada etiqueta="Costo por unidad (opcional)" inputMode="decimal" ayuda="Para divisas. Si se deja vacío, se usa la tasa de referencia vigente." />
+        <Entrada etiqueta="Motivo" placeholder="Fondo inicial" error={errors.motivo?.message} {...register("motivo", { validate: MOTIVO_OBLIGATORIO })} />
+        {conCosto && (
+          <Entrada
+            etiqueta="Costo por unidad (opcional)"
+            inputMode="decimal"
+            ayuda="En pesos por unidad. Si se deja vacío, se usa la tasa de referencia vigente."
+            error={errors.costo?.message}
+            {...register("costo", {
+              validate: (texto) =>
+                !texto.trim() || (leerTasa(texto) !== null && BigInt(leerTasa(texto) ?? "0") > 0n) || "Escribe el costo con coma, por ejemplo 940,50",
+            })}
+          />
         )}
-        <Boton type="submit" anchoCompleto>
+        <Boton type="submit" anchoCompleto cargando={isSubmitting}>
           Registrar {tipo === "INGRESO" ? "ingreso" : "retiro"}
         </Boton>
       </form>
@@ -225,38 +328,122 @@ function IngresoORetiro() {
 }
 
 /**
- * Cierre: se cuenta el dinero de cada moneda. La API compara con el sistema
- * y responde el arqueo con las diferencias (se muestra al conectar el
- * cierre, en F3).
+ * Cierre: se cuenta el dinero de cada moneda con saldo. La API compara con
+ * el sistema y responde el arqueo; no deja cerrar con borradores pendientes.
  */
-function CerrarTurno({ abierto, alCerrar, monedas }: { abierto: boolean; alCerrar: () => void; monedas: string[] }) {
+function CerrarTurno({
+  turno,
+  saldos,
+  abierto,
+  alCancelar,
+  alCerrar,
+}: {
+  turno: Turno;
+  saldos: Saldo[];
+  abierto: boolean;
+  alCancelar: () => void;
+  alCerrar: (cierre: ResultadoCierre) => void;
+}) {
+  const cerrar = useCerrarTurno(turno.id);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<{ conteo: Record<string, string> }>({ defaultValues: { conteo: {} } });
+
+  const alEnviar = handleSubmit(async ({ conteo }) => {
+    try {
+      const enDigitos = Object.fromEntries(saldos.map((s) => [s.monedaCodigo, leerMonto(conteo[s.monedaCodigo] ?? "", s.decimales) ?? ""]));
+      alCerrar(await cerrar.mutateAsync({ conteo: enDigitos }));
+    } catch {
+      // el mensaje queda en cerrar.error
+    }
+  });
+
   return (
     <Dialogo
       abierto={abierto}
-      alCerrar={alCerrar}
+      alCerrar={() => {
+        cerrar.reset();
+        alCancelar();
+      }}
       titulo="Cerrar turno"
       descripcion="Cuenta el dinero de cada moneda y escribe el total. No se puede cerrar con borradores pendientes."
       acciones={
         <>
-          <Boton onClick={alCerrar}>Cancelar</Boton>
-          <Boton variante="primario">Cerrar turno</Boton>
+          <Boton onClick={alCancelar}>Cancelar</Boton>
+          <Boton type="submit" form="cerrar-turno" variante="primario" cargando={isSubmitting}>
+            Cerrar turno
+          </Boton>
         </>
       }
     >
-      <div className={css.formulario}>
-        {monedas.map((m) => (
-          <Entrada key={m} etiqueta={`Contado en ${m}`} inputMode="decimal" placeholder="0" sufijo={m} />
+      <form id="cerrar-turno" className={css.formulario} onSubmit={alEnviar} noValidate>
+        {cerrar.isError && <Aviso tono="error">{mensajeDe(cerrar.error)}</Aviso>}
+        {saldos.length === 0 && <p className={css.nota}>La caja no tiene saldos: se cierra sin conteo.</p>}
+        {saldos.map((s) => (
+          <Entrada
+            key={s.monedaCodigo}
+            etiqueta={`Contado en ${s.monedaCodigo}`}
+            inputMode="decimal"
+            placeholder="0"
+            sufijo={s.monedaCodigo}
+            error={errors.conteo?.[s.monedaCodigo]?.message}
+            {...register(`conteo.${s.monedaCodigo}`, { validate: reglaMonto(s.decimales, { mayorQueCero: false }) })}
+          />
         ))}
-      </div>
+      </form>
     </Dialogo>
+  );
+}
+
+/** El arqueo del turno recién cerrado. */
+function Arqueo({ cierre, alTerminar }: { cierre: ResultadoCierre; alTerminar: () => void }) {
+  const ordenar = useOrdenMonedas();
+  const conDiferencias = cierre.arqueo.some((a) => a.diferencia !== "0");
+  return (
+    <Tarjeta elevada titulo="Turno cerrado: arqueo" acciones={<Boton onClick={alTerminar}>Listo</Boton>} sinRelleno>
+      <div className={css.avisoTarjeta}>
+        {conDiferencias ? (
+          <Aviso tono="atencion" titulo="Hay diferencias">
+            No se corrigen solas: un supervisor registra el ajuste con su motivo.
+          </Aviso>
+        ) : (
+          <Aviso tono="exito">El conteo cuadra con el sistema.</Aviso>
+        )}
+      </div>
+      <Tabla etiqueta="Arqueo">
+        <thead>
+          <tr>
+            <th>Moneda</th>
+            <th className="num">Sistema</th>
+            <th className="num">Contado</th>
+            <th className="num">Diferencia</th>
+          </tr>
+        </thead>
+        <tbody>
+          {ordenar(cierre.arqueo).map((a) => (
+            <tr key={a.monedaCodigo}>
+              <td>{a.monedaCodigo}</td>
+              <td className="num">
+                <Monto valor={a.saldoSistema} moneda={a.monedaCodigo} sinSimbolo />
+              </td>
+              <td className="num">
+                <Monto valor={a.saldoContado} moneda={a.monedaCodigo} sinSimbolo />
+              </td>
+              <td className="num">{a.diferencia === "0" ? "—" : <Monto valor={a.diferencia} moneda={a.monedaCodigo} sinSimbolo />}</td>
+            </tr>
+          ))}
+        </tbody>
+      </Tabla>
+    </Tarjeta>
   );
 }
 
 function VistaSupervisor() {
   const turnos = useTurnosAbiertos();
   const saldos = useSaldos();
-  const { data: catalogo } = useCatalogo();
-  const monedas = useMonedasDeCaja();
+  const catalogo = useCatalogo();
   const ordenar = useOrdenMonedas();
 
   return (
@@ -267,25 +454,7 @@ function VistaSupervisor() {
       <Columnas
         lateral={
           <Tarjeta titulo="Ajuste de caja" descripcion="Corrige una diferencia del arqueo. Monto con signo: -1.000 resta.">
-            <form className={css.formulario} onSubmit={(e) => e.preventDefault()}>
-              <FilaCampos>
-                <Seleccion etiqueta="Caja">
-                  {catalogo?.cajas.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.nombre}
-                    </option>
-                  ))}
-                </Seleccion>
-                <Seleccion etiqueta="Moneda">
-                  {monedas.map((m) => (
-                    <option key={m}>{m}</option>
-                  ))}
-                </Seleccion>
-              </FilaCampos>
-              <Entrada etiqueta="Monto" inputMode="decimal" placeholder="-1.000" />
-              <AreaTexto etiqueta="Motivo" placeholder="Diferencia del arqueo del turno 5" />
-              <Boton type="submit">Registrar ajuste</Boton>
-            </form>
+            <ConDatos consulta={catalogo}>{(datos) => <FormularioAjuste cajas={datos.cajas} />}</ConDatos>
           </Tarjeta>
         }
       >
@@ -357,57 +526,101 @@ function VistaSupervisor() {
   );
 }
 
+type ValoresAjuste = { cajaId: string; moneda: string; monto: string; motivo: string };
+
+function FormularioAjuste({ cajas }: { cajas: { id: number; nombre: string }[] }) {
+  const monedas = useMonedasDeCaja();
+  const monedaBase = useMonedaBase();
+  const decimalesDe = useDecimales();
+  const ajuste = useAjusteCaja();
+  const [listo, setListo] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const {
+    register,
+    handleSubmit,
+    watch,
+    reset,
+    setError: marcar,
+    formState: { errors, isSubmitting },
+  } = useForm<ValoresAjuste>({ defaultValues: { cajaId: String(cajas[0]?.id ?? ""), moneda: monedaBase, monto: "", motivo: "" } });
+  const moneda = watch("moneda") || monedaBase;
+
+  const alEnviar = handleSubmit(async (v) => {
+    setListo(null);
+    setError(null);
+    try {
+      await ajuste.mutateAsync({
+        cajaId: Number(v.cajaId),
+        monedaCodigo: moneda,
+        monto: leerMontoConSigno(v.monto, decimalesDe(moneda)) ?? "",
+        motivo: v.motivo.trim(),
+      });
+      reset({ ...v, monto: "", motivo: "" });
+      setListo("Ajuste registrado.");
+    } catch (e) {
+      setError(errorEnFormulario(e, marcar, ["monto", "motivo"], { porCodigo: { MONTO_INVALIDO: "monto", FALTA_MOTIVO: "motivo" } }));
+    }
+  });
+
+  return (
+    <>
+      {listo && <Aviso tono="exito">{listo}</Aviso>}
+      {error && <Aviso tono="error">{error}</Aviso>}
+      <form className={css.formulario} onSubmit={alEnviar} noValidate>
+        <FilaCampos>
+          <Seleccion etiqueta="Caja" {...register("cajaId")}>
+            {cajas.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nombre}
+              </option>
+            ))}
+          </Seleccion>
+          <Seleccion etiqueta="Moneda" {...register("moneda")}>
+            {monedas.map((m) => (
+              <option key={m}>{m}</option>
+            ))}
+          </Seleccion>
+        </FilaCampos>
+        <Entrada
+          etiqueta="Monto"
+          inputMode="decimal"
+          placeholder="-1.000"
+          sufijo={moneda}
+          error={errors.monto?.message}
+          {...register("monto", { validate: (texto) => reglaMonto(decimalesDe(moneda), { conSigno: true, mayorQueCero: false })(texto) })}
+        />
+        <AreaTexto
+          etiqueta="Motivo"
+          placeholder="Diferencia del arqueo del turno 5"
+          error={errors.motivo?.message}
+          {...register("motivo", { validate: MOTIVO_OBLIGATORIO })}
+        />
+        <Boton type="submit" cargando={isSubmitting}>
+          Registrar ajuste
+        </Boton>
+      </form>
+    </>
+  );
+}
+
 // ---- Gastos ------------------------------------------------------------------
 
 const MEDIOS = Object.keys(MEDIO_PAGO) as MedioPago[];
 
 export function Gastos() {
-  const { usuario, turnoAbierto } = usePersonal();
+  const { usuario } = usePersonal();
   const { data: catalogo } = useCatalogo();
   // Por defecto, los del mes en curso
   const [filtros, setFiltros] = useState<FiltrosGastos>(() => ({ desde: inicioDelMes(hoy()), hasta: hoy() }));
+  const [reversando, setReversando] = useState<Gasto | null>(null);
   const gastos = useGastos(filtros);
   const nombre = useNombres();
   const monedaBase = useMonedaBase();
-  const esAdmin = usuario.rol === "ADMIN";
   const esSupervisor = usuario.rol !== "CAJERO";
   const categoria = new Map(catalogo?.categoriasGasto.map((c) => [c.id, c.nombre]));
 
   return (
-    <Columnas
-      lateral={
-        <Tarjeta titulo="Registrar gasto" descripcion="En efectivo sale de la caja de tu turno. Otros medios, solo el admin.">
-          {!turnoAbierto && !esAdmin && <Aviso tono="atencion">Necesitas un turno abierto para registrar gastos en efectivo.</Aviso>}
-          <form className={css.formulario} onSubmit={(e) => e.preventDefault()}>
-            <Seleccion etiqueta="Categoría">
-              {catalogo?.categoriasGasto.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nombre}
-                </option>
-              ))}
-            </Seleccion>
-            <Entrada etiqueta="Descripción" placeholder="Rollos de papel para boletas" />
-            <FilaCampos>
-              <Entrada etiqueta="Monto" inputMode="numeric" placeholder="0" sufijo={monedaBase} />
-              <Seleccion etiqueta="Medio de pago" defaultValue="EFECTIVO">
-                {MEDIOS.map((m) => (
-                  <option key={m} value={m} disabled={m !== "EFECTIVO" && !esAdmin}>
-                    {MEDIO_PAGO[m]}
-                  </option>
-                ))}
-              </Seleccion>
-            </FilaCampos>
-            <FilaCampos>
-              <Entrada etiqueta="Fecha" type="date" defaultValue={hoy()} />
-              <Entrada etiqueta="Documento" placeholder="Boleta 1234" />
-            </FilaCampos>
-            <Boton type="submit" variante="primario">
-              Registrar gasto
-            </Boton>
-          </form>
-        </Tarjeta>
-      }
-    >
+    <Columnas lateral={<RegistrarGasto />}>
       <Tarjeta>
         <div className={css.filtros}>
           <Entrada etiqueta="Desde" type="date" value={filtros.desde ?? ""} onChange={(e) => setFiltros({ ...filtros, desde: e.target.value || undefined })} />
@@ -462,7 +675,7 @@ export function Gastos() {
                       {esSupervisor && (
                         <td>
                           {g.estado === "VIGENTE" && (
-                            <Boton variante="texto" tamano="chico">
+                            <Boton variante="texto" tamano="chico" onClick={() => setReversando(g)}>
                               Reversar
                             </Boton>
                           )}
@@ -476,6 +689,165 @@ export function Gastos() {
           }
         </ConDatos>
       </Tarjeta>
+      <ReversarGasto gasto={reversando} alCerrar={() => setReversando(null)} />
     </Columnas>
+  );
+}
+
+type ValoresGasto = { categoriaId: string; descripcion: string; monto: string; medioPago: MedioPago; fecha: string; documento: string };
+
+function RegistrarGasto() {
+  const { usuario, turnoAbierto } = usePersonal();
+  const catalogo = useCatalogo();
+  const esAdmin = usuario.rol === "ADMIN";
+  return (
+    <Tarjeta titulo="Registrar gasto" descripcion="En efectivo sale de la caja de tu turno. Otros medios, solo el admin.">
+      {!turnoAbierto && !esAdmin && <Aviso tono="atencion">Necesitas un turno abierto para registrar gastos en efectivo.</Aviso>}
+      <ConDatos consulta={catalogo}>{(datos) => <FormularioGasto categorias={datos.categoriasGasto} esAdmin={esAdmin} />}</ConDatos>
+    </Tarjeta>
+  );
+}
+
+function FormularioGasto({ categorias, esAdmin }: { categorias: { id: number; nombre: string }[]; esAdmin: boolean }) {
+  const monedaBase = useMonedaBase();
+  const decimales = useDecimales()(monedaBase);
+  const registrar = useRegistrarGasto();
+  const [listo, setListo] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const valoresIniciales = (): ValoresGasto => ({
+    categoriaId: String(categorias[0]?.id ?? ""),
+    descripcion: "",
+    monto: "",
+    medioPago: "EFECTIVO",
+    fecha: hoy(),
+    documento: "",
+  });
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setError: marcar,
+    formState: { errors, isSubmitting },
+  } = useForm<ValoresGasto>({ defaultValues: valoresIniciales() });
+
+  const alEnviar = handleSubmit(async (v) => {
+    setListo(null);
+    setError(null);
+    try {
+      await registrar.mutateAsync({
+        categoriaId: Number(v.categoriaId),
+        descripcion: v.descripcion.trim(),
+        monto: leerMonto(v.monto, decimales) ?? "",
+        medioPago: v.medioPago,
+        fecha: v.fecha || undefined,
+        documento: v.documento.trim() || null,
+      });
+      reset(valoresIniciales());
+      setListo("Gasto registrado.");
+    } catch (e) {
+      setError(
+        errorEnFormulario(e, marcar, ["descripcion", "monto", "fecha", "documento"], {
+          porCodigo: { FALTA_DESCRIPCION: "descripcion", MONTO_INVALIDO: "monto", SALDO_INSUFICIENTE: "monto", FECHA_FUTURA: "fecha", FECHA_INVALIDA: "fecha" },
+        }),
+      );
+    }
+  });
+
+  return (
+    <>
+      {listo && <Aviso tono="exito">{listo}</Aviso>}
+      {error && <Aviso tono="error">{error}</Aviso>}
+      <form className={css.formulario} onSubmit={alEnviar} noValidate>
+        <Seleccion etiqueta="Categoría" {...register("categoriaId")}>
+          {categorias.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.nombre}
+            </option>
+          ))}
+        </Seleccion>
+        <Entrada
+          etiqueta="Descripción"
+          placeholder="Rollos de papel para boletas"
+          error={errors.descripcion?.message}
+          {...register("descripcion", { validate: (t) => t.trim() !== "" || "Describe el gasto" })}
+        />
+        <FilaCampos>
+          <Entrada
+            etiqueta="Monto"
+            inputMode="numeric"
+            placeholder="0"
+            sufijo={monedaBase}
+            error={errors.monto?.message}
+            {...register("monto", { validate: reglaMonto(decimales) })}
+          />
+          <Seleccion etiqueta="Medio de pago" {...register("medioPago")}>
+            {MEDIOS.map((m) => (
+              <option key={m} value={m} disabled={m !== "EFECTIVO" && !esAdmin}>
+                {MEDIO_PAGO[m]}
+              </option>
+            ))}
+          </Seleccion>
+        </FilaCampos>
+        <FilaCampos>
+          <Entrada etiqueta="Fecha" type="date" max={hoy()} error={errors.fecha?.message} {...register("fecha")} />
+          <Entrada etiqueta="Documento" placeholder="Boleta 1234" error={errors.documento?.message} {...register("documento")} />
+        </FilaCampos>
+        <Boton type="submit" variante="primario" cargando={isSubmitting}>
+          Registrar gasto
+        </Boton>
+      </form>
+    </>
+  );
+}
+
+function ReversarGasto({ gasto, alCerrar }: { gasto: Gasto | null; alCerrar: () => void }) {
+  const reversar = useReversarGasto();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<{ motivo: string }>({ defaultValues: { motivo: "" } });
+
+  const cerrar = () => {
+    reset();
+    reversar.reset();
+    alCerrar();
+  };
+
+  const alEnviar = handleSubmit(async ({ motivo }) => {
+    if (!gasto) return;
+    try {
+      await reversar.mutateAsync({ id: gasto.id, motivo: motivo.trim() });
+      cerrar();
+    } catch {
+      // el mensaje queda en reversar.error
+    }
+  });
+
+  return (
+    <Dialogo
+      abierto={gasto !== null}
+      alCerrar={cerrar}
+      titulo="Reversar gasto"
+      descripcion={gasto ? `${gasto.descripcion}. Si salió de la caja, el dinero vuelve a ella. Queda registrado quién lo reversó y por qué.` : undefined}
+      acciones={
+        <>
+          <Boton onClick={cerrar}>Cancelar</Boton>
+          <Boton type="submit" form="reversar-gasto" variante="primario" cargando={isSubmitting}>
+            Reversar gasto
+          </Boton>
+        </>
+      }
+    >
+      {gasto ? (
+        <form id="reversar-gasto" className={css.formulario} onSubmit={alEnviar} noValidate>
+          {reversar.isError && <Aviso tono="error">{mensajeDe(reversar.error)}</Aviso>}
+          <AreaTexto etiqueta="Motivo" error={errors.motivo?.message} {...register("motivo", { validate: MOTIVO_OBLIGATORIO })} />
+        </form>
+      ) : (
+        <Cargando />
+      )}
+    </Dialogo>
   );
 }

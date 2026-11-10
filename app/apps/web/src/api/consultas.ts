@@ -9,7 +9,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { diaSiguiente, inicioDelDia } from "../lib/fechas.ts";
-import { obtener } from "./cliente.ts";
+import type { EntradaOperacionJson } from "./acciones.ts";
+import { enviar, obtener } from "./cliente.ts";
 import type {
   AccionAuditoria,
   CasaPublica,
@@ -28,6 +29,7 @@ import type {
   OperacionDeCliente,
   OperacionListada,
   Persona,
+  Previsualizacion,
   RegistroAuditoria,
   Resumen,
   Saldo,
@@ -91,6 +93,23 @@ export function useOperacion(id: number) {
     queryKey: ["operaciones", id],
     queryFn: () => obtener<OperacionListada>(`/api/operaciones/${id}`),
     enabled: esId(id),
+  });
+}
+
+/**
+ * POST /api/operaciones/previsualizar: precio, pesos y si exige ficha UAF,
+ * sin guardar nada. Es un POST, pero solo lee: por eso es una consulta.
+ * Con `entrada` null (monto incompleto) no se pide.
+ */
+export function usePrevisualizacion(entrada: EntradaOperacionJson | null) {
+  return useQuery({
+    queryKey: ["previsualizacion", entrada],
+    queryFn: () => enviar<Previsualizacion>("/api/operaciones/previsualizar", entrada),
+    enabled: entrada !== null,
+    // La pizarra puede cambiar: cada cálculo se pide de nuevo
+    staleTime: 0,
+    // Mientras llega el cálculo nuevo, se sigue viendo el anterior
+    placeholderData: (anterior) => anterior,
   });
 }
 

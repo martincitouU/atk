@@ -77,3 +77,10 @@
     font-size: var(--text-heading-sm);
   }
 }
+
+/* El contenido de los diálogos de confirmar y reversar */
+.formularioDialogo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-16);
+}

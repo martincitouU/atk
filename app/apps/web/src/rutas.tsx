@@ -9,12 +9,12 @@ import { MarcoCliente, MarcoPersonal, MarcoPublico, SoloRoles } from "./marcos/M
 import { MiCuenta } from "./vistas/cliente/MiCuenta.tsx";
 import { NoEncontrada } from "./vistas/NoEncontrada.tsx";
 import { Perfil } from "./vistas/Perfil.tsx";
-import { Administracion, Auditoria, Usuarios } from "./vistas/personal/Administracion.tsx";
+import { Administracion, Auditoria, Fidelizacion, Usuarios } from "./vistas/personal/Administracion.tsx";
 import { Caja, Gastos, TurnoYCaja } from "./vistas/personal/Caja.tsx";
-import { Clientes, CuentasWeb, DetalleCliente, Fichas, NuevoCliente } from "./vistas/personal/Clientes.tsx";
+import { Clientes, CuentasWeb, DetalleCliente, EditarCliente, Fichas, NuevoCliente } from "./vistas/personal/Clientes.tsx";
 import { DetalleOperacion } from "./vistas/personal/DetalleOperacion.tsx";
 import { Inicio } from "./vistas/personal/Inicio.tsx";
-import { NuevaOperacion } from "./vistas/personal/NuevaOperacion.tsx";
+import { EditarOperacion, NuevaOperacion } from "./vistas/personal/NuevaOperacion.tsx";
 import { Operaciones } from "./vistas/personal/Operaciones.tsx";
 import { Pizarra } from "./vistas/personal/Pizarra.tsx";
 import { Ingresar } from "./vistas/publico/Ingresar.tsx";
@@ -44,6 +44,7 @@ export const rutas: RouteObject[] = [
       { path: "operaciones", element: <Operaciones /> },
       { path: "operaciones/nueva", element: <NuevaOperacion /> },
       { path: "operaciones/:id", element: <DetalleOperacion /> },
+      { path: "operaciones/:id/editar", element: <EditarOperacion /> },
       {
         path: "caja",
         element: <Caja />,
@@ -63,6 +64,7 @@ export const rutas: RouteObject[] = [
       },
       { path: "clientes/nuevo", element: <NuevoCliente /> },
       { path: "clientes/:id", element: <DetalleCliente /> },
+      { path: "clientes/:id/editar", element: <EditarCliente /> },
       {
         path: "administracion",
         element: <SoloRoles roles={["ADMIN"]} />,
@@ -72,6 +74,7 @@ export const rutas: RouteObject[] = [
             children: [
               { index: true, element: <Navigate to="usuarios" replace /> },
               { path: "usuarios", element: <Usuarios /> },
+              { path: "fidelizacion", element: <Fidelizacion /> },
               { path: "auditoria", element: <Auditoria /> },
             ],
           },

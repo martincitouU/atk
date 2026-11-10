@@ -1,11 +1,16 @@
 // Pizarra: las tasas vigentes de cada divisa (GET /api/pizarra). Compra y
 // venta se leen desde la casa: "Compra" es lo que paga la casa por la divisa.
-// El admin publica tasas nuevas (POST /api/cotizaciones; el formulario se
-// conecta en F3).
+// El admin publica tasas nuevas (POST /api/cotizaciones). El formulario
+// parte con los valores vigentes de la divisa: lo común es mover solo la
+// referencia. Cambiar un margen crea una regla nueva; las operaciones
+// conservan la suya.
 
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { usePublicarTasa } from "../../api/acciones.ts";
 import { useCatalogo, usePizarra } from "../../api/consultas.ts";
 import type { FilaPizarra, TipoMargen } from "../../api/tipos.ts";
+import { Aviso } from "../../componentes/Aviso.tsx";
 import { Boton } from "../../componentes/Boton.tsx";
 import { Entrada, FilaCampos, Seleccion } from "../../componentes/Campo.tsx";
 import { IconoDivisa } from "../../componentes/Divisa.tsx";
@@ -16,7 +21,8 @@ import { Grilla, Pagina } from "../../componentes/Pagina.tsx";
 import { Segmentado } from "../../componentes/Segmentado.tsx";
 import { Tarjeta } from "../../componentes/Tarjeta.tsx";
 import { formatearFechaHora } from "../../lib/fechas.ts";
-import { formatearPorcentaje, formatearTasa } from "../../lib/montos.ts";
+import { errorEnFormulario } from "../../lib/formularios.ts";
+import { formatearPorcentaje, formatearTasa, leerTasa } from "../../lib/montos.ts";
 import { usePersonal } from "../../sesion/Sesion.tsx";
 import css from "./Pizarra.module.css";
 
@@ -40,7 +46,7 @@ export function Pizarra() {
           )
         }
       </ConDatos>
-      {usuario.rol === "ADMIN" && <Publicar />}
+      {usuario.rol === "ADMIN" && pizarra.data && <Publicar filas={pizarra.data} />}
     </Pagina>
   );
 }
@@ -81,26 +87,106 @@ function TarjetaDivisa({ fila }: { fila: FilaPizarra }) {
   );
 }
 
-function Publicar() {
+type ValoresPublicacion = { monedaCodigo: string; referencia: string; tipoMargen: TipoMargen; margenCompra: string; margenVenta: string };
+
+/** Los valores vigentes de una divisa, como se escriben ("940,00", "1,5"). */
+function valoresVigentes(fila: FilaPizarra | undefined, monedaCodigo: string): ValoresPublicacion {
+  const tipoMargen = fila?.tipoMargen ?? "PORCENTAJE";
+  const margen = (valor: string | null | undefined) => (valor ? formatearTasa(valor, tipoMargen === "PORCENTAJE" ? 0 : (fila?.decimalesTasa ?? 2)) : "");
+  return {
+    monedaCodigo,
+    referencia: fila?.referenciaE6 ? formatearTasa(fila.referenciaE6, fila.decimalesTasa) : "",
+    tipoMargen,
+    margenCompra: margen(fila?.margenCompraE6),
+    margenVenta: margen(fila?.margenVentaE6),
+  };
+}
+
+const reglaTasa =
+  (opciones: { cero?: boolean } = {}) =>
+  (texto: string) => {
+    if (!texto.trim()) return "Escribe el valor";
+    const valor = leerTasa(texto);
+    if (valor === null) return "Escribe el número con coma para los decimales, por ejemplo 1,5";
+    return opciones.cero || BigInt(valor) > 0n || "Debe ser mayor que cero";
+  };
+
+function Publicar({ filas }: { filas: FilaPizarra[] }) {
   const { data: catalogo } = useCatalogo();
-  const [tipoMargen, setTipoMargen] = useState<TipoMargen>("PORCENTAJE");
+  const publicar = usePublicarTasa();
+  const [listo, setListo] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const primera = filas[0]?.monedaCodigo ?? "";
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    reset,
+    setError: marcar,
+    formState: { errors, isSubmitting },
+  } = useForm<ValoresPublicacion>({ defaultValues: valoresVigentes(filas[0], primera) });
+  const tipoMargen = watch("tipoMargen");
   const sufijo = tipoMargen === "PORCENTAJE" ? "%" : "CLP";
+
+  const alEnviar = handleSubmit(async (v) => {
+    setListo(null);
+    setError(null);
+    try {
+      await publicar.mutateAsync({
+        monedaCodigo: v.monedaCodigo,
+        referenciaE6: leerTasa(v.referencia) ?? "",
+        tipoMargen: v.tipoMargen,
+        margenCompraE6: leerTasa(v.margenCompra) ?? "",
+        margenVentaE6: leerTasa(v.margenVenta) ?? "",
+      });
+      setListo(`Tasa de ${v.monedaCodigo} publicada: la pizarra ya cambió.`);
+    } catch (e) {
+      setError(
+        errorEnFormulario(e, marcar, [], {
+          nombres: { referenciaE6: "referencia", margenCompraE6: "margenCompra", margenVentaE6: "margenVenta" },
+          porCodigo: { REFERENCIA_INVALIDA: "referencia" },
+        }),
+      );
+    }
+  });
 
   return (
     <Tarjeta
       titulo="Publicar una tasa"
       descripcion="La pizarra se calcula con la referencia y los márgenes. Cambiar un margen crea una regla nueva: las operaciones conservan la suya."
     >
-      <form className={css.formulario} onSubmit={(e) => e.preventDefault()}>
+      {listo && <Aviso tono="exito">{listo}</Aviso>}
+      {error && <Aviso tono="error">{error}</Aviso>}
+      <form className={css.formulario} onSubmit={alEnviar} noValidate>
         <FilaCampos>
-          <Seleccion etiqueta="Divisa">
+          <Seleccion
+            etiqueta="Divisa"
+            {...register("monedaCodigo", {
+              // Al cambiar de divisa, se parte de sus valores vigentes
+              onChange: (e: { target: { value: string } }) =>
+                reset(
+                  valoresVigentes(
+                    filas.find((f) => f.monedaCodigo === e.target.value),
+                    e.target.value,
+                  ),
+                ),
+            })}
+          >
             {catalogo?.divisas.map((d) => (
               <option key={d.codigo} value={d.codigo}>
                 {d.codigo} · {d.nombre}
               </option>
             ))}
           </Seleccion>
-          <Entrada etiqueta="Tasa de referencia" inputMode="decimal" placeholder="940,00" sufijo="CLP" />
+          <Entrada
+            etiqueta="Tasa de referencia"
+            inputMode="decimal"
+            placeholder="940,00"
+            sufijo="CLP"
+            error={errors.referencia?.message}
+            {...register("referencia", { validate: reglaTasa() })}
+          />
         </FilaCampos>
         <div className={css.grupo}>
           <span className={css.etiquetaGrupo}>Tipo de margen</span>
@@ -111,15 +197,29 @@ function Publicar() {
               { valor: "MONTO_FIJO", texto: "Monto fijo" },
             ]}
             valor={tipoMargen}
-            alCambiar={setTipoMargen}
+            alCambiar={(valor) => setValue("tipoMargen", valor)}
           />
         </div>
         <FilaCampos>
-          <Entrada etiqueta="Margen de compra" inputMode="decimal" placeholder="1,5" sufijo={sufijo} />
-          <Entrada etiqueta="Margen de venta" inputMode="decimal" placeholder="1,5" sufijo={sufijo} />
+          <Entrada
+            etiqueta="Margen de compra"
+            inputMode="decimal"
+            placeholder="1,5"
+            sufijo={sufijo}
+            error={errors.margenCompra?.message}
+            {...register("margenCompra", { validate: reglaTasa({ cero: true }) })}
+          />
+          <Entrada
+            etiqueta="Margen de venta"
+            inputMode="decimal"
+            placeholder="1,5"
+            sufijo={sufijo}
+            error={errors.margenVenta?.message}
+            {...register("margenVenta", { validate: reglaTasa({ cero: true }) })}
+          />
         </FilaCampos>
         <div className={css.acciones}>
-          <Boton type="submit" variante="primario">
+          <Boton type="submit" variante="primario" cargando={isSubmitting}>
             Publicar tasa
           </Boton>
         </div>

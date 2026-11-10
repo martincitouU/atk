@@ -1,12 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  formatearConSimbolo,
-  formatearMonto,
-  formatearPorcentaje,
-  formatearTasa,
-  leerMonto,
-  leerTasa,
-} from "../src/lib/montos.ts";
+import { formatearConSimbolo, formatearMonto, formatearPorcentaje, formatearTasa, leerMonto, leerMontoConSigno, leerTasa } from "../src/lib/montos.ts";
 
 describe("formatearMonto", () => {
   it.each([
@@ -105,5 +98,24 @@ describe("leerTasa", () => {
 
   it("rechaza más de 6 decimales", () => {
     expect(leerTasa("1,1234567")).toBeNull();
+  });
+});
+
+describe("leerMontoConSigno (ajustes de caja)", () => {
+  it.each([
+    ["-1.000", 0, "-1000"],
+    ["250", 0, "250"],
+    ["-0,50", 2, "-50"],
+    ["-0", 0, "0"],
+  ])("%s con %i decimales → %s", (texto, decimales, esperado) => {
+    expect(leerMontoConSigno(texto, decimales)).toBe(esperado);
+  });
+
+  it.each([
+    ["--5", 0],
+    ["-1,5", 0],
+    ["-", 0],
+  ])("%j → null", (texto, decimales) => {
+    expect(leerMontoConSigno(texto, decimales)).toBeNull();
   });
 });

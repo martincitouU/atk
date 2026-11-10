@@ -60,6 +60,18 @@ export function leerMonto(texto: string, decimales: number): string | null {
   return (enteros + fraccion.padEnd(decimales, "0")).replace(/^0+(?=\d)/, "");
 }
 
+/**
+ * Como leerMonto, pero con signo: un ajuste de caja puede restar.
+ * "-1.000" con 0 → "-1000"; "250" con 0 → "250".
+ */
+export function leerMontoConSigno(texto: string, decimales: number): string | null {
+  const limpio = texto.replace(/\s/g, "");
+  const negativo = limpio.startsWith("-");
+  const valor = leerMonto(negativo ? limpio.slice(1) : limpio, decimales);
+  if (valor === null) return null;
+  return negativo && valor !== "0" ? `-${valor}` : valor;
+}
+
 /** Una tasa es un monto con 6 decimales: "954,10" → "954100000". */
 export function leerTasa(texto: string): string | null {
   return leerMonto(texto, 6);

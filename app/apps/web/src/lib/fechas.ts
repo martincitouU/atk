@@ -55,9 +55,21 @@ export function diaSiguiente(dia: string): string {
  * Un filtro "hasta el 8" se envía como el inicio del 9 (la API lo excluye).
  */
 export function inicioDelDia(dia: string, zona = ZONA_CASA): string {
-  // El desfase de ese día, leído a mediodía UTC (lejos de un cambio de hora)
+  return instanteDeHora(dia, "00:00", zona);
+}
+
+/**
+ * Una hora de un día en la zona de la casa, como instante para la API:
+ * ("2026-11-08", "14:05") → "2026-11-08T14:05:00-03:00". Sirve para la hora
+ * real de una operación registrada después (registro diferido).
+ */
+export function instanteDeHora(dia: string, hora: string, zona = ZONA_CASA): string {
+  return `${dia}T${hora}:00${desfaseDe(dia, zona)}`;
+}
+
+/** El desfase de la zona ese día ("-03:00"), leído a mediodía UTC, lejos de un cambio de hora. */
+function desfaseDe(dia: string, zona: string): string {
   const partes = formateador({ timeZoneName: "longOffset" }, zona, "en-US").formatToParts(new Date(`${dia}T12:00:00Z`));
   const nombre = partes.find((p) => p.type === "timeZoneName")?.value ?? "";
-  const desfase = /GMT([+-]\d{2}:\d{2})/.exec(nombre)?.[1] ?? (nombre === "GMT" ? "+00:00" : "-03:00");
-  return `${dia}T00:00:00${desfase}`;
+  return /GMT([+-]\d{2}:\d{2})/.exec(nombre)?.[1] ?? (nombre === "GMT" ? "+00:00" : "-03:00");
 }
