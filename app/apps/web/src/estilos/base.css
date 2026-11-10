@@ -408,9 +408,8 @@ fieldset.grupo > legend {
 }
 
 /* El separador «·» (componentes/Sep.tsx). Va en la fuente mono, donde es un
-   glifo normal centrado en su celda (en Overpass, la fuente anterior, era una
-   marca de ancho cero)
-   (el mismo margen a cada lado). Va entre dos espacios iguales, sin espaciado
+   glifo normal centrado en su celda: el mismo margen a cada lado (en Overpass,
+   la fuente anterior, era una marca de ancho cero). Va entre dos espacios iguales, sin espaciado
    de letras propio (si no, el aire de la derecha crece), y el margen negativo
    simétrico le quita el exceso de la celda: ~0,3 em de aire por lado. Es un
    glifo en línea, no un inline-block: así el espacio duro de la izquierda

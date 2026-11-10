@@ -201,7 +201,7 @@ table.tasas tr.esperando .esqueleto {
 }
 
 .cambio-btn:hover {
-  background: rgb(255 255 255 / 0.08);
+  background: rgb(0 0 0 / 0.12); /* oscurece: el aviso sigue en ~5,5:1 */
 }
 
 /* Con foco, el anillo es blanco (8:1 sobre el verde): el amarillo ya dice «cambió» */
@@ -234,7 +234,7 @@ table.tasas tr.cambio.vista .aviso-dest {
   opacity: 0.75;
 }
 
-/* Solo destella el borde: el fondo queda en --encendida y el aviso nunca baja de 4,86:1 */
+/* Solo destella el borde: el fondo queda en --encendida y el aviso nunca baja de 4,65:1 */
 @keyframes reflejo {
   0%,
   44% {
@@ -247,7 +247,7 @@ table.tasas tr.cambio.vista .aviso-dest {
 }
 
 table.tasas tr.vencida td.cifra {
-  opacity: 0.55;
+  opacity: 0.7; /* 4,85:1 sobre la pizarra apagada */
 }
 
 /* En una pantalla baja, la pizarra y el registro se aprietan un poco más */

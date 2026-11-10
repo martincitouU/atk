@@ -5,7 +5,7 @@
  * columnas.
  */
 :root {
-  /* No cambia de noche (--turismo sí sube de luz, para el riel) */
+  /* No cambia de noche */
   --jornada-letrero: var(--letrero-jornada); /* el blanco lee 8,2:1 */
   --jornada-letrero-tinta: #ffffff;
 }

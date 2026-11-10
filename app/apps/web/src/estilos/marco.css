@@ -138,11 +138,19 @@
   color: var(--tinta);
 }
 
+/* Los tonos apagados no llegan a 3:1 sobre el asfalto: el canto claro sí
+   (13,3:1), como en la barra del teléfono. En la activa, sobre la cabecera
+   clara, el canto es de trazo. */
 .pestana-cuadro {
   flex: none;
   width: 12px;
   height: 12px;
   border-radius: 3px;
+  box-shadow: 0 0 0 1.5px var(--riel-tinta);
+}
+
+.pestanas a[aria-current="page"] .pestana-cuadro {
+  box-shadow: 0 0 0 1.5px var(--trazo);
 }
 
 .pestanas a kbd {

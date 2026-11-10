@@ -3,9 +3,9 @@
  * aprobado (.impeccable/mocks/decision/src/assigned.html); los que el comp
  * escribía sueltos en sus reglas tienen aquí su nombre.
  *
- * Oscuro: letreros bajo los focos. El asfalto se hunde, el letrero sigue en
- * verde vial y los blancos reflejan. Todo texto cumple AA sobre --panel y
- * --fondo; los colores de divisa y de función suben de luz para leerse de
+ * Oscuro: letreros bajo los focos. El asfalto se hunde, los letreros conservan
+ * su tono apagado (--letrero-*) y los blancos reflejan. Todo texto cumple AA
+ * sobre --panel y --fondo; los colores de divisa suben de luz para leerse de
  * noche.
  */
 :root {
@@ -17,8 +17,6 @@
   --amarillo: #f2b705;
   --faena: #e06a1b;
   --pare: #c8102e;
-  --servicios: #1e4fa0;
-  --turismo: #7a4a2a;
   --neutro: #6b7378;
 
   /* Superficies */
@@ -114,15 +112,12 @@
   --riel-activo: var(--asfalto-2);
   --riel-tinta: #e9eae4;
   --riel-suave: #9aa3a8;
-  --riel-turno: #b5bcc0;
   --riel-linea: #3a4146;
   --riel-kbd-fondo: #e2e4de;
   --riel-kbd-tinta: #3f474c;
   --riel-kbd-borde: #c7cac1;
-  --riel-borde: transparent;
 
   /* Medidas */
-  --riel-ancho: 208px;
   --barra-alto: 60px;
   --radio-letrero: 14px;
   --radio-panel: 6px;      /* vuelta 3: más de escritorio (era 10 px) */
@@ -136,13 +131,11 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --vial: #005c45;           /* el letrero no cambia de color */
+    --vial: #005c45;           /* el botón principal y el letrero de la entrada no cambian */
     --vial-hi: #0b7a5d;
     --amarillo: #f2b705;       /* 8,9:1 sobre el panel */
     --faena: #e06a1b;          /* 4,8:1 sobre el panel */
     --pare: #f5596b;           /* 5,0:1 sobre el panel */
-    --servicios: #5b8be0;
-    --turismo: #b98057;
     --neutro: #7a8287;
 
     --fondo: #14181b;
@@ -195,7 +188,6 @@
     --fila-elegida: #3a3112;
 
     --riel-linea: #252b30;
-    --riel-borde: #252b30;     /* de noche el riel y el fondo casi se tocan */
 
     --sombra-letrero: 0 2px 0 rgb(0 0 0 / 0.4), 0 10px 28px -12px rgb(0 0 0 / 0.8);
   }

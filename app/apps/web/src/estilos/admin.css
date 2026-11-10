@@ -256,7 +256,7 @@
   overflow: auto;
   border-radius: var(--radio-control);
   background: var(--lamina);
-  font: 12px/1.45 var(--familia-num);
+  font: 500 12px/1.45 var(--familia-num); /* la Mono se carga en 500 y 700 */
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
