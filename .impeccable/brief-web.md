@@ -12,7 +12,7 @@ Abierto: denominaciones sin tabla (ayuda de conteo en el front); configuración 
 
 THESIS: la ventanilla se lee como un letrero de ruta chileno: las divisas son destinos y las tasas sus distancias, legibles de un vistazo. Rechaza el dashboard de tarjetas de KPI con barra lateral clara y acento azul.
 
-OWN-WORLD: verde vial (#005C45) solo en la pizarra-letrero, con su filete blanco interior redondeado; riel de asfalto (#1D2226) con un color de función por sección (verde Ventanilla, amarillo Cierre, café Jornada, azul servicios Clientes); fondo gris claro de lámina; Overpass y Overpass Mono tabular; un color fijo por divisa; amarillo de advertencia para cambios y descuadres, naranja de faena para borradores, rojo PARE para el reverso. En oscuro, letreros bajo los focos: los blancos reflejan.
+OWN-WORLD: letreros en el tono apagado de cada función (vuelta 3, A3: verde pizarra Ventanilla, ocre Cierre, café Jornada, azul pizarra Clientes, gris Configuración), con su filete blanco interior redondeado; verde vial (#005C45) para el botón principal y la entrada; pestañas de asfalto (#1D2226) con el cuadro de cada función; fondo gris claro de lámina; IBM Plex Sans e IBM Plex Mono tabular (B1); un color fijo por divisa; amarillo de advertencia para cambios y descuadres, naranja de faena para borradores, rojo PARE para el reverso. En oscuro, letreros bajo los focos: los blancos reflejan.
 
 STORY: Rolando ve la pizarra, escribe C/V, la divisa y el monto, lee la placa de la vista previa y pulsa Enter; la operación cae en el libro del día. Cree que el sistema no le miente con el dinero.
 

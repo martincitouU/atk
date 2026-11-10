@@ -8,8 +8,6 @@ colors:
   reflejo: "#ffd54a"
   faena: "#e06a1b"
   pare: "#c8102e"
-  servicios: "#1e4fa0"
-  turismo: "#7a4a2a"
   neutro: "#6b7378"
   letrero-ventanilla: "#37584a"
   letrero-cierre: "#7b5e2e"
@@ -242,13 +240,13 @@ La densidad es la de una herramienta de trabajo: 80 a 150 operaciones al día po
 Pintura de señalética sobre lámina gris: colores planos para la información vial, neutros cálidos para el trabajo. Desde la vuelta 3 (A3, 2026-11-09) los letreros llevan el tono de su función con la croma baja: el código por pestaña se mantiene sin estridencia; los colores saturados quedan para los avisos.
 
 ### Primary
-- **Verde Vial** (`vial`): el letrero de la entrada y el botón principal («Confirmar», «Entrar», «Cerrar turno»). No cambia de valor en oscuro. Su hover es **Verde Vial Encendido** (`vial-hi`), que también es el cursor de texto en claro.
+- **Verde Vial** (`vial`): el botón principal («Confirmar», «Entrar», «Cerrar turno») y el favicon (verde de marca). No cambia de valor en oscuro. Su hover es **Verde Vial Encendido** (`vial-hi`), que también es el cursor de texto en claro.
 
 ### Secondary: los colores de función
 Cada sección se reconoce por su tono apagado en el cuadro de su pestaña y en su letrero (vuelta 3, A3). Todos llevan tinta y filete blancos y no cambian de noche:
-- **Verde Pizarra** (`letrero-ventanilla`, #37584a, 7,9:1): Ventanilla (la pizarra).
+- **Verde Pizarra** (`letrero-ventanilla`, #37584a, 7,9:1): Ventanilla (la pizarra) y, desde la sesión 059, también el letrero de la entrada y el del portal `/mi`, con su subtítulo #d6e6e0 (6,1:1).
 - **Ocre** (`letrero-cierre`, #7b5e2e, 6,0:1): Cierre del día. Va en H78 y no en el H85 del amarillo, que con la croma baja se vuelve caqui. El **Amarillo de Advertencia** (`amarillo`) deja el letrero y queda para el foco, la selección de texto, el borde de la tasa que cambió y el descuadre.
-- **Café** (`letrero-jornada`, #624a3c, 8,2:1): Jornada. `turismo` sigue para el riel y sube de luz de noche.
+- **Café** (`letrero-jornada`, #624a3c, 8,2:1): Jornada.
 - **Azul Pizarra** (`letrero-clientes`, #40506c, 8,1:1; subtítulo #d6dfec, 6,1:1): Clientes.
 - **Gris** (`letrero-config`, #4f575b, 7,4:1; subtítulo #e1e5e7, 5,8:1): Configuración, Usuarios y Auditoría. `neutro` sigue para la divisa sin color propio, como CLP.
 
@@ -271,7 +269,7 @@ Cada sección se reconoce por su tono apagado en el cuadro de su pestaña y en s
 - **Destacador** (`fila-elegida`) y **aviso** (`aviso-fondo`): la fila elegida del libro y el fondo del aviso amarillo.
 
 ### Named Rules
-**The Letrero Rule.** Los tonos `letrero-*` aparecen solo en el letrero de su sección y en el cuadro de su pestaña. El verde vial y el amarillo suman únicamente los papeles listados arriba (botón principal y confirmada; advertencia, foco y selección). Ningún color de función tiñe paneles, fondos ni encabezados.
+**The Letrero Rule.** Los tonos `letrero-*` aparecen solo en el letrero de su sección y en el cuadro de su pestaña (`letrero-ventanilla` también en los letreros de la entrada y del portal). El verde vial y el amarillo suman únicamente los papeles listados arriba (botón principal y confirmada; advertencia, foco y selección). Ningún color de función tiñe paneles, fondos ni encabezados.
 
 **The Destino Rule.** Cada divisa tiene un solo color, en todas las pantallas, siempre como punto o barra junto a su código. Una divisa nueva sin token cae en `neutro`.
 
@@ -304,7 +302,7 @@ Cada sección se reconoce por su tono apagado en el cuadro de su pestaña y en s
 El marco de escritorio (vuelta 3; comp B en `.impeccable/mocks/office/`) ocupa la ventana, de arriba abajo:
 
 1. **La barra de título** (asfalto, 32 px): «ATK», la casa, la sección abierta con su caja y quién está.
-2. **Las pestañas de sección** (asfalto): Ventanilla F1, Cierre del día F2, Jornada F3, Clientes F4 y Configuración F5, y, solo para el administrador, Usuarios y Auditoría. Cada una lleva el cuadro de su color de función; la activa se funde con la cinta. «Salir» va al final de la fila.
+2. **Las pestañas de sección** (asfalto): Ventanilla F1, Cierre del día F2, Jornada F3, Clientes F4 y Configuración F5, y, solo para el administrador, Usuarios y Auditoría. Cada una lleva el cuadro del tono apagado de su función, con un canto claro de 1,5 px (de trazo en la activa) para llegar a 3:1 sobre el asfalto; la activa se funde con la cinta. «Salir» va al final de la fila.
 3. **La cinta** (unos 76 px): los comandos de la pantalla en grupos rotulados, con su tecla.
 4. **El área de trabajo**, con 14px 18px de margen, que corre por dentro. Los bloques se separan por 14 px.
 5. **La barra de estado** (asfalto, 28 px): el turno, quién está, la conexión con el servidor, la vigencia de la pizarra y la fecha y la hora.
@@ -348,7 +346,7 @@ La vista previa invertida: tres columnas (tasa, cliente paga, margen), rótulos 
 - **Hover / Focus:** hover a `vial-hi` (0.15s ease-out); foco con el anillo global.
 - **Secondary:** panel blanco con borde de trazo; hover a `lamina`.
 - **Peligro:** rojo PARE con tinta blanca (en oscuro, #f5596b con tinta de asfalto).
-- **Enlace:** acción secundaria dentro de una fila o un aviso: 800, subrayado de 1 px que pasa a 2 px en hover.
+- **Enlace:** acción secundaria dentro de una fila o un aviso: 700, subrayado de 1 px que pasa a 2 px en hover.
 
 ### Segmentado
 Compra/Venta y gasto/retiro/ingreso: dos mitades dentro de un borde de trazo de 2 px. La activa en asfalto con tinta blanca (en oscuro, trazo claro con tinta oscura); cada mitad lleva su tecla.
@@ -376,7 +374,7 @@ Grilla de ícono y cuerpo, borde de 2 px y 8 px de radio. Advertencia: borde ama
 Las pestañas de sección sobre el asfalto: cuadro de color, nombre 700 13.5px y tecla de función (F1–F5). Hover en `asfalto-2`; la activa en `cabecera`, con borde de línea, sube 2 px y se funde con la cinta. «Salir» al final de la fila. Bajo 900 px es la barra inferior de 60 px de siempre: cuadro arriba, nombre corto abajo, la activa en `asfalto-2` con el anillo reflectante en su cuadro.
 
 ### Cinta
-Los comandos de la pantalla, en grupos rotulados (11px 800 en mayúsculas, como una leyenda): los principales como botones grandes (ícono de 22 px arriba, rótulo y tecla abajo) y los demás apilados (ícono de 18 px, rótulo y tecla). Hover en `lamina` con borde de línea; el ícono va en `suave`, en `vial-hi` si confirma y en `pare` si reversa. Un grupo puede llevar una nota corta («Vigente desde 21:45»). Cada pantalla la declara con `useCinta()` y cada comando llama a lo mismo que su tecla. Es una barra de herramientas: una sola parada de Tab, y las flechas recorren sus botones. En una ventana baja se vuelve una sola fila sin rótulos.
+Los comandos de la pantalla, en grupos rotulados (11px 700 en mayúsculas, como una leyenda): los principales como botones grandes (ícono de 22 px arriba, rótulo y tecla abajo) y los demás apilados (ícono de 18 px, rótulo y tecla). Hover en `lamina` con borde de línea; el ícono va en `suave`, en `vial-hi` si confirma y en `pare` si reversa. Un grupo puede llevar una nota corta («Vigente desde 21:45»). Cada pantalla la declara con `useCinta()` y cada comando llama a lo mismo que su tecla. Es una barra de herramientas: una sola parada de Tab, y las flechas recorren sus botones. En una ventana baja se vuelve una sola fila sin rótulos.
 
 ### Barra de estado
 Asfalto, 28 px, 12px 600: segmentos separados por una línea, con su ícono en `riel-suave`: el turno (en blanco «Turno abierto»), quién está y su rol, un punto verde «Conectado al servidor» (amarillo si no), la vigencia de la pizarra y, a la derecha, el día y la hora en Mono.
@@ -387,7 +385,7 @@ La tabla del día, como una planilla (vuelta 3): cabecera fija en mayúsculas so
 Las demás grillas del personal (conteo, clientes, usuarios, auditoría, configuración) siguen la misma regla: filas de 32 px, líneas verticales y cebra; la cebra no pesa (`:where()`) y cualquier estado de fila manda sobre ella.
 
 ### Grupos rotulados
-En un formulario, los campos que van juntos se encierran en un grupo con su leyenda (11px 800 en mayúsculas, en `suave`), con borde de línea y 6 px de radio, como en un cuadro de diálogo: en el registro, «Operación» y «Monto y documento». La placa no lleva recuadro: su rótulo imita la leyenda.
+En un formulario, los campos que van juntos se encierran en un grupo con su leyenda (11px 700 en mayúsculas, en `suave`), con borde de línea y 6 px de radio, como en un cuadro de diálogo: en el registro, «Operación» y «Monto y documento». La placa no lleva recuadro: su rótulo imita la leyenda.
 
 ### Teclas
 `kbd` en Mono 700 11px, borde de 1 px con 2 px abajo, 4 px de radio. Sobre el verde y el asfalto toma el fondo de su superficie.
@@ -398,7 +396,7 @@ Barras grises del tamaño de lo que viene, con un pulso de opacidad de 1.2s; sin
 ## Do's and Don'ts
 
 ### Do:
-- **Do** abrir cada pantalla con su letrero en su color de función, con filete interior y la sombra del letrero.
+- **Do** abrir cada pantalla con su letrero en el tono apagado de su función, con filete interior y la sombra del letrero.
 - **Do** escribir toda cifra de dinero en IBM Plex Mono tabular, con `formatearMonto`/`formatearTasa`.
 - **Do** mostrar la tecla de cada acción con `kbd` junto a su rótulo.
 - **Do** usar el foco amarillo con canto de asfalto (3 px + 5 px) y medir 3:1 en cada superficie donde aparezca.
