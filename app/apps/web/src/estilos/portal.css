@@ -1,7 +1,7 @@
 /*
  * El portal de clientes (/mi): «Carretera Austral, versión teléfono».
- * La misma identidad que la ventanilla (el letrero verde, IBM Plex, el color
- * por divisa), más tranquila: una columna, una acción por pantalla, y la
+ * La misma identidad que la ventanilla (el letrero en el verde apagado de la
+ * pizarra, IBM Plex, el color por divisa), más tranquila: una columna, una acción por pantalla, y la
  * jerarquía plana: espacio, tipografía y divisores, sin cajas dentro de cajas.
  * Comp aprobado: .impeccable/mocks/portal/portal-390.png.
  */
@@ -31,8 +31,9 @@
   padding-bottom: 24px;
 }
 
-/* El letrero: el verde vial con su filete blanco, más bajo y sin cifras. Un
-   solo elemento: el filete es un contorno hacia adentro, no una caja anidada */
+/* El letrero: el verde apagado de la pizarra (vuelta 3, A3) con su filete
+   blanco, más bajo y sin cifras. Un solo elemento: el filete es un contorno
+   hacia adentro, no una caja anidada. Blanco 7,9:1; #d6e6e0, 6,1:1 */
 .portal-letrero {
   display: flex;
   align-items: baseline;
@@ -42,7 +43,7 @@
   border-radius: var(--radio-letrero);
   outline: 2.5px solid #fff;
   outline-offset: -7px;
-  background: var(--vial);
+  background: var(--letrero-ventanilla);
   box-shadow: var(--sombra-letrero);
   color: #fff;
 }

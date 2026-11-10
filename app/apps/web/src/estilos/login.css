@@ -1,11 +1,11 @@
 /*
  * La entrada. Sin riel: el letrero verde de ATK es la única pieza de
- * identidad (el mismo verde vial, filete blanco y radio de la pizarra), y
+ * identidad (el mismo verde apagado, filete blanco y radio de la pizarra), y
  * debajo, el formulario en un panel como los de la Ventanilla.
  */
 
 :root {
-  /* El subtítulo del letrero: blanco atenuado sobre el verde vial (6,2:1) */
+  /* El subtítulo del letrero: blanco atenuado sobre el verde de la pizarra (6,1:1) */
   --login-letrero-suave: #d6e6e0;
 }
 
@@ -30,11 +30,12 @@
   width: min(100%, 392px);
 }
 
-/* El letrero: verde vial con su filete blanco interior */
+/* El letrero: el verde apagado de la pizarra (vuelta 3, A3; blanco 7,9:1) con
+   su filete blanco interior. El favicon conserva el verde de marca. */
 .login-letrero {
   padding: 6px;
   border-radius: var(--radio-letrero);
-  background: var(--vial);
+  background: var(--letrero-ventanilla);
   box-shadow: var(--sombra-letrero);
   color: #fff;
 }
