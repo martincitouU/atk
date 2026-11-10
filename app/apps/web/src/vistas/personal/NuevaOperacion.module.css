@@ -226,3 +226,10 @@
 .avanzadas summary:hover {
   color: var(--color-texto);
 }
+
+/* El monto escrito no es válido: el mensaje reemplaza la ayuda, en coral y con texto */
+.errorPanel {
+  font-size: var(--text-caption);
+  line-height: var(--leading-caption);
+  color: var(--color-error);
+}

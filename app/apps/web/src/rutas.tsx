@@ -14,7 +14,7 @@ import { Caja, Gastos, TurnoYCaja } from "./vistas/personal/Caja.tsx";
 import { Clientes, CuentasWeb, DetalleCliente, Fichas, NuevoCliente } from "./vistas/personal/Clientes.tsx";
 import { DetalleOperacion } from "./vistas/personal/DetalleOperacion.tsx";
 import { Inicio } from "./vistas/personal/Inicio.tsx";
-import { NuevaOperacion } from "./vistas/personal/NuevaOperacion.tsx";
+import { EditarOperacion, NuevaOperacion } from "./vistas/personal/NuevaOperacion.tsx";
 import { Operaciones } from "./vistas/personal/Operaciones.tsx";
 import { Pizarra } from "./vistas/personal/Pizarra.tsx";
 import { Ingresar } from "./vistas/publico/Ingresar.tsx";
@@ -44,6 +44,7 @@ export const rutas: RouteObject[] = [
       { path: "operaciones", element: <Operaciones /> },
       { path: "operaciones/nueva", element: <NuevaOperacion /> },
       { path: "operaciones/:id", element: <DetalleOperacion /> },
+      { path: "operaciones/:id/editar", element: <EditarOperacion /> },
       {
         path: "caja",
         element: <Caja />,

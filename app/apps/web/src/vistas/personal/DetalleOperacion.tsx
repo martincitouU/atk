@@ -6,17 +6,22 @@
 //   CONFIRMADA  reversar con motivo (supervisor o admin)
 //   REVERSADA   nada: se muestra el motivo
 //
-// Los botones abren sus diálogos; las acciones se conectan con la API en F3.
+// Confirmar mueve la caja y no se deshace (solo se reversa): por eso pide
+// confirmación y muestra los montos. Si la pizarra cambió desde el borrador,
+// la API no confirma; se recalcula y el cajero revisa los montos nuevos con
+// el cliente antes de confirmar.
 
 import { ArrowDown } from "lucide-react";
 import { useState } from "react";
-import { Link, useParams } from "react-router";
-import { esNoExiste } from "../../api/cliente.ts";
+import { useForm } from "react-hook-form";
+import { Link, useNavigate, useParams } from "react-router";
+import { useAutorizarTasa, useConfirmarOperacion, useEditarBorrador, useEliminarBorrador, useReversarOperacion } from "../../api/acciones.ts";
+import { ErrorApi, esNoExiste, mensajeDe } from "../../api/cliente.ts";
 import { useCatalogo, useDecimalesTasa, useMonedaBase, useNombres, useOperacion } from "../../api/consultas.ts";
 import type { OperacionListada } from "../../api/tipos.ts";
 import { Aviso } from "../../componentes/Aviso.tsx";
-import { Boton } from "../../componentes/Boton.tsx";
-import { AreaTexto } from "../../componentes/Campo.tsx";
+import { Boton, EnlaceBoton } from "../../componentes/Boton.tsx";
+import { AreaTexto, Entrada, FilaCampos, Seleccion } from "../../componentes/Campo.tsx";
 import { Dialogo } from "../../componentes/Dialogo.tsx";
 import { PastillaDivisa } from "../../componentes/Divisa.tsx";
 import { EncabezadoPagina } from "../../componentes/EncabezadoPagina.tsx";
@@ -35,6 +40,8 @@ export function DetalleOperacion() {
   const id = Number(useParams().id);
   const consulta = useOperacion(id);
   const nombre = useNombres();
+  // Lo que acaba de pasar (confirmada, reversada...): las acciones cambian con el estado
+  const [listo, setListo] = useState<string | null>(null);
 
   if (!Number.isInteger(id) || id <= 0 || esNoExiste(consulta.error)) return <NoEncontrada />;
   if (consulta.isError) return <ErrorDeCarga error={consulta.error} alReintentar={() => void consulta.refetch()} />;
@@ -56,13 +63,15 @@ export function DetalleOperacion() {
         volver={{ a: "/operaciones", texto: "Operaciones" }}
       />
 
+      {listo && <Aviso tono="exito">{listo}</Aviso>}
+
       {op.estado === "REVERSADA" && (
         <Aviso tono="error" titulo={`Reversada por ${nombre(op.reversadaPor)}${op.reversadaEn ? ` el ${formatearFechaHora(op.reversadaEn)}` : ""}`}>
           Motivo: {op.motivoReverso}
         </Aviso>
       )}
 
-      <Columnas lateral={<Acciones op={op} />}>
+      <Columnas lateral={<Acciones op={op} alTerminar={setListo} />}>
         <Resumen op={op} />
         <Tarjeta titulo="Detalle">
           <DatosOperacion op={op} />
@@ -138,56 +147,221 @@ function DatosOperacion({ op }: { op: OperacionListada }) {
 }
 
 /** Acciones según el estado y el rol. Una sola acción magenta: la que sigue. */
-function Acciones({ op }: { op: OperacionListada }) {
+function Acciones({ op, alTerminar }: { op: OperacionListada; alTerminar: (mensaje: string) => void }) {
   const { usuario } = usePersonal();
-  const nombre = useNombres();
-  const [reversando, setReversando] = useState(false);
-  const [eliminando, setEliminando] = useState(false);
   const esSupervisor = usuario.rol !== "CAJERO";
-  const esPropia = op.usuarioId === usuario.id;
+  if (op.estado === "REVERSADA") return null;
+  if (op.estado === "BORRADOR") return <AccionesBorrador op={op} esPropia={op.usuarioId === usuario.id} esSupervisor={esSupervisor} alTerminar={alTerminar} />;
+  return <AccionesConfirmada op={op} esSupervisor={esSupervisor} alTerminar={alTerminar} />;
+}
+
+function AccionesBorrador({
+  op,
+  esPropia,
+  esSupervisor,
+  alTerminar,
+}: {
+  op: OperacionListada;
+  esPropia: boolean;
+  esSupervisor: boolean;
+  alTerminar: (mensaje: string) => void;
+}) {
+  const nombre = useNombres();
+  const navegar = useNavigate();
+  const autorizar = useAutorizarTasa(op.id);
+  const eliminar = useEliminarBorrador(op.id);
+  const [confirmando, setConfirmando] = useState(false);
+  const [eliminando, setEliminando] = useState(false);
   const faltaAutorizar = op.esPreferencial && op.autorizadoPor === null;
 
-  if (op.estado === "REVERSADA") return null;
-
-  if (op.estado === "BORRADOR") {
-    return (
-      <Tarjeta
-        titulo="Borrador"
-        descripcion="Al confirmar se recalcula con la pizarra vigente: si cambió desde el borrador, no se confirma y hay que revisarlo."
-      >
-        <div className={css.botones}>
-          {faltaAutorizar && esSupervisor && <Boton variante="suave">Autorizar tasa preferencial</Boton>}
-          {esPropia ? (
-            <>
-              <Boton variante="primario" disabled={faltaAutorizar}>
-                Confirmar operación
-              </Boton>
-              <Boton>Editar</Boton>
-              <Boton variante="texto" onClick={() => setEliminando(true)}>
-                Eliminar borrador
-              </Boton>
-            </>
+  return (
+    <Tarjeta titulo="Borrador" descripcion="Al confirmar se recalcula con la pizarra vigente: si cambió desde el borrador, no se confirma y hay que revisarlo.">
+      {autorizar.isError && <Aviso tono="error">{mensajeDe(autorizar.error)}</Aviso>}
+      <div className={css.botones}>
+        {faltaAutorizar &&
+          (esSupervisor ? (
+            <Boton
+              variante="suave"
+              cargando={autorizar.isPending}
+              onClick={() => autorizar.mutate(undefined, { onSuccess: () => alTerminar("Tasa preferencial autorizada: ya se puede confirmar.") })}
+            >
+              Autorizar tasa preferencial
+            </Boton>
           ) : (
-            <p className={css.nota}>Solo quien registró el borrador ({nombre(op.usuarioId)}) puede confirmarlo, editarlo o eliminarlo.</p>
-          )}
-        </div>
-        <Dialogo
-          abierto={eliminando}
-          alCerrar={() => setEliminando(false)}
-          titulo="¿Eliminar este borrador?"
-          descripcion="Un borrador no movió la caja: se puede eliminar sin dejar rastro en ella."
-          acciones={
-            <>
-              <Boton onClick={() => setEliminando(false)}>Cancelar</Boton>
-              <Boton variante="primario">Eliminar</Boton>
-            </>
-          }
-        />
-      </Tarjeta>
-    );
-  }
+            <p className={css.nota}>La tasa preferencial necesita la autorización de un supervisor antes de confirmar.</p>
+          ))}
+        {esPropia ? (
+          <>
+            <Boton variante="primario" disabled={faltaAutorizar} onClick={() => setConfirmando(true)}>
+              Confirmar operación
+            </Boton>
+            <EnlaceBoton to={`/operaciones/${op.id}/editar`}>Editar</EnlaceBoton>
+            <Boton variante="texto" onClick={() => setEliminando(true)}>
+              Eliminar borrador
+            </Boton>
+          </>
+        ) : (
+          <p className={css.nota}>Solo quien registró el borrador ({nombre(op.usuarioId)}) puede confirmarlo, editarlo o eliminarlo.</p>
+        )}
+      </div>
 
-  // CONFIRMADA
+      <DialogoConfirmar
+        op={op}
+        abierto={confirmando}
+        alCerrar={() => setConfirmando(false)}
+        alConfirmar={() => alTerminar("Operación confirmada: la caja ya se movió.")}
+      />
+
+      <Dialogo
+        abierto={eliminando}
+        alCerrar={() => setEliminando(false)}
+        titulo="¿Eliminar este borrador?"
+        descripcion="Un borrador no movió la caja: se puede eliminar sin dejar rastro en ella."
+        acciones={
+          <>
+            <Boton onClick={() => setEliminando(false)}>Cancelar</Boton>
+            <Boton variante="primario" cargando={eliminar.isPending} onClick={() => eliminar.mutate(undefined, { onSuccess: () => navegar("/operaciones") })}>
+              Eliminar
+            </Boton>
+          </>
+        }
+      >
+        {eliminar.isError && <Aviso tono="error">{mensajeDe(eliminar.error)}</Aviso>}
+      </Dialogo>
+    </Tarjeta>
+  );
+}
+
+/**
+ * Confirmar: muestra lo que se va a cobrar o pagar y, si falta, pide el
+ * folio de la boleta (en la práctica se emite al final).
+ *
+ * Guardar el folio recalcula el borrador: si con eso cambian los montos (la
+ * pizarra cambió), no se confirma y se muestran los nuevos para revisarlos.
+ */
+function DialogoConfirmar({ op, abierto, alCerrar, alConfirmar }: { op: OperacionListada; abierto: boolean; alCerrar: () => void; alConfirmar: () => void }) {
+  const editar = useEditarBorrador(op.id);
+  const confirmar = useConfirmarOperacion(op.id);
+  const monedaBase = useMonedaBase();
+  const decimalesTasa = useDecimalesTasa()(op.monedaCodigo);
+  const [error, setError] = useState<ErrorApi | Error | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
+  const faltaFolio = op.folioDte === null;
+  const {
+    register,
+    handleSubmit,
+    setError: marcar,
+    formState: { errors, isSubmitting },
+  } = useForm<{ tipoDte: string; folio: string }>({ defaultValues: { tipoDte: "41", folio: "" } });
+
+  const cerrar = () => {
+    setError(null);
+    setAviso(null);
+    alCerrar();
+  };
+
+  const alEnviar = handleSubmit(async ({ tipoDte, folio }) => {
+    setError(null);
+    setAviso(null);
+    try {
+      if (faltaFolio) {
+        const conFolio = await editar.mutateAsync({ tipoDte: Number(tipoDte) as 34 | 41, folioDte: Number(folio) });
+        if (conFolio.montoBase !== op.montoBase || conFolio.tasaAplicadaE6 !== op.tasaAplicadaE6) {
+          setAviso("La pizarra cambió desde el borrador: el folio quedó guardado y los montos se recalcularon. Revísalos con el cliente y confirma de nuevo.");
+          return;
+        }
+      }
+      await confirmar.mutateAsync();
+      alConfirmar();
+      cerrar();
+    } catch (e) {
+      if (e instanceof ErrorApi && ["FOLIO_DUPLICADO", "DTE_INVALIDO", "DTE_INCOMPLETO"].includes(e.codigo)) marcar("folio", { message: e.message });
+      else setError(e instanceof Error ? e : new Error(mensajeDe(e)));
+    }
+  });
+
+  const recalcular = async () => {
+    setError(null);
+    try {
+      await editar.mutateAsync({});
+      setAviso("Montos recalculados con la pizarra vigente. Revísalos con el cliente antes de confirmar.");
+    } catch (e) {
+      setError(e instanceof Error ? e : new Error(mensajeDe(e)));
+    }
+  };
+
+  const codigo = error instanceof ErrorApi ? error.codigo : null;
+  return (
+    <Dialogo
+      abierto={abierto}
+      alCerrar={cerrar}
+      titulo={`Confirmar la operación N° ${op.id}`}
+      descripcion="Mueve la caja y no se deshace: si hay un error, un supervisor la reversa."
+      acciones={
+        <>
+          <Boton onClick={cerrar}>Cancelar</Boton>
+          <Boton type="submit" form={`confirmar-${op.id}`} variante="primario" cargando={isSubmitting}>
+            Confirmar
+          </Boton>
+        </>
+      }
+    >
+      <form id={`confirmar-${op.id}`} className={css.formularioDialogo} onSubmit={alEnviar} noValidate>
+        <p>
+          {op.tipo === "VENTA" ? "El cliente recibe" : "El cliente entrega"} <Monto valor={op.montoDivisa} moneda={op.monedaCodigo} />{" "}
+          {op.tipo === "VENTA" ? "y paga" : "y recibe"}{" "}
+          <strong>
+            <Monto valor={op.montoBase} moneda={monedaBase} />
+          </strong>
+          , a <Tasa valorE6={op.tasaAplicadaE6} decimales={decimalesTasa} /> por {op.monedaCodigo}.
+        </p>
+        {aviso && <Aviso tono="atencion">{aviso}</Aviso>}
+        {error && (
+          <Aviso
+            tono="error"
+            acciones={
+              codigo === "PIZARRA_CAMBIO" ? (
+                <Boton tamano="chico" cargando={editar.isPending} onClick={() => void recalcular()}>
+                  Recalcular
+                </Boton>
+              ) : (codigo === "FICHA_INCOMPLETA" || codigo === "FALTA_PROPOSITO") && op.clienteId ? (
+                <Link to={codigo === "FICHA_INCOMPLETA" ? `/clientes/${op.clienteId}` : `/operaciones/${op.id}/editar`}>
+                  {codigo === "FICHA_INCOMPLETA" ? "Ver la ficha" : "Editar"}
+                </Link>
+              ) : undefined
+            }
+          >
+            {error.message}
+          </Aviso>
+        )}
+        {faltaFolio && (
+          <FilaCampos>
+            <Seleccion etiqueta="Documento" {...register("tipoDte")}>
+              {Object.entries(TIPO_DTE).map(([valor, texto]) => (
+                <option key={valor} value={valor}>
+                  {texto} ({valor})
+                </option>
+              ))}
+            </Seleccion>
+            <Entrada
+              etiqueta="Folio"
+              inputMode="numeric"
+              autoComplete="off"
+              error={errors.folio?.message}
+              {...register("folio", {
+                validate: (f) =>
+                  f.trim() === "" ? "Escribe el folio de la boleta o factura" : /^[1-9]\d{0,9}$/.test(f.trim()) || "El folio es un número entero",
+              })}
+            />
+          </FilaCampos>
+        )}
+      </form>
+    </Dialogo>
+  );
+}
+
+function AccionesConfirmada({ op, esSupervisor, alTerminar }: { op: OperacionListada; esSupervisor: boolean; alTerminar: (mensaje: string) => void }) {
+  const [reversando, setReversando] = useState(false);
   if (!esSupervisor) {
     return (
       <Tarjeta titulo="Confirmada">
@@ -198,20 +372,65 @@ function Acciones({ op }: { op: OperacionListada }) {
   return (
     <Tarjeta titulo="Confirmada" descripcion="No se modifica. Si hubo un error, se reversa: la caja recibe los movimientos inversos.">
       <Boton onClick={() => setReversando(true)}>Reversar operación</Boton>
-      <Dialogo
+      <DialogoReversar
+        op={op}
         abierto={reversando}
         alCerrar={() => setReversando(false)}
-        titulo={`Reversar la operación N° ${op.id}`}
-        descripcion="Queda registrado quién la reversó, cuándo y por qué. Solo se puede con el turno de la operación abierto."
-        acciones={
-          <>
-            <Boton onClick={() => setReversando(false)}>Cancelar</Boton>
-            <Boton variante="primario">Reversar</Boton>
-          </>
-        }
-      >
-        <AreaTexto etiqueta="Motivo" placeholder="Por ejemplo: el cliente se arrepintió antes de retirarse" required />
-      </Dialogo>
+        alReversar={() => alTerminar("Operación reversada: la caja recibió los movimientos inversos.")}
+      />
     </Tarjeta>
+  );
+}
+
+function DialogoReversar({ op, abierto, alCerrar, alReversar }: { op: OperacionListada; abierto: boolean; alCerrar: () => void; alReversar: () => void }) {
+  const reversar = useReversarOperacion(op.id);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<{ motivo: string }>({ defaultValues: { motivo: "" } });
+
+  const cerrar = () => {
+    reset();
+    reversar.reset();
+    alCerrar();
+  };
+
+  const alEnviar = handleSubmit(async ({ motivo }) => {
+    try {
+      await reversar.mutateAsync({ motivo: motivo.trim() });
+      alReversar();
+      cerrar();
+    } catch {
+      // el mensaje queda en reversar.error
+    }
+  });
+
+  return (
+    <Dialogo
+      abierto={abierto}
+      alCerrar={cerrar}
+      titulo={`Reversar la operación N° ${op.id}`}
+      descripcion="Queda registrado quién la reversó, cuándo y por qué. Solo se puede con el turno de la operación abierto."
+      acciones={
+        <>
+          <Boton onClick={cerrar}>Cancelar</Boton>
+          <Boton type="submit" form={`reversar-${op.id}`} variante="primario" cargando={isSubmitting}>
+            Reversar
+          </Boton>
+        </>
+      }
+    >
+      <form id={`reversar-${op.id}`} className={css.formularioDialogo} onSubmit={alEnviar} noValidate>
+        {reversar.isError && <Aviso tono="error">{mensajeDe(reversar.error)}</Aviso>}
+        <AreaTexto
+          etiqueta="Motivo"
+          placeholder="Por ejemplo: el cliente se arrepintió antes de retirarse"
+          error={errors.motivo?.message}
+          {...register("motivo", { validate: (m) => m.trim() !== "" || "Escribe el motivo del reverso" })}
+        />
+      </form>
+    </Dialogo>
   );
 }
