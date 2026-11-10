@@ -1,12 +1,11 @@
 /*
- * El Cierre del día. Su letrero es el de advertencia de la ruta: amarillo con
- * filete negro (el color de función del Cierre en el riel y el de los
- * descuadres). Debajo, un bloque de conteo por moneda, la barra que cierra el
+ * El Cierre del día. Su letrero es ocre apagado con filete blanco (vuelta 3,
+ * A3: el amarillo de advertencia queda para los descuadres). Debajo, un bloque de conteo por moneda, la barra que cierra el
  * turno y los gastos, retiros e ingresos.
  */
 :root {
-  --cierre-letrero: #f2b705;
-  --cierre-letrero-tinta: #1d2226; /* 8,8:1 sobre el amarillo */
+  --cierre-letrero: var(--letrero-cierre);
+  --cierre-letrero-tinta: #ffffff; /* 6,0:1 sobre el ocre */
   /* La franja de un descuadre: amarillo pálido con su filete */
   --descuadre-fondo: var(--aviso-fondo);
   --descuadre-tinta: var(--tinta);
@@ -14,13 +13,10 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    /* Bajo los focos el letrero sigue amarillo, un punto menos encandilante */
-    --cierre-letrero: #e3aa05;
-    --cierre-letrero-tinta: #14181b; /* 8,5:1 */
     /* De noche el amarillo pálido se vuelve café y el descuadre se pierde:
-       la franja es una placa amarilla entera, como el letrero */
-    --descuadre-fondo: var(--cierre-letrero);
-    --descuadre-tinta: var(--cierre-letrero-tinta);
+       la franja es una placa amarilla entera, un punto menos encandilante */
+    --descuadre-fondo: #e3aa05;
+    --descuadre-tinta: #14181b; /* 8,5:1 */
   }
 }
 

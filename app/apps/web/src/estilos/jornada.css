@@ -1,21 +1,13 @@
 /*
  * La Jornada, primero para el teléfono (desde 360 px). Su letrero es el café
- * de los servicios turísticos de la ruta, con filete blanco; debajo, los
+ * de los servicios turísticos de la ruta, apagado (vuelta 3), con filete blanco; debajo, los
  * saldos en filas grandes, el día y las operaciones. Desde 1200 px, dos
  * columnas.
  */
 :root {
-  --jornada-letrero: #7a4a2a; /* el café de --turismo: el blanco lee 7,4:1 */
+  /* No cambia de noche (--turismo sí sube de luz, para el riel) */
+  --jornada-letrero: var(--letrero-jornada); /* el blanco lee 8,2:1 */
   --jornada-letrero-tinta: #ffffff;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* --turismo sube de luz de noche (para el riel); el letrero no: con el
-       café claro el blanco bajaría a 3,3:1 */
-    --jornada-letrero: #7a4a2a;
-    --jornada-letrero-tinta: #ffffff;
-  }
 }
 
 .jornada {

@@ -23,7 +23,7 @@
 .letrero {
   padding: 6px;
   border-radius: var(--radio-letrero);
-  background: var(--vial);
+  background: var(--letrero-ventanilla);
   box-shadow: var(--sombra-letrero);
   color: #fff;
 }

@@ -1,6 +1,6 @@
 /*
  * Clientes y Configuración. Cada sección abre con su cartel de servicio:
- * azul de servicios para Clientes y gris neutro para Configuración, con el
+ * azul de servicios apagado para Clientes y gris neutro para Configuración, con el
  * filete blanco de la señalética (más fino que el de la pizarra, que es el
  * letrero principal). Debajo, paneles y tablas con las medidas de la
  * Ventanilla.
@@ -8,19 +8,15 @@
 
 :root {
   /* Los carteles no cambian de color de noche, como el letrero de la pizarra */
-  --clientes-letrero: #1e4fa0;       /* blanco encima: 7,8:1 */
-  --clientes-letrero-suave: #d5e0f3; /* 5,9:1 sobre el azul */
-  --config-letrero: #5d666c;         /* blanco encima: 5,9:1 */
-  --config-letrero-suave: #e8eaeb;   /* 4,9:1 sobre el gris */
+  --clientes-letrero: var(--letrero-clientes); /* blanco encima: 8,1:1 */
+  --clientes-letrero-suave: #d6dfec;           /* 6,1:1 sobre el azul */
+  --config-letrero: var(--letrero-config);     /* blanco encima: 7,4:1 */
+  --config-letrero-suave: #e1e5e7;             /* 5,8:1 sobre el gris */
   --clientes-fila-hover: var(--lamina);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --clientes-letrero: #1e4fa0;
-    --clientes-letrero-suave: #d5e0f3;
-    --config-letrero: #4f575c;       /* un punto más hondo: de noche el gris no encandila */
-    --config-letrero-suave: #e8eaeb; /* 6,1:1 */
     --clientes-fila-hover: #232a2f;
   }
 }

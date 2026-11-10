@@ -28,13 +28,13 @@ export type Seccion = {
 };
 
 export const SECCIONES: readonly Seccion[] = [
-  { ruta: "/ventanilla", nombre: "Ventanilla", corto: "Ventanilla", color: "var(--vial)", tecla: "F1" },
-  { ruta: "/cierre", nombre: "Cierre del día", corto: "Cierre", color: "var(--amarillo)", tecla: "F2" },
-  { ruta: "/jornada", nombre: "Jornada", corto: "Jornada", color: "var(--turismo)", tecla: "F3", permiso: "verJornada" },
-  { ruta: "/clientes", nombre: "Clientes", corto: "Clientes", color: "var(--servicios)", tecla: "F4" },
-  { ruta: "/configuracion", nombre: "Configuración", corto: "Config.", color: "var(--neutro)", tecla: "F5" },
-  { ruta: "/usuarios", nombre: "Usuarios", corto: "Usuarios", color: "var(--neutro)", permiso: "administrar", admin: true },
-  { ruta: "/auditoria", nombre: "Auditoría", corto: "Auditoría", color: "var(--neutro)", permiso: "administrar", admin: true },
+  { ruta: "/ventanilla", nombre: "Ventanilla", corto: "Ventanilla", color: "var(--letrero-ventanilla)", tecla: "F1" },
+  { ruta: "/cierre", nombre: "Cierre del día", corto: "Cierre", color: "var(--letrero-cierre)", tecla: "F2" },
+  { ruta: "/jornada", nombre: "Jornada", corto: "Jornada", color: "var(--letrero-jornada)", tecla: "F3", permiso: "verJornada" },
+  { ruta: "/clientes", nombre: "Clientes", corto: "Clientes", color: "var(--letrero-clientes)", tecla: "F4" },
+  { ruta: "/configuracion", nombre: "Configuración", corto: "Config.", color: "var(--letrero-config)", tecla: "F5" },
+  { ruta: "/usuarios", nombre: "Usuarios", corto: "Usuarios", color: "var(--letrero-config)", permiso: "administrar", admin: true },
+  { ruta: "/auditoria", nombre: "Auditoría", corto: "Auditoría", color: "var(--letrero-config)", permiso: "administrar", admin: true },
 ];
 
 const ROL: Record<Rol, string> = { ADMIN: "Administrador", SUPERVISOR: "Supervisor", CAJERO: "Cajero" };

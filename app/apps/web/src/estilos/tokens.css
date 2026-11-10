@@ -39,6 +39,17 @@
   --borde-control: #8a9296;  /* contorno de input y select: 3:1 sobre el panel */
   --cursor: var(--vial-hi);
 
+  /* Letreros de sección (vuelta 3, A3): el tono de cada función con la croma
+     baja, para que cada pestaña conserve su código sin estridencia. No cambian
+     de noche. Blanco encima: ventanilla 7,9:1 · cierre 6,0 · jornada 8,2 ·
+     clientes 8,1 · configuración 7,4. El cierre va en H78 (ocre) y no en el
+     H85 del amarillo: con la croma baja, el H85 se vuelve caqui. */
+  --letrero-ventanilla: #37584a;
+  --letrero-cierre: #7b5e2e;
+  --letrero-jornada: #624a3c;
+  --letrero-clientes: #40506c;
+  --letrero-config: #4f575b;
+
   /* Divisas: un color fijo por destino */
   --usd: #2f7d4f;
   --ars: #3e8fc9;
