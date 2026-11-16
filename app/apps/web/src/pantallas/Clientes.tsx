@@ -15,7 +15,7 @@ import { useCinta, type GrupoCinta } from "../componentes/Cinta.tsx";
 import { ErrorCampo } from "../componentes/ErrorCampo.tsx";
 import { Kbd } from "../componentes/Kbd.tsx";
 import { Sep } from "../componentes/Sep.tsx";
-import { DATOS_DE_EJEMPLO, rutConPuntos } from "../comun.ts";
+import { DATOS_DE_EJEMPLO, nombrePais, rutConPuntos } from "../comun.ts";
 import "../estilos/clientes.css";
 import { CuentasPendientes } from "./CuentasPendientes.tsx";
 
@@ -37,18 +37,6 @@ const paraBuscar = (q: string) => (/^[\d.]+(-[\dkK]?)?$/.test(q.trim()) ? q.repl
 
 /** Los países que más pasan por la ventanilla de Coyhaique, para sugerir el código. */
 const PAISES = ["CL", "AR", "US", "DE", "FR", "ES", "GB", "IT", "NL", "CH", "IL", "BR", "UY", "PE", "BO", "CO", "MX", "CA", "AU", "CN", "JP"];
-const regiones = new Intl.DisplayNames(["es-CL"], { type: "region" });
-
-/** «DE» → «Alemania»; un código que no existe, null. */
-function nombrePais(codigo: string): string | null {
-  if (!/^[A-Za-z]{2}$/.test(codigo)) return null;
-  try {
-    const nombre = regiones.of(codigo.toUpperCase());
-    return nombre && nombre !== codigo.toUpperCase() ? nombre : null;
-  } catch {
-    return null;
-  }
-}
 
 const codigoPais = (campo: string) =>
   z

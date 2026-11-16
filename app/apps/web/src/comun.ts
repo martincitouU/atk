@@ -30,6 +30,19 @@ export function rutConPuntos(rut: string): string {
   return partes ? `${(partes[1] ?? "").replace(/\B(?=(\d{3})+(?!\d))/g, ".")}-${partes[2]}` : rut;
 }
 
+const regiones = new Intl.DisplayNames(["es-CL"], { type: "region" });
+
+/** «DE» → «Alemania»; un código que no existe, null. */
+export function nombrePais(codigo: string): string | null {
+  if (!/^[A-Za-z]{2}$/.test(codigo)) return null;
+  try {
+    const nombre = regiones.of(codigo.toUpperCase());
+    return nombre && nombre !== codigo.toUpperCase() ? nombre : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Pesos con su signo: 428400n → "$428.400"; un negativo, "−$1.000". */
 export function pesos(monto: bigint, decimales = 0): string {
   return monto < 0n ? `−$${formatearMonto(-monto, decimales)}` : `$${formatearMonto(monto, decimales)}`;

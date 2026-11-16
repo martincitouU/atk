@@ -7,7 +7,7 @@ import { aBigint, type CuentaDelCliente, type OperacionCliente } from "../../api
 import { Aviso } from "../../componentes/Aviso.tsx";
 import { EsqueletoEntrar } from "../../componentes/Esqueleto.tsx";
 import { Sep } from "../../componentes/Sep.tsx";
-import { conSimbolo, diaLargo, fechaEn, hora, pesos, rutConPuntos, tasa } from "../../comun.ts";
+import { conSimbolo, diaLargo, fechaEn, hora, nombrePais, pesos, rutConPuntos, tasa } from "../../comun.ts";
 import "../../estilos/portal.css";
 
 // ---------------------------------------------------------------------------
@@ -281,6 +281,9 @@ export function MisOperaciones() {
 
 const TIPO_DOC: Record<string, string> = { RUT: "RUT", PASAPORTE: "Pasaporte", DNI: "DNI", OTRO: "Documento" };
 
+/** «CL» → «Chile»; un código que el navegador no conoce se muestra tal cual. */
+const pais = (codigo: string | null) => (codigo ? (nombrePais(codigo) ?? codigo) : null);
+
 function Dato({ nombre, children }: { nombre: string; children: ReactNode }) {
   return (
     <div>
@@ -321,8 +324,8 @@ export function MiFicha() {
             <Dato nombre={TIPO_DOC[f.tipoDocumento] ?? "Documento"}>
               <span className="num">{f.tipoDocumento === "RUT" ? rutConPuntos(f.numeroDocumento) : f.numeroDocumento}</span>
             </Dato>
-            <Dato nombre="Nacionalidad">{f.nacionalidad}</Dato>
-            <Dato nombre="País de residencia">{f.paisResidencia}</Dato>
+            <Dato nombre="Nacionalidad">{pais(f.nacionalidad)}</Dato>
+            <Dato nombre="País de residencia">{pais(f.paisResidencia)}</Dato>
             <Dato nombre="Oficio o profesión">{f.oficio}</Dato>
             <Dato nombre="Domicilio">{f.domicilio}</Dato>
             <Dato nombre="Teléfono">{f.telefono}</Dato>

@@ -75,6 +75,9 @@ describe("El portal de clientes (/mi)", () => {
     montar("/mi/ficha");
     expect(await screen.findByText("Pedro Soto Muñoz")).toBeInTheDocument();
     expect(screen.getByText("22.222.222-2")).toBeInTheDocument();
+    // El país con su nombre, como en la ficha del personal, no el código ISO
+    expect(screen.getByText("Chile")).toBeInTheDocument();
+    expect(screen.queryByText("CL")).not.toBeInTheDocument();
     expect(screen.getAllByText("Sin dato").length).toBeGreaterThan(0);
   });
 
