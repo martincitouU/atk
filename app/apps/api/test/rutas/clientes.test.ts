@@ -27,6 +27,17 @@ describe("RF-17, RF-18: clientes por HTTP", () => {
     expect(editado.json()).toMatchObject({ oficio: "Comerciante" });
   });
 
+  it("la búsqueda dice qué le falta a cada ficha, para saber antes de operar desde US$ 5.000", async () => {
+    const { pedir } = apiDePrueba();
+
+    const encontrados = (await pedir("CAJERO", "GET", "/api/clientes?q=de prueba")).json();
+
+    expect(encontrados.map((c: { nombre: string; faltantesUaf: string[] }) => [c.nombre, c.faltantesUaf.length > 0])).toEqual([
+      ["Cliente Completo de Prueba", false],
+      ["Cliente Incompleto de Prueba", true],
+    ]);
+  });
+
   it("RUT inválido, duplicado e inexistente", async () => {
     const { pedir } = apiDePrueba();
 

@@ -22,3 +22,7 @@ export type TipoOperacion = (typeof TIPOS_OPERACION)[number];
 export type MedioPago = (typeof MEDIOS_PAGO)[number];
 export type EstadoOperacion = (typeof ESTADOS_OPERACION)[number];
 export type EstadoCuentaCliente = (typeof ESTADOS_CUENTA_CLIENTE)[number];
+export type EstadoGasto = (typeof ESTADOS_GASTO)[number];
+export type TipoDocumento = (typeof TIPOS_DOCUMENTO)[number];
+export type AccionAuditoria = (typeof ACCIONES_AUDITORIA)[number];
+export type TipoMargen = (typeof TIPOS_MARGEN)[number];

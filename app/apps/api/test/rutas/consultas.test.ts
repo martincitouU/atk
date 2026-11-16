@@ -1,6 +1,50 @@
 import { describe, expect, it } from "vitest";
+import { migrar } from "../../src/db/migrar.ts";
+import { construirServidor } from "../../src/servidor.ts";
+import { baseTemporal } from "../ayuda.ts";
 import { abrirConFondos, CAJERO, operar } from "../servicios/escenario.ts";
 import { apiDePrueba } from "./api.ts";
+
+describe("Datos públicos de la casa", () => {
+  it("sin sesión entrega el nombre y las monedas, nada privado", async () => {
+    const { pedir } = apiDePrueba();
+
+    const respuesta = await pedir(null, "GET", "/api/casa");
+
+    expect(respuesta.statusCode).toBe(200);
+    const casa = respuesta.json();
+    expect(casa).toEqual({
+      nombre: "Cambios Demo",
+      monedaBase: { codigo: "CLP", nombre: "Peso chileno", simbolo: "$", decimales: 0 },
+      divisas: [
+        { codigo: "USD", nombre: "Dólar estadounidense", simbolo: "US$", decimales: 2, decimalesTasa: 2, activa: true },
+        { codigo: "EUR", nombre: "Euro", simbolo: "€", decimales: 2, decimalesTasa: 2, activa: true },
+        { codigo: "BRL", nombre: "Real brasileño", simbolo: "R$", decimales: 2, decimalesTasa: 2, activa: true },
+        { codigo: "ARS", nombre: "Peso argentino", simbolo: "AR$", decimales: 2, decimalesTasa: 4, activa: true },
+      ],
+    });
+  });
+
+  it("una divisa que ya no se opera sigue en la lista, para mostrar sus operaciones antiguas", async () => {
+    const { pedir, sqlite } = apiDePrueba();
+    sqlite.prepare("UPDATE casa_moneda SET activa = 0 WHERE moneda_codigo = 'ARS'").run();
+
+    const casa = (await pedir(null, "GET", "/api/casa")).json();
+
+    expect(casa.divisas.find((d: { codigo: string }) => d.codigo === "ARS")).toMatchObject({ decimales: 2, activa: false });
+  });
+
+  it("antes de configurar la casa, y con el login apagado, responde vacío en vez de fallar", async () => {
+    const base = baseTemporal();
+    migrar(base.sqlite);
+    const app = construirServidor(base, { urlPublica: null, obtenerSesion: () => null });
+
+    const respuesta = await app.inject({ method: "GET", url: "/api/casa" });
+
+    expect(respuesta.statusCode).toBe(200);
+    expect(respuesta.json()).toEqual({ nombre: null, monedaBase: null, divisas: [] });
+  });
+});
 
 describe("Catálogo, RF-15 y RF-16 por HTTP", () => {
   it("el catálogo trae lo que el front necesita para armar las pantallas", async () => {

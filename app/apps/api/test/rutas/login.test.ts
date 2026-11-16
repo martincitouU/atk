@@ -86,6 +86,26 @@ describe("RF-14: inicio de sesión", () => {
     expect((await app.inject({ method: "GET", url: "/api/yo", headers: { cookie } })).statusCode).toBe(401);
   });
 
+  it("cambiar la contraseña: la actual equivocada es 400 (no 401: el front cerraría la sesión) y la nueva vale", async () => {
+    const { app, cookieDeSesion, iniciarSesion } = await conLogin();
+    const cookie = await cookieDeSesion();
+    const cambiar = (currentPassword: string) =>
+      app.inject({
+        method: "POST",
+        url: "/api/auth/change-password",
+        headers: { cookie, origin: ORIGEN },
+        payload: { currentPassword, newPassword: "otra clave bien larga", revokeOtherSessions: true },
+      });
+
+    const equivocada = await cambiar("no es la actual");
+    expect(equivocada.statusCode).toBe(400);
+    expect(equivocada.json().code).toBe("INVALID_PASSWORD");
+
+    expect((await cambiar(CONTRASENA)).statusCode).toBe(200);
+    expect((await iniciarSesion("cajero@demo.cl", "otra clave bien larga")).statusCode).toBe(200);
+    expect((await iniciarSesion("cajero@demo.cl", CONTRASENA)).statusCode).toBe(401);
+  });
+
   it("un usuario desactivado pierde el acceso aunque tenga sesión", async () => {
     const { app, db, cookieDeSesion } = await conLogin();
     const cookie = await cookieDeSesion();

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { apiDePrueba, ORIGEN } from "./api.ts";
 
 describe("Contrato HTTP de la API", () => {
-  it("sin sesión, toda ruta de /api responde 401", async () => {
+  it("sin sesión, las rutas de trabajo responden 401", async () => {
     const { pedir } = apiDePrueba();
 
     const respuesta = await pedir(null, "GET", "/api/pizarra");

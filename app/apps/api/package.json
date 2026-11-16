@@ -3,12 +3,14 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "node --watch src/cli/desarrollo.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p ."
   },
   "dependencies": {
     "@atk/shared": "*",
     "@fastify/rate-limit": "^11.2.2",
+    "@fastify/static": "^10.1.10",
     "better-auth": "^1.7.18",
     "better-sqlite3": "^13.0.3",
     "drizzle-orm": "^0.45.4",

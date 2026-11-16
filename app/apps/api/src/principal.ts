@@ -2,6 +2,8 @@
 // pendientes y atiende HTTP. Contrato con la infra (CLAUDE.md): escucha en
 // PORT y guarda SQLite en DATABASE_PATH.
 
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { crearAuth } from "./auth/auth.ts";
 import { sesionDesdeCookie } from "./auth/sesion.ts";
 import { abrirBase } from "./db/conexion.ts";
@@ -35,13 +37,19 @@ const auth =
       })
     : null;
 
+// El front compilado (apps/web/dist) lo deja la imagen de Docker. En
+// desarrollo no existe: el front lo sirve Vite.
+const carpetaFront = fileURLToPath(new URL("../../web/dist/", import.meta.url));
+
 const app = construirServidor(conexion, {
   auth,
   urlPublica,
   obtenerSesion: auth ? sesionDesdeCookie(auth, conexion.db) : () => null,
+  carpetaFront: existsSync(carpetaFront) ? carpetaFront : null,
 });
 app.log.info({ base: rutaBase, aplicadas }, aplicadas.length ? "migraciones aplicadas" : "base al día");
 if (!auth) app.log.warn("Faltan BETTER_AUTH_SECRET o BETTER_AUTH_URL: el login está desactivado");
+if (!existsSync(carpetaFront)) app.log.info("Sin front compilado: solo se sirven /health y /api");
 
 // docker stop manda SIGTERM: se termina lo que está en curso y se cierra la base
 for (const senal of ["SIGTERM", "SIGINT"] as const) {
@@ -52,4 +60,6 @@ for (const senal of ["SIGTERM", "SIGINT"] as const) {
   });
 }
 
-await app.listen({ port: puerto, host: "0.0.0.0" });
+// En el contenedor se escucha en todas las interfaces (Nginx llega por la
+// red de Docker); npm run dev usa ESCUCHAR_EN=127.0.0.1 para no exponerse a la red.
+await app.listen({ port: puerto, host: process.env.ESCUCHAR_EN ?? "0.0.0.0" });

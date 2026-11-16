@@ -8,7 +8,7 @@
 // la caja (RF-04). Una confirmada solo se anula con un reverso con motivo.
 
 import { TIPOS_DTE } from "@atk/shared";
-import { and, desc, eq, gte, lt, type SQL } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, gte, lt, type SQL } from "drizzle-orm";
 import {
   categoriaCliente,
   cliente,
@@ -356,10 +356,26 @@ export function editarBorrador(ctx: Contexto, actor: Actor, id: number, cambios:
     validarDatos(tx, entrada, id);
     const ahora = ctx.ahora();
     const calculo = calcular(tx, ctx, parametros, entrada, elTurno);
+    const campos = camposDe(entrada, calculo, actor, ahora);
+
+    // La autorización de una tasa preferencial vale para el precio y el monto
+    // que vio el supervisor. Si la edición no los cambia (por ejemplo, solo
+    // agrega el folio de la boleta al confirmar), se conserva; si los cambia,
+    // hay que autorizar de nuevo.
+    const mismoPrecio =
+      calculo.esPreferencial &&
+      calculo.tasaAplicadaE6 === actual.tasaAplicadaE6 &&
+      entrada.montoDivisa === actual.montoDivisa &&
+      entrada.tipo === actual.tipo &&
+      entrada.monedaCodigo === actual.monedaCodigo;
+    if (mismoPrecio && campos.autorizadoPor === null && actual.autorizadoPor !== null) {
+      campos.autorizadoPor = actual.autorizadoPor;
+      campos.autorizadoEn = actual.autorizadoEn;
+    }
 
     const editada = tx
       .update(operacion)
-      .set(camposDe(entrada, calculo, actor, ahora))
+      .set(campos)
       .where(eq(operacion.id, id))
       .returning()
       .get();
@@ -582,8 +598,25 @@ export type FiltrosOperaciones = {
   limite?: number;
 };
 
+/** Una operación como se muestra: con el nombre de su cliente (null si es anónima). */
+export type OperacionConCliente = Operacion & { clienteNombre: string | null };
+
+function conNombreDeCliente(datos: Datos) {
+  return datos
+    .select({ ...getTableColumns(operacion), clienteNombre: cliente.nombre })
+    .from(operacion)
+    .leftJoin(cliente, eq(cliente.id, operacion.clienteId));
+}
+
+/** Para mostrar una operación (GET /api/operaciones/:id). */
+export function verOperacion(datos: Datos, id: number): OperacionConCliente {
+  const op = conNombreDeCliente(datos).where(eq(operacion.id, id)).get();
+  exigir(op, "OPERACION_NO_EXISTE", `La operación ${id} no existe`);
+  return op;
+}
+
 /** Operaciones de lo más reciente a lo más antiguo, filtradas por fecha real (realizada_en). */
-export function listarOperaciones(datos: Datos, filtros: FiltrosOperaciones = {}): Operacion[] {
+export function listarOperaciones(datos: Datos, filtros: FiltrosOperaciones = {}): OperacionConCliente[] {
   const condiciones: SQL[] = [];
   if (filtros.turnoId !== undefined) condiciones.push(eq(operacion.turnoId, filtros.turnoId));
   if (filtros.cajaId !== undefined) condiciones.push(eq(operacion.cajaId, filtros.cajaId));
@@ -592,13 +625,9 @@ export function listarOperaciones(datos: Datos, filtros: FiltrosOperaciones = {}
   if (filtros.monedaCodigo) condiciones.push(eq(operacion.monedaCodigo, filtros.monedaCodigo));
   if (filtros.desde) condiciones.push(gte(operacion.realizadaEn, filtros.desde));
   if (filtros.hasta) condiciones.push(lt(operacion.realizadaEn, filtros.hasta));
-  return datos
-    .select()
-    .from(operacion)
+  return conNombreDeCliente(datos)
     .where(and(...condiciones))
     .orderBy(desc(operacion.realizadaEn), desc(operacion.id))
     .limit(Math.min(filtros.limite ?? 200, 1000))
     .all();
 }
-
-export { obtenerOperacion };

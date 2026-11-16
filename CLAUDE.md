@@ -62,12 +62,20 @@ La app debe:
 - **Login**: Better Auth (sesiones en cookie httpOnly, roles). No escribir
   autenticación a mano.
 - **Front**: React + Vite + React Router, TanStack Query, react-hook-form.
+  Estilos con CSS Modules y los tokens de `DESIGN.md` (sin Tailwind).
 - **Validación**: esquemas zod compartidos en `packages/shared`.
 - **Excel del histórico**: exceljs (no el paquete `xlsx` de npm).
 - **Tests**: Vitest.
 - Un solo contenedor sirve la API (`/api/*`) y el front compilado: mismo
   origen, sin CORS. La imagen es `app/Dockerfile`; arranca en
-  `apps/api/src/principal.ts`, aplica las migraciones y sirve `/health` y `/api`.
+  `apps/api/src/principal.ts`, aplica las migraciones y sirve `/health`,
+  `/api` y el front (`apps/web/dist`, ver `src/http/front.ts`): las
+  direcciones del front responden `index.html`; una ruta de `/api` que no
+  existe, siempre 404 en JSON.
+- La imagen instala con `npm ci --omit=dev --omit=optional`: Better Auth
+  declara React, Vitest y otros como *peer* opcionales y, sin `--omit=optional`,
+  npm los mete en producción. El front se compila en una etapa aparte: en
+  producción no corre Node para él, solo se sirven sus archivos.
 - API: `src/servidor.ts` arma Fastify; `src/rutas/` (una por tema, delgadas);
   `src/http/` (actor, errores, JSON con bigint). Tests en `test/rutas/` con
   `app.inject` y la cabecera `x-actor-prueba`, que existe solo en los tests.
@@ -141,11 +149,13 @@ La app debe:
   `@atk/shared`; las respuestas, con `apps/web/src/api/esquemas.ts` (cada
   una lee lo que manda la API y, si la pantalla necesita otra forma, la arma
   con un transform: así una diferencia vive en un solo lugar).
-- **En desarrollo**: `npm run dev:api` levanta la API real con una base de
-  demo (`app/.dev/demo.db`, la crea `apps/api/src/cli/demo.ts`, solo
-  desarrollo) y `npm run dev` levanta Vite, que reenvía `/api` a la API
-  (mismo origen: cookie y `Origin` calzan). Login de demo:
-  `rolando@atk.cl` / `ventanilla`. Para empezar de cero, borrar `app/.dev/`.
+- **En desarrollo**: `npm run dev` levanta la API con la base de desarrollo
+  (`apps/api/src/cli/desarrollo.ts`, cuentas `@demo.cl`) y Vite juntos
+  (`scripts/dev.ts`). Para la base de demo del diseño (`app/.dev/demo.db`,
+  la crea `apps/api/src/cli/demo.ts`, login `rolando@atk.cl` /
+  `ventanilla`), `npm run dev:api` y `npm run dev:web` en dos terminales.
+  Vite reenvía `/api` a la API (mismo origen: cookie y `Origin` calzan).
+  Para empezar de cero, borrar `app/.dev/`.
 - **Mocks**: MSW en `apps/web/src/mocks/`, con la forma de `docs/api.md`.
   Solo para los tests y con `VITE_MOCKS=1` (datos de ejemplo sin API).
 - **Diseño**: dirección «Carretera Austral» (señalética vial chilena),
@@ -183,9 +193,14 @@ La app debe:
   `app/` se copia a `/srv/atk/codigo` y la imagen se construye en la VM.
 - `app/`: la aplicación (npm workspaces). `app/db/` tiene migraciones,
   semillas y `probar.sh`; `app/apps/api/` el backend; `app/apps/web/` el
-  front; `app/packages/shared/` los esquemas de entrada y el dinero.
+  front; `app/packages/shared/` los esquemas de entrada y el dinero;
+  `app/scripts/dev.ts` levanta la API y el front juntos en desarrollo.
+- `DESIGN.md`: guía visual de todas las vistas; `PRODUCT.md`: el producto.
 - `docs/api.md`: contrato de la API para el front. Si una ruta cambia, se
   actualiza en el mismo PR.
+- `docs/prueba-punta-a-punta.md`: un día completo de la casa, desde una base
+  vacía con la imagen real. Se hace antes de desplegar cambios en cómo se
+  opera, nunca en producción.
 - `docs/casa_cambio_schema_postgres.sql`: diseño original del modelo, solo
   referencia.
 - `infra/README.md`: guía paso a paso para desplegar.
@@ -202,9 +217,15 @@ cd infra/ansible && ANSIBLE_INVENTORY_ENABLED=host_list ansible-playbook -i loca
 # App: tests, tipos y pruebas SQL del esquema
 cd app && npm test && npm run typecheck && npm run db:probar
 
-# Front contra la API real en local (dos terminales); http://localhost:5173
-cd app && npm run dev:api
+# Desarrollo: API (127.0.0.1:3000) + front (Vite) → http://localhost:5173
+# La primera vez crea app/.dev con la semilla, cuentas de prueba y una
+# jornada de ejemplo (ver apps/api/src/cli/desarrollo.ts). Para partir de
+# cero, o para tener la jornada con fecha de hoy: rm -rf app/.dev
 cd app && npm run dev
+
+# O con la base de demo del diseño, en dos terminales
+cd app && npm run dev:api
+cd app && npm run dev:web
 
 # Prueba local del stack (imagen real de app/)
 cd deploy && CODIGO=../app HTTP_PORT=8080 docker compose up -d --build --wait
@@ -252,6 +273,9 @@ sudo docker compose -f /srv/atk/compose.yaml exec app node apps/api/src/cli/inic
   una hora.
 - Confirmar recalcula con la pizarra vigente: si cambió desde el borrador,
   no se confirma (el cliente vería un precio y pagaría otro).
+- Editar un borrador lo recalcula. La autorización de una tasa preferencial
+  vale para el precio y el monto que vio el supervisor: se conserva si la
+  edición no los cambia (agregar el folio al confirmar) y se pierde si sí.
 - Cambiar un margen cierra la regla de spread y crea otra: cada operación
   conserva la regla con que se cobró.
 - La divisa siempre es efectivo; `medio_pago` es cómo se pagan los pesos.
@@ -283,7 +307,8 @@ sudo docker compose -f /srv/atk/compose.yaml exec app node apps/api/src/cli/inic
   Sus errores vienen como `{ message, code }`, no con nuestro formato.
 - La app lee `BETTER_AUTH_SECRET` y `BETTER_AUTH_URL` (dirección pública,
   para validar `Origin`). Si faltan, arranca **cerrada**: sin login, toda
-  `/api` responde 401 y no se acepta ninguna escritura.
+  `/api` responde 401 y no se acepta ninguna escritura. La única excepción
+  es `GET /api/casa`: público siempre (nombre y monedas, lo de la pizarra).
 - Las cuentas se crean con `crearCuenta()` (`src/auth/auth.ts`), nunca a mano.
 
 ## Supuestos de la iteración 1 (por confirmar con el cliente)
