@@ -9,6 +9,7 @@ describe("puede: los roles de los servicios", () => {
     ["verJornada", false, true, true],
     ["gastoSinEfectivo", false, false, true],
     ["administrar", false, false, true],
+    ["ajustarCaja", false, true, true],
   ])("%s → cajero %s, supervisor %s, admin %s", (accion, cajero, supervisor, admin) => {
     expect(puede("CAJERO", accion)).toBe(cajero);
     expect(puede("SUPERVISOR", accion)).toBe(supervisor);

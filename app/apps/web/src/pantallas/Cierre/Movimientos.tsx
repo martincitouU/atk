@@ -2,7 +2,16 @@ import { aBigint, type Gasto } from "../../api/esquemas.ts";
 import { CheckCircleIcon } from "@phosphor-icons/react";
 import { useEffect, useId, useImperativeHandle, useRef, useState, type FormEvent, type Ref } from "react";
 import { ErrorNegocio } from "../../api/cliente.ts";
-import { useCatalogo, useCategoriasGasto, useGastos, useMovimientoCaja, useRegistrarGasto, useReversarGasto } from "../../api/consultas.ts";
+import {
+  useAjustarCaja,
+  useCatalogo,
+  useCategoriasGasto,
+  useGastos,
+  useMovimientoCaja,
+  useRegistrarGasto,
+  useReversarGasto,
+  useSesion,
+} from "../../api/consultas.ts";
 import { usePuede } from "../../api/permisos.ts";
 import { Aviso } from "../../componentes/Aviso.tsx";
 import { Kbd } from "../../componentes/Kbd.tsx";
@@ -11,14 +20,18 @@ import { conSimbolo, montoEn, pesos } from "../../comun.ts";
 import type { MonedaCatalogo } from "./Conteo.tsx";
 import { leerMonto } from "./conteo.ts";
 
-export type Tipo = "GASTO" | "RETIRO" | "INGRESO";
+export type Tipo = "GASTO" | "RETIRO" | "INGRESO" | "AJUSTE";
 type Medio = Gasto["medioPago"];
 
 const TIPOS: readonly (readonly [Tipo, string])[] = [
   ["GASTO", "Gasto"],
   ["RETIRO", "Retiro"],
   ["INGRESO", "Ingreso"],
+  ["AJUSTE", "Ajuste"],
 ];
+
+/** Un ajuste corrige el arqueo: lo que faltó se resta del saldo del sistema; lo que sobró, se suma. */
+type Sentido = "FALTA" | "SOBRA";
 
 const MEDIOS: readonly (readonly [Medio, string])[] = [
   ["EFECTIVO", "Efectivo"],
@@ -29,7 +42,7 @@ const MEDIOS: readonly (readonly [Medio, string])[] = [
 const MEDIO = Object.fromEntries(MEDIOS) as Record<Medio, string>;
 
 export type MovimientosApi = {
-  /** «Gasto», «Retiro» o «Ingreso» de la cinta: elige el tipo y lleva el foco al primer campo. */
+  /** «Gasto», «Retiro», «Ingreso» o «Ajuste» de la cinta: elige el tipo y lleva el foco al primer campo. */
   elegir: (tipo: Tipo) => void;
 };
 
@@ -52,7 +65,13 @@ function Formulario({ ref }: { ref?: Ref<MovimientosApi> }) {
   // Un gasto por transferencia o tarjeta lo registra solo el admin (gastos.ts)
   const medios = usePuede()("gastoSinEfectivo") ? MEDIOS : MEDIOS.filter(([valor]) => valor === "EFECTIVO");
   const mover = useMovimientoCaja();
+  const ajustar = useAjustarCaja();
+  // El ajuste es del supervisor o del admin (caja.ts); al cajero no se le muestra
+  const tipos = usePuede()("ajustarCaja") ? TIPOS : TIPOS.filter(([t]) => t !== "AJUSTE");
+  const { data: sesion } = useSesion();
   const [tipo, setTipo] = useState<Tipo>("GASTO");
+  const [sentido, setSentido] = useState<Sentido>("FALTA");
+  const [cajaElegida, setCajaElegida] = useState<number | null>(null);
   const [categoriaId, setCategoriaId] = useState("");
   const [medio, setMedio] = useState<Medio>("EFECTIVO");
   const [codigo, setCodigo] = useState<string | null>(null);
@@ -68,7 +87,10 @@ function Formulario({ ref }: { ref?: Ref<MovimientosApi> }) {
   const monedas: MonedaCatalogo[] = catalogo ? [catalogo.monedaBase, ...catalogo.divisas] : [base];
   // Un gasto es siempre en pesos; un retiro o un ingreso, en la moneda que se elija.
   const moneda = tipo === "GASTO" ? base : (monedas.find((m) => m.codigo === codigo) ?? base);
-  const ocupado = registrar.isPending || mover.isPending;
+  // La caja del ajuste: la elegida, la del turno abierto o la primera
+  const cajas = catalogo?.cajas ?? [];
+  const cajaId = cajaElegida ?? (sesion?.turno?.estado === "ABIERTO" ? sesion.turno.cajaId : null) ?? cajas[0]?.id ?? null;
+  const ocupado = registrar.isPending || mover.isPending || ajustar.isPending;
   const nombre = TIPOS.find(([t]) => t === tipo)?.[1] ?? "Gasto";
 
   function elegirTipo(t: Tipo) {
@@ -119,6 +141,12 @@ function Formulario({ ref }: { ref?: Ref<MovimientosApi> }) {
         });
         const categoria = categorias.data?.find((c) => c.id === g.categoriaId)?.nombre;
         setHecho(`Gasto registrado: ${pesos(aBigint(g.monto), base.decimales)}${categoria ? ` · ${categoria}` : ""}.`);
+      } else if (tipo === "AJUSTE") {
+        if (cajaId === null) return;
+        const conSigno = sentido === "FALTA" ? -valor : valor;
+        const m = await ajustar.mutateAsync({ cajaId, monedaCodigo: moneda.codigo, monto: conSigno.toString(), motivo: descripcion.trim() });
+        const caja = cajas.find((c) => c.id === cajaId)?.nombre ?? `Caja ${cajaId}`;
+        setHecho(`Ajuste registrado en ${caja}: ${conSimbolo(conSigno, moneda)}. El sistema queda en ${conSimbolo(aBigint(m.saldoPost), moneda)}.`);
       } else {
         const m = await mover.mutateAsync({ tipo, monedaCodigo: moneda.codigo, monto: valor.toString(), motivo: descripcion.trim() });
         setHecho(`${nombre} registrado: ${conSimbolo(valor, moneda)}. Quedan en caja ${conSimbolo(aBigint(m.saldoPost), moneda)}.`);
@@ -136,11 +164,11 @@ function Formulario({ ref }: { ref?: Ref<MovimientosApi> }) {
     <section className="panel cierre-form" aria-labelledby={`${id}-t`}>
       <header>
         <h2 id={`${id}-t`}>Gastos, retiros e ingresos</h2>
-        <span className="hint">De la caja del turno</span>
+        <span className="hint">{tipo === "AJUSTE" ? "De la caja elegida" : "De la caja del turno"}</span>
       </header>
       <form ref={campos} onSubmit={(e) => void enviar(e)} noValidate>
         <div className="seg mov-tipo" role="group" aria-label="Tipo de movimiento">
-          {TIPOS.map(([t, texto]) => (
+          {tipos.map(([t, texto]) => (
             <button key={t} type="button" aria-pressed={tipo === t} onClick={() => elegirTipo(t)}>
               {texto}
             </button>
@@ -189,6 +217,29 @@ function Formulario({ ref }: { ref?: Ref<MovimientosApi> }) {
               </select>
             </label>
           )}
+          {tipo === "AJUSTE" && (
+            <>
+              <label>
+                En el arqueo
+                <select value={sentido} onChange={(e) => setSentido(e.target.value as Sentido)}>
+                  <option value="FALTA">Faltó: se resta</option>
+                  <option value="SOBRA">Sobró: se suma</option>
+                </select>
+              </label>
+              {cajas.length > 1 && (
+                <label>
+                  Caja
+                  <select value={cajaId ?? ""} onChange={(e) => setCajaElegida(Number(e.target.value))}>
+                    {cajas.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+            </>
+          )}
           <label className={tipo === "GASTO" ? "mov-monto ancho" : "mov-monto"}>
             {moneda.codigo === base.codigo ? "Monto en pesos" : montoEn(moneda.codigo)}
             <input
@@ -214,7 +265,13 @@ function Formulario({ ref }: { ref?: Ref<MovimientosApi> }) {
             data-campo="descripcion"
             autoComplete="off"
             placeholder={
-              tipo === "GASTO" ? "Resma de papel, flete, cuenta de luz…" : tipo === "RETIRO" ? "Depósito en el banco…" : "Fondo de la mañana…"
+              tipo === "GASTO"
+                ? "Resma de papel, flete, cuenta de luz…"
+                : tipo === "RETIRO"
+                  ? "Depósito en el banco…"
+                  : tipo === "AJUSTE"
+                    ? "Descuadre del arqueo de la tarde…"
+                    : "Fondo de la mañana…"
             }
             value={descripcion}
             onChange={(e) => setDescripcion(e.target.value)}
@@ -234,7 +291,9 @@ function Formulario({ ref }: { ref?: Ref<MovimientosApi> }) {
               : "Un gasto por transferencia o tarjeta no toca la caja: lo registra el administrador."
             : tipo === "RETIRO"
               ? "El retiro sale de la caja del turno, con su motivo."
-              : "El ingreso entra a la caja del turno, con su motivo."}
+              : tipo === "AJUSTE"
+                ? "Alinea el saldo del sistema con lo contado en el arqueo. Queda en la auditoría con su motivo."
+                : "El ingreso entra a la caja del turno, con su motivo."}
         </p>
 
         {fallo && (

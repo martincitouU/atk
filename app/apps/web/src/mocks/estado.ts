@@ -41,6 +41,7 @@ import { ErrorNegocio } from "../api/cliente.ts";
 import type {
   CambiosUsuario,
   Cierre,
+  EntradaAjuste,
   EntradaCotizacion,
   EntradaGasto,
   EntradaMovimiento,
@@ -778,15 +779,39 @@ export function moverDinero(e: Estado, entrada: EntradaMovimiento): Movimiento {
     },
   ]);
   if (!m) throw new Error("aplicarMovimientos no devolvió el movimiento");
-  return {
-    id: m.id,
-    monedaCodigo: m.monedaCodigo,
-    tipo: m.tipo,
-    monto: texto(m.monto),
-    saldoPost: texto(m.saldoPost),
-    descripcion: m.descripcion,
-    creadoEn: iso(m.creadoEn),
-  };
+  return aMovimiento(m);
+}
+
+const aMovimiento = (m: MovimientoMock): Movimiento => ({
+  id: m.id,
+  monedaCodigo: m.monedaCodigo,
+  tipo: m.tipo,
+  monto: texto(m.monto),
+  saldoPost: texto(m.saldoPost),
+  descripcion: m.descripcion,
+  creadoEn: iso(m.creadoEn),
+});
+
+/** POST /api/caja/ajustes: como ajustarCaja (caja.ts), puede dejar la caja bajo cero. */
+export function ajustarCaja(e: Estado, entrada: EntradaAjuste): Movimiento {
+  exigirRol(usuarioActual(e), ["SUPERVISOR", "ADMIN"], "Ajustar la caja");
+  const motivo = limpiar(entrada.motivo);
+  exigir(motivo, "FALTA_MOTIVO", "Indique el motivo del ajuste");
+  const monto = aBigint(entrada.monto);
+  exigir(monto !== 0n, "MONTO_INVALIDO", "El ajuste no puede ser cero");
+  exigir(e.cajas.some((c) => c.id === entrada.cajaId), "CAJA_NO_EXISTE", `La caja ${entrada.cajaId} no existe`);
+  infoMoneda(e, entrada.monedaCodigo);
+  const permitir = e.parametros.permitirSaldoNegativo;
+  e.parametros.permitirSaldoNegativo = true;
+  try {
+    const [m] = aplicarMovimientos(e, [
+      { cajaId: entrada.cajaId, turnoId: entrada.turnoId ?? null, monedaCodigo: entrada.monedaCodigo, tipo: "AJUSTE", monto, descripcion: motivo },
+    ]);
+    if (!m) throw new Error("aplicarMovimientos no devolvió el movimiento");
+    return aMovimiento(m);
+  } finally {
+    e.parametros.permitirSaldoNegativo = permitir;
+  }
 }
 
 // ---------------------------------------------------------------------------

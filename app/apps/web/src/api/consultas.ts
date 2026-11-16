@@ -31,6 +31,7 @@ import {
   type CambiosOperacion,
   type CambiosUsuario,
   type EntradaCliente,
+  type EntradaAjuste,
   type EntradaCotizacion,
   type EntradaRegistro,
   type EntradaGasto,
@@ -275,6 +276,15 @@ export function useMovimientoCaja() {
   const invalidar = useInvalidar();
   return useMutation({
     mutationFn: (entrada: EntradaMovimiento) => enviar(RUTAS.movimientos, Movimiento, entrada),
+    onSuccess: () => invalidar(["resumen"], ["saldos"]),
+  });
+}
+
+/** Ajuste tras un arqueo (supervisor o admin): el monto con signo alinea el saldo con lo contado. */
+export function useAjustarCaja() {
+  const invalidar = useInvalidar();
+  return useMutation({
+    mutationFn: (entrada: EntradaAjuste) => enviar(RUTAS.ajustes, Movimiento, entrada),
     onSuccess: () => invalidar(["resumen"], ["saldos"]),
   });
 }

@@ -15,6 +15,7 @@ import {
   entradaCliente,
   entradaGasto,
   entradaIngresoRetiro,
+  entradaAjusteCaja,
   entradaOperacion,
   entradaPublicacion,
   entradaUsuario,
@@ -64,6 +65,7 @@ export type EntradaCliente = z.input<typeof entradaCliente>;
 export type EntradaCotizacion = z.input<typeof entradaPublicacion>;
 export type EntradaGasto = z.input<typeof entradaGasto>;
 export type EntradaMovimiento = z.input<typeof entradaIngresoRetiro>;
+export type EntradaAjuste = z.input<typeof entradaAjusteCaja>;
 export type EntradaUsuario = z.input<typeof entradaUsuario>;
 export type CambiosUsuario = z.input<typeof cambiosUsuario>;
 /** POST /api/auth/sign-in/email (Better Auth). */
@@ -377,6 +379,7 @@ export const RUTAS = {
   arqueo: (id: number) => `/api/turnos/${id}/arqueo`,
   saldos: "/api/saldos",
   movimientos: "/api/caja/movimientos",
+  ajustes: "/api/caja/ajustes",
   gastos: "/api/gastos",
   reversarGasto: (id: number) => `/api/gastos/${id}/reversar`,
   clientes: "/api/clientes",

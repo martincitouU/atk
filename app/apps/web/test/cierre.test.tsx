@@ -4,7 +4,7 @@ import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cierre } from "../src/pantallas/Cierre/Cierre.tsx";
 import { leerConteo, type Conteo } from "../src/pantallas/Cierre/conteo.ts";
-import { RELOJ_PRUEBA } from "./preparar.ts";
+import { estadoPrueba, RELOJ_PRUEBA } from "./preparar.ts";
 import { Proveedores } from "./proveedores.tsx";
 import { texto } from "./texto.ts";
 
@@ -126,6 +126,31 @@ describe("Cierre del día", () => {
     expect(await within(lista).findByText(/Reversado el gasto «Resma de papel.*»: el dinero volvió a la caja/)).toBeInTheDocument();
     expect(within(lista).getByText("Se registró dos veces")).toBeInTheDocument();
     expect(within(lista).getByText("Reversado")).toBeInTheDocument();
+  });
+
+  it("el admin ajusta un faltante del arqueo: resta del saldo del sistema, con su motivo", async () => {
+    const antes = estadoPrueba.saldos.get("USD") ?? 0n;
+    const u = montar();
+    const form = await screen.findByRole("region", { name: "Gastos, retiros e ingresos" });
+    // Aparece cuando llega la sesión con el rol
+    await u.click(await within(form).findByRole("button", { name: "Ajuste" }));
+    await u.selectOptions(within(form).getByRole("combobox", { name: "Moneda" }), "USD");
+    expect(within(form).getByRole("combobox", { name: "En el arqueo" })).toHaveValue("FALTA");
+    await u.type(within(form).getByRole("textbox", { name: /Monto en dólares/ }), "10");
+    await u.type(within(form).getByRole("textbox", { name: /Motivo/ }), "Descuadre del arqueo de la tarde");
+    await u.click(within(form).getByRole("button", { name: "Registrar ajuste" }));
+    expect(await within(form).findByText(/Ajuste registrado en Caja 1: −US\$ 10,00\. El sistema queda en/)).toBeInTheDocument();
+    expect(estadoPrueba.saldos.get("USD")).toBe(antes - 1000n);
+  });
+
+  it("el cajero no ve el ajuste: es del supervisor o del admin", async () => {
+    if (estadoPrueba.sesion) estadoPrueba.sesion = { ...estadoPrueba.sesion, rol: "CAJERO" };
+    montar();
+    const form = await screen.findByRole("region", { name: "Gastos, retiros e ingresos" });
+    // Con la sesión ya cargada (el cartel dice quién es), el ajuste sigue sin aparecer
+    expect(await screen.findByText(/Rolando del Río/)).toBeInTheDocument();
+    expect(within(form).getByRole("button", { name: "Ingreso" })).toBeInTheDocument();
+    expect(within(form).queryByRole("button", { name: "Ajuste" })).not.toBeInTheDocument();
   });
 });
 

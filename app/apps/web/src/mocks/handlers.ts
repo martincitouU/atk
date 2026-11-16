@@ -7,6 +7,7 @@
 import {
   cambiosOperacion,
   cambiosUsuario,
+  entradaAjusteCaja,
   entradaAbrirTurno,
   entradaCerrarTurno,
   entradaCliente,
@@ -136,6 +137,7 @@ export function handlers(e: m.Estado): HttpHandler[] {
       return m.saldos(e, caja === undefined ? undefined : Number(caja));
     })),
     http.post(en(RUTAS.movimientos), manejar(async ({ request }) => m.moverDinero(e, await cuerpo(request, entradaIngresoRetiro)), 201)),
+    http.post(en(RUTAS.ajustes), manejar(async ({ request }) => m.ajustarCaja(e, await cuerpo(request, entradaAjusteCaja)), 201)),
 
     // Gastos
     http.get(en(RUTAS.gastos), manejar(({ url }) => m.listarGastos(e, { desde: consulta(url, "desde"), hasta: consulta(url, "hasta") }))),

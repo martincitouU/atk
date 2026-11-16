@@ -547,8 +547,11 @@
   padding: 14px 18px 18px;
 }
 
+/* Tres tipos, o cuatro con el «Ajuste» del supervisor: siempre en una fila */
 .seg.mov-tipo {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: none;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
 }
 
 .mov-campos {

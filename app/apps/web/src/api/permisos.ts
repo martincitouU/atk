@@ -15,7 +15,9 @@ export type Accion =
   /** POST /api/gastos con TRANSFERENCIA o TARJETA (gastos.ts) */
   | "gastoSinEfectivo"
   /** /api/usuarios y /api/auditoria (usuarios.ts, auditoria.ts) */
-  | "administrar";
+  | "administrar"
+  /** POST /api/caja/ajustes (caja.ts, ajustarCaja) */
+  | "ajustarCaja";
 
 const ROLES: Record<Accion, readonly Rol[]> = {
   publicarPizarra: ["ADMIN"],
@@ -23,6 +25,7 @@ const ROLES: Record<Accion, readonly Rol[]> = {
   verJornada: ["SUPERVISOR", "ADMIN"],
   gastoSinEfectivo: ["ADMIN"],
   administrar: ["ADMIN"],
+  ajustarCaja: ["SUPERVISOR", "ADMIN"],
 };
 
 /**

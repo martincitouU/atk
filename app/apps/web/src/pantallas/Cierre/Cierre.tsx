@@ -8,11 +8,13 @@ import {
   LockKeyIcon,
   MoneyIcon,
   ReceiptIcon,
+  ScalesIcon,
 } from "@phosphor-icons/react";
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { ErrorNegocio } from "../../api/cliente.ts";
 import { useAbrirTurno, useCatalogo, useParametros, useSesion } from "../../api/consultas.ts";
+import { usePuede } from "../../api/permisos.ts";
 import type { Cierre as RespuestaCierre } from "../../api/esquemas.ts";
 import { Aviso } from "../../componentes/Aviso.tsx";
 import { useCinta, type GrupoCinta } from "../../componentes/Cinta.tsx";
@@ -37,6 +39,7 @@ export function Cierre() {
   const conteo = useRef<ConteoApi>(null);
   const movimientos = useRef<MovimientosApi>(null);
   const navegar = useNavigate();
+  const puedeAjustar = usePuede()("ajustarCaja");
 
   // La cinta del Cierre: llama a lo mismo que los botones de la pantalla
   const grupos: GrupoCinta[] = [
@@ -53,6 +56,9 @@ export function Cierre() {
         { id: "gasto", etiqueta: "Gasto", Icono: ReceiptIcon, grande: true, alPulsar: () => movimientos.current?.elegir("GASTO") },
         { id: "retiro", etiqueta: "Retiro", Icono: HandWithdrawIcon, grande: true, alPulsar: () => movimientos.current?.elegir("RETIRO") },
         { id: "ingreso", etiqueta: "Ingreso", Icono: HandDepositIcon, grande: true, alPulsar: () => movimientos.current?.elegir("INGRESO") },
+        ...(puedeAjustar
+          ? [{ id: "ajuste", etiqueta: "Ajuste", Icono: ScalesIcon, grande: true, alPulsar: () => movimientos.current?.elegir("AJUSTE") }]
+          : []),
       ],
     },
     ...(turno
@@ -130,7 +136,7 @@ export function Cierre() {
 
       <Movimientos ref={movimientos} hoy={hoy} />
 
-      <p className="cierre-nota">Las diferencias no se ajustan solas: un supervisor registra un ajuste.</p>
+      <p className="cierre-nota">Las diferencias no se ajustan solas: un supervisor o el administrador registra un «Ajuste», junto a los gastos.</p>
     </div>
   );
 }
