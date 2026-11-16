@@ -6,10 +6,13 @@
 
 import { spawn } from "node:child_process";
 
-const procesos = [
-  spawn("npm", ["run", "dev", "--workspace=@atk/api"], { stdio: "inherit" }),
-  spawn("npm", ["run", "dev", "--workspace=@atk/web"], { stdio: "inherit" }),
-];
+// En Windows "npm" es npm.cmd y spawn no lo encuentra sin shell (ENOENT). Se
+// usa el mismo npm que lanzó este script (npm_execpath), corrido con node.
+const npm = process.env.npm_execpath;
+const correr = (args: string[]) =>
+  npm ? spawn(process.execPath, [npm, ...args], { stdio: "inherit" }) : spawn("npm", args, { stdio: "inherit" });
+
+const procesos = [correr(["run", "dev", "--workspace=@atk/api"]), correr(["run", "dev", "--workspace=@atk/web"])];
 
 let deteniendo = false;
 function detenerTodo(codigo = 0) {

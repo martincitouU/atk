@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="es-CL">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ATK — Ventanilla (B, pestañas de cinta)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;700;800;900&family=Overpass+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+<link rel="stylesheet" href="office.css">
+<script>if(new URLSearchParams(location.search).get('tema')==='oscuro')document.documentElement.dataset.theme='dark'</script>
+<style>
+
+body{display:grid;grid-template-rows:32px 34px auto minmax(0,1fr) 28px}
+.letrero-cab{padding:6px 14px}
+table.tasas td{height:36px}
+table.tasas .cod{font-size:20px}
+table.tasas td.cifra{font-size:20px}
+.registro .cuerpo{padding:10px 12px!important;gap:8px!important}
+fieldset.grupo{padding:6px 10px 10px}
+.monto{height:44px;font-size:24px}
+.divisas{margin-top:8px!important}
+.placa div{padding:7px 12px}
+.placa b{font-size:19px}
+.grande{padding:4px 8px}
+.gr .cap{padding:2px 0 3px}
+table.tasas td{height:32px}
+.letrero-cab{padding:5px 14px}
+.seg div,.divisas div{min-height:34px;height:34px}
+.registro fieldset.grupo:last-of-type{border:0;padding:0}
+.registro fieldset.grupo:last-of-type legend{padding:0 0 4px;margin:0}
+.registro .cuerpo{gap:7px!important}
+.monto{height:42px}
+.titulo{background:var(--asfalto);color:var(--riel-tinta);display:flex;align-items:center;gap:14px;padding:0 16px;font-size:12.5px;font-weight:600}
+.titulo .marca{font-weight:900;font-size:17px;letter-spacing:.05em;color:#fff}
+.titulo .lugar{color:var(--riel-suave);font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:11px}
+.titulo .doc{margin:0 auto;font-weight:700;color:#fff}
+.titulo .usr{display:flex;align-items:center;gap:8px}
+.titulo .usr .ph-bold{font-size:16px;color:var(--riel-suave)}
+.pestanas{background:var(--asfalto);display:flex;align-items:flex-end;gap:2px;padding:0 10px;border-bottom:1px solid var(--linea)}
+.pestanas div{display:flex;align-items:center;gap:9px;height:30px;padding:0 16px;border-radius:6px 6px 0 0;color:var(--riel-tinta);font-weight:700;font-size:13.5px}
+.pestanas div.on{background:var(--pestana);color:var(--tinta);height:32px;margin-bottom:-1px;border:1px solid var(--linea);border-bottom-color:var(--pestana)}
+.pestanas div.on kbd{background:var(--kbd-fondo);border-color:var(--kbd-borde);color:var(--kbd-tinta)}
+.pestanas .cuadro{width:12px;height:12px;border-radius:3px}
+.cinta{background:var(--pestana);border-bottom:1px solid var(--linea);display:flex;align-items:stretch;padding:6px 8px 3px;gap:0}
+.gr{display:flex;flex-direction:column;padding:0 8px;border-right:1px solid var(--linea)}
+.gr:last-child{border-right:0}
+.gr .btns{display:flex;align-items:flex-start;gap:4px;flex:1}
+.gr .cap{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--suave);text-align:center;padding:4px 0 5px}
+.grande{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:70px;padding:6px 8px;border-radius:5px;border:1px solid transparent;font-weight:700;font-size:12.5px;white-space:nowrap}
+.grande .ph-bold{font-size:24px;color:var(--suave)}
+.grande.activo{background:var(--panel);border-color:var(--trazo)}
+.grande.activo .ph-bold{color:var(--tinta)}
+.grande.verde .ph-bold{color:var(--vial)}
+.pila{display:flex;flex-direction:column;gap:2px;padding-top:2px}
+.pila .cmd{height:28px;font-size:12.5px}
+.nota{font-size:12px;color:var(--suave);font-weight:600;padding:6px 6px 0;line-height:1.5}
+.nota b{color:var(--tinta)}
+:root[data-theme="dark"] .grande.verde .ph-bold{color:#6fd3ae}
+.contenido{min-height:0;display:flex;flex-direction:column;gap:14px;padding:14px 18px}
+.trabajo{flex:1;min-height:0;display:grid;grid-template-columns:400px minmax(0,1fr);gap:14px}
+.registro .cuerpo{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.dos{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.libro .scroll{flex:1;min-height:0;overflow:hidden}
+
+</style>
+</head>
+<body>
+<header class="titulo">
+  <span class="marca">ATK</span><span class="lugar">Casa de cambio <span class="pt">·</span> Coyhaique</span>
+  <span class="doc">Ventanilla <span class="pt">·</span> Caja 1</span>
+  <span class="usr"><i class="ph-bold ph-user-circle"></i>Rolando del Río <span class="pt">·</span> Administrador<span class="pt"></span><i class="ph-bold ph-sign-out"></i>Salir</span>
+</header>
+<nav class="pestanas" aria-label="Secciones">
+  <div class="on"><span class="cuadro" style="background:var(--vial)"></span>Ventanilla<kbd>F1</kbd></div>
+  <div><span class="cuadro c-amar"></span>Cierre del día<kbd>F2</kbd></div>
+  <div><span class="cuadro c-tur"></span>Jornada<kbd>F3</kbd></div>
+  <div><span class="cuadro c-serv"></span>Clientes<kbd>F4</kbd></div>
+  <div><span class="cuadro c-neu"></span>Configuración<kbd>F5</kbd></div>
+</nav>
+<div class="cinta" role="toolbar" aria-label="Comandos de la Ventanilla">
+  <div class="gr"><div class="btns">
+    <span class="grande"><i class="ph-bold ph-arrow-down-left"></i><span>Compra <kbd>C</kbd></span></span>
+    <span class="grande activo"><i class="ph-bold ph-arrow-up-right"></i><span>Venta <kbd>V</kbd></span></span>
+    <div class="pila"><span class="cmd"><i class="ph-bold ph-note-pencil"></i>Borrador<kbd>B</kbd></span><span class="cmd"><i class="ph-bold ph-eraser"></i>Limpiar<kbd>Esc</kbd></span></div>
+  </div><div class="cap">Operación</div></div>
+  <div class="gr"><div class="btns">
+    <span class="grande verde"><i class="ph-bold ph-check-circle"></i><span>Confirmar <kbd>Enter</kbd></span></span>
+    <div class="pila"><span class="cmd peligro"><i class="ph-bold ph-arrow-u-up-left"></i>Reversar<kbd>R</kbd></span><span class="cmd"><i class="ph-bold ph-arrows-down-up"></i>Elegir fila<kbd>↑↓</kbd></span></div>
+  </div><div class="cap">Libro del día</div></div>
+  <div class="gr"><div class="btns">
+    <span class="grande"><i class="ph-bold ph-arrows-clockwise"></i><span>Actualizar pizarra</span></span>
+    <div class="nota">Vigente desde <b>21:45</b><br>USD cambió hoy</div>
+  </div><div class="cap">Pizarra</div></div>
+  <div class="gr"><div class="btns">
+    <span class="grande"><i class="ph-bold ph-identification-card"></i><span>Ficha del cliente</span></span>
+    <div class="nota">Obligatoria desde<br><b>US$ 5.000</b></div>
+  </div><div class="cap">Cliente</div></div>
+</div>
+<div class="contenido">
+<section class="letrero" aria-label="Pizarra">
+      <div class="letrero-in">
+        <div class="letrero-cab">
+          <h2>Pizarra <span><span class="pt">·</span>pesos chilenos por unidad</span></h2>
+          <span class="vig"><i class="ph-bold ph-clock"></i>Vigente desde 21:45</span>
+          <span class="btn-letrero"><i class="ph-bold ph-arrows-clockwise"></i>Actualizar</span>
+        </div>
+        <table class="tasas">
+          <thead><tr><th>Divisa</th><th style="width:190px">Compra</th><th style="width:190px">Venta</th><th style="width:300px;text-align:left">Cambio</th></tr></thead>
+          <tbody>
+            <tr class="cambio-on"><td><span class="dotb usdb"></span><span class="cod">USD</span><span class="nom">Dólar estadounidense</span></td><td class="cifra">935,00</td><td class="cifra">952,00</td><td class="cambio"><i class="ph-bold ph-warning-diamond"></i>Cambió a las 21:45 <span class="pt">·</span> revisar</td></tr>
+            <tr><td><span class="dotb arsb"></span><span class="cod">ARS</span><span class="nom">Peso argentino</span></td><td class="cifra">0,6200</td><td class="cifra">0,7100</td><td class="cambio">Sin cambios desde las 20:03</td></tr>
+            <tr><td><span class="dotb eurb"></span><span class="cod">EUR</span><span class="nom">Euro</span></td><td class="cifra">1.018,00</td><td class="cifra">1.046,00</td><td class="cambio">Sin cambios desde las 20:03</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  <div class="trabajo">
+<section class="panel registro" aria-label="Nueva operación">
+        <div class="panel-cab"><h2>Nueva operación</h2><span class="meta">Enter confirma <span class="pt">·</span> Esc limpia</span></div>
+        <div class="cuerpo">
+          <fieldset class="grupo"><legend>Operación</legend>
+            <div class="seg"><div>Compra <kbd>C</kbd></div><div class="on">Venta <kbd>V</kbd></div></div>
+            <div class="divisas" style="margin-top:10px"><div class="on"><span class="dot usd"></span>USD<kbd>1</kbd></div><div><span class="dot ars"></span>ARS<kbd>2</kbd></div><div><span class="dot eur"></span>EUR<kbd>3</kbd></div></div>
+          </fieldset>
+          <fieldset class="grupo"><legend>Monto y documento</legend>
+            <span class="rot">Monto en dólares</span>
+            <div class="monto">450,00<span class="cursor"></span></div>
+            <div class="dos" style="margin-top:10px">
+              <div class="campo"><label>Folio boleta (41)</label><div class="control num">18234</div></div>
+              <div class="campo"><label>Medio de pago</label><div class="control sel">Efectivo<i class="ph-bold ph-caret-down"></i></div></div>
+            </div>
+          </fieldset>
+          <fieldset class="grupo" style="padding:10px"><legend>Vista previa <span class="pt">·</span> se lee al cliente</legend>
+            <div class="placa"><div><small>Tasa</small><b>952,00</b></div><div><small>Cliente paga</small><b>$428.400</b></div><div><small>Margen</small><b>$3.825</b></div></div>
+          </fieldset>
+          <div class="acciones"><div class="btn prim">Confirmar <kbd>Enter</kbd></div><div class="btn">Borrador <kbd>B</kbd></div></div>
+        </div>
+      </section>
+<section class="panel libro" aria-label="Libro del día">
+        <div class="panel-cab"><h2>Libro del día</h2><span class="meta"><span>6 operaciones <span class="pt">·</span> 1 borrador</span><span>↑↓ elige <span class="pt">·</span> <kbd>R</kbd> reversa</span></span></div>
+        <div class="scroll">
+          <table class="grilla">
+            <thead><tr><th class="der">N°</th><th>Hora</th><th>Tipo</th><th>Divisa</th><th class="der">Monto</th><th class="der">Tasa</th><th class="der">Pesos</th><th class="der">Folio</th><th>Estado</th></tr></thead>
+            <tbody>
+              <tr class="elegida"><td class="nro num">6</td><td class="num">21:45</td><td>Venta</td><td><span class="div"><span class="dot usd"></span>USD</span></td><td class="num der">300,00</td><td class="num der">952,00</td><td class="num der">285.600</td><td class="num der">18233</td><td><span class="chip ok"><i class="ph-bold ph-check"></i>Confirmada</span></td></tr>
+              <tr><td class="nro num">5</td><td class="num">21:34</td><td>Compra</td><td><span class="div"><span class="dot ars"></span>ARS</span></td><td class="num der">150.000,00</td><td class="num der">0,6200</td><td class="num der">93.000</td><td class="num der">18232</td><td><span class="chip ok"><i class="ph-bold ph-check"></i>Confirmada</span></td></tr>
+              <tr><td class="nro num">4</td><td class="num">21:18</td><td>Compra</td><td><span class="div"><span class="dot usd"></span>USD</span></td><td class="num der">1.200,00</td><td class="num der">935,00</td><td class="num der">1.122.000</td><td class="num der">18231</td><td><span class="chip ok"><i class="ph-bold ph-check"></i>Confirmada</span></td></tr>
+              <tr class="rev"><td class="nro num">3</td><td class="num">21:01</td><td>Venta</td><td><span class="div"><span class="dot eur"></span>EUR</span></td><td class="num der monto-rev">500,00</td><td class="num der">1.046,00</td><td class="num der" style="padding-top:4px;padding-bottom:4px"><span class="monto-rev" style="color:var(--rev-tinta);text-decoration:line-through">523.000</span><span class="motivo">Monto mal digitado</span></td><td class="num der">18229</td><td><span class="chip rev"><i class="ph-bold ph-arrow-u-up-left"></i>Reversada</span></td></tr>
+              <tr><td class="nro num">2</td><td class="num">21:00</td><td>Venta</td><td><span class="div"><span class="dot eur"></span>EUR</span></td><td class="num der">50,00</td><td class="num der">1.046,00</td><td class="num der">52.300</td><td class="num der">18230</td><td><span class="chip ok"><i class="ph-bold ph-check"></i>Confirmada</span></td></tr>
+              <tr class="borr"><td class="nro num">1</td><td class="num">20:43</td><td>Compra</td><td><span class="div"><span class="dot usd"></span>USD</span></td><td class="num der">80,00</td><td class="num der">935,00</td><td class="num der">74.800</td><td class="num der">—</td><td><span class="chip obra"><i class="ph-bold ph-note-pencil"></i>Borrador</span><span class="link">Confirmar</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="totales"><div><small>Compras</small><b>$1.215.000</b></div><div><small>Ventas</small><b>$337.900</b></div><div><small>Margen del día</small><b>$18.400</b></div><div><small>Caja en pesos</small><b>$3.482.150</b></div></div>
+      </section>
+  </div>
+</div>
+<footer class="estado" aria-label="Barra de estado">
+  <span><i class="ph-bold ph-cash-register"></i><b>Turno abierto</b> <span class="pt">·</span> Caja 1 <span class="pt">·</span> desde 20:05</span>
+  <span><i class="ph-bold ph-user"></i>Rolando del Río <span class="pt">·</span> Administrador</span>
+  <span><i class="punto"></i>Conectado al servidor</span>
+  <span><i class="ph-bold ph-clock"></i>Pizarra vigente desde 21:45</span>
+  <span class="der"><i class="ph-bold ph-calendar-blank"></i>Domingo 8 de noviembre <span class="pt">·</span> <b class="num">22:04</b></span>
+</footer>
+</body>
+</html>

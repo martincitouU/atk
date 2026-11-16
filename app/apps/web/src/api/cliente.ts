@@ -1,112 +1,76 @@
-// La única puerta a la API: toda petición del front pasa por aquí.
-//
-//   obtener("/api/operaciones", { estado: "CONFIRMADA" })   GET con parámetros
-//   enviar("/api/auth/sign-out")                             POST (cuerpo {} si no hay)
-//
-// Cualquier falla termina en un ErrorApi con la misma forma, venga de donde
-// venga: { estado, codigo, mensaje, detalles }. El `mensaje` está en español
-// y se muestra tal cual; el `codigo` sirve para decidir qué hacer.
-//
-// Dos casos no traen nuestro formato (docs/api.md) y se traducen aquí:
-//   - /api/auth/* es de Better Auth: { message, code }, en inglés.
-//   - 429 (demasiados intentos) lo arma la librería del límite, en inglés.
+import type { z } from "zod";
+import { ErrorApi, ErrorAuth } from "./esquemas.ts";
 
-/** Un campo que la API rechazó: viene con DATOS_INVALIDOS (400). */
-export type DetalleError = { campo: string; mensaje: string };
-
-export class ErrorApi extends Error {
-  /** Estado HTTP; 0 si ni siquiera hubo respuesta (sin conexión). */
-  readonly estado: number;
+/**
+ * Error esperable, con el `mensaje` escrito para mostrarse tal cual: el
+ * { codigo, mensaje } que manda la API (docs/api.md, «Errores»). Un 400
+ * trae además `detalles`, el mensaje de cada campo.
+ */
+export class ErrorNegocio extends Error {
   readonly codigo: string;
-  readonly detalles: DetalleError[];
+  readonly detalles: { campo: string; mensaje: string }[];
 
-  constructor(estado: number, codigo: string, mensaje: string, detalles: DetalleError[] = []) {
+  constructor(codigo: string, mensaje: string, detalles: { campo: string; mensaje: string }[] = []) {
     super(mensaje);
-    this.name = "ErrorApi";
-    this.estado = estado;
+    this.name = "ErrorNegocio";
     this.codigo = codigo;
     this.detalles = detalles;
   }
 }
 
-/** La sesión venció o no existe: los marcos llevan al login. */
-export const esSinSesion = (error: unknown): boolean => error instanceof ErrorApi && error.estado === 401;
-
-/** Lo pedido no existe (404): la vista muestra "no existe" en vez de un error. */
-export const esNoExiste = (error: unknown): boolean => error instanceof ErrorApi && error.estado === 404;
-
-/** El mensaje para mostrar de cualquier error, sea o no de la API. */
-export const mensajeDe = (error: unknown): string => (error instanceof ErrorApi ? error.message : "Ocurrió un error inesperado. Intenta de nuevo.");
-
-// Los de Better Auth que pueden llegar desde las rutas que la app usa
-const MENSAJES_LOGIN: Record<string, string> = {
+/** Better Auth responde en inglés: estos son los que la pantalla puede ver. */
+const MENSAJES_AUTH: Record<string, string> = {
   INVALID_EMAIL_OR_PASSWORD: "Correo o contraseña incorrectos",
-  INVALID_EMAIL: "Correo inválido",
+  INVALID_EMAIL: "Revise el correo: no tiene la forma nombre@dominio.cl.",
+  // Al cambiar la propia contraseña (POST /api/auth/change-password)
   INVALID_PASSWORD: "La contraseña actual no es correcta",
-  PASSWORD_TOO_SHORT: "La contraseña debe tener al menos 10 caracteres",
-  PASSWORD_TOO_LONG: "La contraseña es demasiado larga",
+  PASSWORD_TOO_SHORT: "La contraseña nueva debe tener al menos 10 caracteres",
+  PASSWORD_TOO_LONG: "La contraseña nueva es demasiado larga",
 };
 
-type Metodo = "GET" | "POST" | "PATCH" | "DELETE";
+/** El ErrorNegocio de una respuesta fallida: de la API, de Better Auth o, si no se entiende, por su status. */
+function errorDe(status: number, cuerpo: unknown): ErrorNegocio {
+  const api = ErrorApi.safeParse(cuerpo);
+  if (api.success) return new ErrorNegocio(api.data.error.codigo, api.data.error.mensaje, api.data.error.detalles);
+  if (status === 429) return new ErrorNegocio("DEMASIADOS_INTENTOS", "Demasiados intentos seguidos. Espere un minuto y vuelva a probar.");
+  const auth = ErrorAuth.safeParse(cuerpo);
+  if (auth.success) {
+    // El login fallido es el único error de credenciales: la pantalla lo marca en la contraseña
+    const codigo = auth.data.code === "INVALID_EMAIL_OR_PASSWORD" ? "CREDENCIALES" : auth.data.code;
+    return new ErrorNegocio(codigo, MENSAJES_AUTH[auth.data.code] ?? "No se pudo iniciar sesión. Inténtelo de nuevo.");
+  }
+  if (status === 401) return new ErrorNegocio("SIN_SESION", "Inicie sesión para continuar");
+  return new ErrorNegocio("ERROR", `Error ${status}`);
+}
 
-export async function pedir<T>(metodo: Metodo, ruta: string, cuerpo?: unknown): Promise<T> {
-  const escribe = metodo !== "GET";
-  let respuesta: Response;
+/**
+ * fetch + zod. Una respuesta 4xx/5xx se lanza como ErrorNegocio; sin red,
+ * como SIN_CONEXION; una respuesta que no cumple el esquema, como el
+ * ZodError (es un error de programación, no del usuario).
+ */
+export async function pedir<T>(ruta: string, esquema: z.ZodType<T, unknown>, init?: RequestInit): Promise<T> {
+  let r: Response;
   try {
-    respuesta = await fetch(ruta, {
-      method: metodo,
-      // La API exige cuerpo JSON en toda escritura, aunque sea {}
-      headers: escribe ? { "content-type": "application/json" } : undefined,
-      body: escribe ? JSON.stringify(cuerpo ?? {}) : undefined,
-    });
-  } catch {
-    throw new ErrorApi(0, "SIN_CONEXION", "No se pudo conectar con el servidor. Revisa la conexión e intenta de nuevo.");
+    // Solo con cuerpo va el Content-Type: Fastify rechaza un JSON vacío
+    const headers = init?.body === undefined ? undefined : { "content-type": "application/json" };
+    r = await fetch(ruta, { credentials: "same-origin", headers, ...init });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") throw error;
+    throw new ErrorNegocio("SIN_CONEXION", "No hay conexión con el servidor. Anote en el libro físico y regístrelo después.");
   }
-
-  if (respuesta.status === 204) return undefined as T;
-  const datos: unknown = await respuesta.json().catch(() => null);
-  if (respuesta.ok) return datos as T;
-  throw errorDesde(respuesta.status, datos);
+  let cuerpo: unknown = null;
+  if (r.status !== 204) {
+    try {
+      cuerpo = await r.json();
+    } catch {
+      cuerpo = null; // un 502 del proxy trae HTML, no JSON
+    }
+  }
+  if (!r.ok) throw errorDe(r.status, cuerpo);
+  return esquema.parse(cuerpo);
 }
 
-/** Valores de un filtro: lo vacío o indefinido no se envía. */
-export type Parametros = Record<string, string | number | boolean | null | undefined>;
-
-export function obtener<T>(ruta: string, parametros: Parametros = {}): Promise<T> {
-  const query = new URLSearchParams();
-  for (const [clave, valor] of Object.entries(parametros)) {
-    if (valor !== undefined && valor !== null && valor !== "") query.set(clave, String(valor));
-  }
-  const texto = query.toString();
-  return pedir<T>("GET", texto ? `${ruta}?${texto}` : ruta);
-}
-
-export const enviar = <T>(ruta: string, cuerpo: unknown = {}) => pedir<T>("POST", ruta, cuerpo);
-
-/** Arma el ErrorApi de una respuesta con error, sea cual sea su formato. */
-export function errorDesde(estado: number, datos: unknown): ErrorApi {
-  if (estado === 429) {
-    return new ErrorApi(429, "DEMASIADOS_INTENTOS", "Demasiados intentos desde esta conexión. Espera un rato antes de volver a intentar.");
-  }
-
-  // El nuestro: { error: { codigo, mensaje, detalles? } }
-  const nuestro = (datos as { error?: { codigo?: unknown; mensaje?: unknown; detalles?: unknown } } | null)?.error;
-  if (typeof nuestro?.codigo === "string" && typeof nuestro.mensaje === "string") {
-    const detalles = Array.isArray(nuestro.detalles) ? (nuestro.detalles as DetalleError[]) : [];
-    return new ErrorApi(estado, nuestro.codigo, nuestro.mensaje, detalles);
-  }
-
-  // Better Auth: { message, code }
-  const deLogin = datos as { code?: unknown } | null;
-  if (typeof deLogin?.code === "string") {
-    return new ErrorApi(estado, deLogin.code, MENSAJES_LOGIN[deLogin.code] ?? generico(estado));
-  }
-
-  // Sin cuerpo JSON (por ejemplo, Nginx con la app caída)
-  return new ErrorApi(estado, estado >= 500 ? "ERROR_SERVIDOR" : "ERROR_HTTP", generico(estado));
-}
-
-function generico(estado: number): string {
-  if (estado === 502 || estado === 503 || estado === 504) return "El servidor no responde. Intenta de nuevo en un momento.";
-  return `Ocurrió un error inesperado (HTTP ${estado}). Intenta de nuevo.`;
+/** pedir() con un cuerpo JSON (POST por defecto). La API exige cuerpo en toda escritura, aunque sea {}. */
+export function enviar<T>(ruta: string, esquema: z.ZodType<T, unknown>, cuerpo: unknown = {}, metodo = "POST"): Promise<T> {
+  return pedir(ruta, esquema, { method: metodo, body: JSON.stringify(cuerpo) });
 }

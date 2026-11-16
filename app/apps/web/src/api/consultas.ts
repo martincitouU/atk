@@ -1,257 +1,436 @@
-// Lo que las vistas leen de la API, con TanStack Query (api/cache.ts):
-// cada hook pide su ruta, guarda la respuesta y da estados de carga y error.
-// Las vistas solo llaman a estos hooks; las rutas y sus parámetros están
-// en docs/api.md.
-//
-// Las claves empiezan por el tema ("operaciones", "clientes"...): al guardar
-// algo (F3) se invalida el tema completo y todo lo que lo muestra se
-// vuelve a pedir.
+// Un hook de TanStack Query por ruta del contrato. Las consultas usan claves
+// con prefijo (["libro", fecha], ["resumen", fecha]…) para que cada mutación
+// invalide solo lo que cambió.
 
-import { useQuery } from "@tanstack/react-query";
-import { diaSiguiente, inicioDelDia } from "../lib/fechas.ts";
-import type { EntradaOperacionJson } from "./acciones.ts";
-import { enviar, obtener } from "./cliente.ts";
-import type {
-  AccionAuditoria,
-  CasaPublica,
+import { keepPreviousData, skipToken, useMutation, useQuery, useQueryClient, type QueryKey } from "@tanstack/react-query";
+import { z } from "zod";
+import { fechaEn, ZONA_CASA } from "../comun.ts";
+import { enviar, ErrorNegocio, pedir } from "./cliente.ts";
+import {
   Catalogo,
+  Cierre,
+  Cliente,
+  Cotizacion,
   CuentaCliente,
-  Dia,
-  EstadoCuentaCliente,
-  EstadoGasto,
-  EstadoOperacion,
   FichaCliente,
-  FichaDeCuenta,
+  OperacionCliente,
+  RespuestaRegistro,
+  FilaArqueo,
   FilaPizarra,
   Gasto,
-  Moneda,
-  MovimientoCaja,
-  OperacionDeCliente,
-  OperacionListada,
-  Persona,
-  Previsualizacion,
+  Movimiento,
+  Operacion,
   RegistroAuditoria,
   Resumen,
-  Saldo,
-  TurnoAbierto,
+  RUTAS,
+  SaldoCaja,
+  Turno,
   Usuario,
-} from "./tipos.ts";
+  Vista,
+  Yo,
+  type CambiosOperacion,
+  type CambiosUsuario,
+  type EntradaCliente,
+  type EntradaAjuste,
+  type EntradaCotizacion,
+  type EntradaRegistro,
+  type EntradaGasto,
+  type EntradaMovimiento,
+  type EntradaOperacion,
+  type EntradaSesion,
+  type EntradaUsuario,
+  type Sesion,
+} from "./esquemas.ts";
 
-/** Un id de la URL que no es un número positivo no se pide: no existe. */
-const esId = (id: number) => Number.isInteger(id) && id > 0;
+const CINCO_MINUTOS = 5 * 60_000;
 
-/** Un día del filtro, como instante de la casa. "Hasta" incluye ese día completo. */
-const desdeElDia = (dia?: Dia) => (dia ? inicioDelDia(dia) : undefined);
-const hastaElDia = (dia?: Dia) => (dia ? inicioDelDia(diaSiguiente(dia)) : undefined);
-
-// ---- Lo público y lo fijo ---------------------------------------------------
-
-/** GET /api/casa: nombre y monedas. Sin sesión: sirve en el login y en el portal. */
-export function useCasa() {
-  return useQuery({ queryKey: ["casa"], queryFn: () => obtener<CasaPublica>("/api/casa"), staleTime: Infinity });
+/** `ruta?clave=valor&…`, sin las claves vacías. */
+function conConsulta(ruta: string, consulta: Record<string, string | undefined>): string {
+  const params = new URLSearchParams(Object.entries(consulta).filter((par): par is [string, string] => Boolean(par[1])));
+  const texto = params.toString();
+  return texto ? `${ruta}?${texto}` : ruta;
 }
 
-/** GET /api/catalogo: cajas, categorías, parámetros... Una vez por sesión. */
-export function useCatalogo() {
-  return useQuery({ queryKey: ["catalogo"], queryFn: () => obtener<Catalogo>("/api/catalogo"), staleTime: Infinity });
+/** Invalida varias claves y espera los refetch: así la mutación termina con la pantalla al día. */
+function useInvalidar() {
+  const qc = useQueryClient();
+  return (...claves: QueryKey[]) => Promise.all(claves.map((queryKey) => qc.invalidateQueries({ queryKey })));
 }
 
-/** GET /api/pizarra */
-export function usePizarra() {
-  return useQuery({ queryKey: ["pizarra"], queryFn: () => obtener<FilaPizarra[]>("/api/pizarra") });
-}
-
-/** GET /api/personal: para mostrar nombres donde la API entrega ids. */
-function usePersonas() {
-  return useQuery({ queryKey: ["personal"], queryFn: () => obtener<Persona[]>("/api/personal"), staleTime: 5 * 60_000 });
-}
-
-// ---- Operaciones -------------------------------------------------------------
-
-export type FiltrosOperaciones = {
-  estado?: EstadoOperacion;
-  monedaCodigo?: string;
-  /** Días de la casa, inclusive */
-  desde?: Dia;
-  hasta?: Dia;
-  turnoId?: number;
-  limite?: number;
-};
-
-/** GET /api/operaciones, de la más reciente a la más antigua */
-export function useOperaciones({ estado, monedaCodigo, desde, hasta, turnoId, limite }: FiltrosOperaciones = {}) {
-  const parametros = { estado, monedaCodigo, turnoId, limite, desde: desdeElDia(desde), hasta: hastaElDia(hasta) };
-  return useQuery({
-    queryKey: ["operaciones", "lista", parametros],
-    queryFn: () => obtener<OperacionListada[]>("/api/operaciones", parametros),
-  });
-}
-
-/** GET /api/operaciones/:id */
-export function useOperacion(id: number) {
-  return useQuery({
-    queryKey: ["operaciones", id],
-    queryFn: () => obtener<OperacionListada>(`/api/operaciones/${id}`),
-    enabled: esId(id),
-  });
-}
+// ---------------------------------------------------------------------------
+// Consultas
 
 /**
- * POST /api/operaciones/previsualizar: precio, pesos y si exige ficha UAF,
- * sin guardar nada. Es un POST, pero solo lee: por eso es una consulta.
- * Con `entrada` null (monto incompleto) no se pide.
+ * Quién está y su turno (GET /api/yo). Sin sesión lanza ErrorNegocio
+ * SIN_SESION (401): no se reintenta. Una cuenta de cliente no entra a las
+ * pantallas del personal.
  */
-export function usePrevisualizacion(entrada: EntradaOperacionJson | null) {
-  return useQuery({
-    queryKey: ["previsualizacion", entrada],
-    queryFn: () => enviar<Previsualizacion>("/api/operaciones/previsualizar", entrada),
-    enabled: entrada !== null,
-    // La pizarra puede cambiar: cada cálculo se pide de nuevo
-    staleTime: 0,
-    // Mientras llega el cálculo nuevo, se sigue viendo el anterior
-    placeholderData: (anterior) => anterior,
+export const useSesion = () =>
+  useQuery({
+    queryKey: ["sesion"],
+    queryFn: async ({ signal }): Promise<Sesion> => {
+      const yo = await pedir(RUTAS.yo, Yo, { signal });
+      if (yo.tipo === "cliente") {
+        throw new ErrorNegocio("SOLO_PERSONAL", "Esta es la ventanilla del personal. El portal de clientes todavía no está disponible aquí.");
+      }
+      return { usuario: yo.usuario, turno: yo.turnoAbierto };
+    },
+    retry: false,
   });
-}
 
-// ---- Turnos y caja ---------------------------------------------------------------
-
-/** GET /api/saldos: de una caja o de todas */
-export function useSaldos(cajaId?: number) {
-  return useQuery({ queryKey: ["saldos", cajaId ?? "todas"], queryFn: () => obtener<Saldo[]>("/api/saldos", { cajaId }) });
-}
-
-/** GET /api/turnos/:id/movimientos: el libro de caja del turno */
-export function useMovimientos(turnoId: number) {
-  return useQuery({
-    queryKey: ["movimientos", turnoId],
-    queryFn: () => obtener<MovimientoCaja[]>(`/api/turnos/${turnoId}/movimientos`),
+/** La pizarra; se refresca sola cada minuto (vencimientos y cambios de otra caja). */
+export const usePizarra = () =>
+  useQuery({
+    queryKey: ["pizarra"],
+    queryFn: ({ signal }) => pedir(RUTAS.pizarra, z.array(FilaPizarra), { signal }),
+    refetchInterval: 60_000,
   });
-}
-
-/** GET /api/turnos/abiertos */
-export function useTurnosAbiertos() {
-  return useQuery({ queryKey: ["turnos", "abiertos"], queryFn: () => obtener<TurnoAbierto[]>("/api/turnos/abiertos") });
-}
-
-// ---- Clientes --------------------------------------------------------------------
-
-/** Letras mínimas para buscar: con menos, la lista sería casi todo el registro. */
-export const MINIMO_BUSQUEDA = 2;
-
-/** GET /api/clientes?q=: busca en nombre y documento */
-export function useClientes(texto: string) {
-  const q = texto.trim();
-  return useQuery({
-    queryKey: ["clientes", "busqueda", q.toLowerCase()],
-    queryFn: () => obtener<FichaCliente[]>("/api/clientes", { q }),
-    enabled: q.length >= MINIMO_BUSQUEDA,
-    // Mientras se escribe, la lista anterior se queda hasta que llega la nueva
-    placeholderData: (anterior) => anterior,
-  });
-}
-
-/** GET /api/clientes/:id */
-export function useCliente(id: number) {
-  return useQuery({ queryKey: ["clientes", id], queryFn: () => obtener<FichaCliente>(`/api/clientes/${id}`), enabled: esId(id) });
-}
-
-/** GET /api/cuentas-cliente?estado= (sin estado: todas) */
-export function useCuentasCliente(estado?: EstadoCuentaCliente) {
-  return useQuery({
-    queryKey: ["cuentas-cliente", estado ?? "todas"],
-    queryFn: () => obtener<CuentaCliente[]>("/api/cuentas-cliente", { estado }),
-  });
-}
-
-// ---- Gastos y consultas -----------------------------------------------------------
-
-export type FiltrosGastos = { desde?: Dia; hasta?: Dia; estado?: EstadoGasto };
-
-/** GET /api/gastos (las fechas son días de la casa, inclusive) */
-export function useGastos(filtros: FiltrosGastos = {}) {
-  return useQuery({ queryKey: ["gastos", filtros], queryFn: () => obtener<Gasto[]>("/api/gastos", filtros) });
-}
-
-/** GET /api/resumen?fecha= (hoy si no se indica) */
-export function useResumen(fecha?: Dia) {
-  return useQuery({ queryKey: ["resumen", fecha ?? "hoy"], queryFn: () => obtener<Resumen>("/api/resumen", { fecha }) });
-}
-
-export type FiltrosAuditoria = { tabla?: string; accion?: AccionAuditoria; desde?: Dia; hasta?: Dia };
-
-/** GET /api/auditoria: lo más reciente primero */
-export function useAuditoria({ tabla, accion, desde, hasta }: FiltrosAuditoria = {}) {
-  const parametros = { tabla, accion, desde: desdeElDia(desde), hasta: hastaElDia(hasta) };
-  return useQuery({
-    queryKey: ["auditoria", parametros],
-    queryFn: () => obtener<RegistroAuditoria[]>("/api/auditoria", parametros),
-  });
-}
-
-/** GET /api/usuarios (solo admin) */
-export function useUsuarios() {
-  return useQuery({ queryKey: ["usuarios"], queryFn: () => obtener<Usuario[]>("/api/usuarios") });
-}
-
-// ---- Portal de clientes ------------------------------------------------------------
-
-/** GET /api/mi/operaciones. Solo con la cuenta verificada: antes, la API responde 403. */
-export function useMisOperaciones(verificada: boolean) {
-  return useQuery({
-    queryKey: ["mi", "operaciones"],
-    queryFn: () => obtener<OperacionDeCliente[]>("/api/mi/operaciones"),
-    enabled: verificada,
-  });
-}
-
-/** GET /api/mi/ficha. Solo con la cuenta verificada. */
-export function useMiFicha(verificada: boolean) {
-  return useQuery({ queryKey: ["mi", "ficha"], queryFn: () => obtener<FichaDeCuenta>("/api/mi/ficha"), enabled: verificada });
-}
-
-// ---- Ayudas para mostrar ---------------------------------------------------------
-
-export type InfoMoneda = Moneda & { decimalesTasa?: number };
 
 /**
- * Monedas por código (la base y todas las divisas), para formatear montos y
- * tasas. Undefined mientras no llega /api/casa.
+ * El día de la casa como rango de instantes (la API filtra por desde/hasta):
+ * "2026-11-08" → ["2026-11-08T00:00:00-03:00", "2026-11-09T00:00:00-03:00"].
+ * ponytail: usa el desfase del mediodía; en un día con cambio de hora se corre una hora (Aysén no cambia la hora).
  */
-export function useMonedas(): Map<string, InfoMoneda> | undefined {
-  const { data } = useCasa();
-  if (!data) return undefined;
-  const mapa = new Map<string, InfoMoneda>();
-  if (data.monedaBase) mapa.set(data.monedaBase.codigo, data.monedaBase);
-  for (const divisa of data.divisas) mapa.set(divisa.codigo, divisa);
-  return mapa;
-}
-
-/** Decimales con que se muestra la tasa de una divisa (2 si no se sabe aún). */
-export function useDecimalesTasa() {
-  const monedas = useMonedas();
-  return (codigo: string) => monedas?.get(codigo)?.decimalesTasa ?? 2;
-}
-
-/** Código de la moneda base (los "pesos" de cada operación). */
-export function useMonedaBase(): string {
-  return useCasa().data?.monedaBase?.codigo ?? "CLP";
-}
-
-/** Ordena por moneda como la pizarra: primero la moneda base y después las divisas. */
-export function useOrdenMonedas() {
-  const { data } = useCasa();
-  const orden = [data?.monedaBase?.codigo, ...(data?.divisas.map((d) => d.codigo) ?? [])];
-  const posicion = (codigo: string) => (orden.includes(codigo) ? orden.indexOf(codigo) : orden.length);
-  return <T extends { monedaCodigo: string }>(lista: readonly T[]) => [...lista].sort((a, b) => posicion(a.monedaCodigo) - posicion(b.monedaCodigo));
-}
-
-/** Nombre de una persona del personal por su id ("…" mientras llega la lista). */
-export function useNombres() {
-  const { data } = usePersonas();
-  const porId = new Map(data?.map((p) => [p.id, p.nombre]));
-  return (id: number | null): string => {
-    if (id === null) return "—";
-    if (!data) return "…";
-    return porId.get(id) ?? `Usuario ${id}`;
+export function rangoDelDia(fecha: string, zona: string = ZONA_CASA): { desde: string; hasta: string } {
+  const desfase = (dia: string) => {
+    const nombre = new Intl.DateTimeFormat("en-US", { timeZone: zona, timeZoneName: "longOffset" })
+      .formatToParts(new Date(`${dia}T12:00:00Z`))
+      .find((p) => p.type === "timeZoneName")?.value;
+    const off = nombre?.replace("GMT", "") ?? "";
+    return off === "" ? "Z" : off;
   };
+  const siguiente = new Date(`${fecha}T12:00:00Z`);
+  siguiente.setUTCDate(siguiente.getUTCDate() + 1);
+  const manana = siguiente.toISOString().slice(0, 10);
+  return { desde: `${fecha}T00:00:00${desfase(fecha)}`, hasta: `${manana}T00:00:00${desfase(manana)}` };
+}
+
+/** Las operaciones de un día (todas: borradores, confirmadas y reversadas). Sin fecha, hoy en la casa. */
+export const useLibroDelDia = (fecha?: string) =>
+  useQuery({
+    queryKey: ["libro", fecha ?? "hoy"],
+    queryFn: ({ signal }) => {
+      const { desde, hasta } = rangoDelDia(fecha ?? fechaEn(new Date()));
+      return pedir(conConsulta(RUTAS.operaciones, { desde, hasta, limite: "1000" }), z.array(Operacion), { signal });
+    },
+  });
+
+/** Saldos, totales y margen del día (solo SUPERVISOR o ADMIN). */
+export const useResumen = (fecha?: string) =>
+  useQuery({
+    queryKey: ["resumen", fecha ?? "hoy"],
+    queryFn: ({ signal }) => pedir(conConsulta(RUTAS.resumen, { fecha }), Resumen, { signal }),
+  });
+
+export const useCatalogo = () =>
+  useQuery({ queryKey: ["catalogo"], queryFn: ({ signal }) => pedir(RUTAS.catalogo, Catalogo, { signal }), staleTime: CINCO_MINUTOS });
+
+/** Los parámetros vienen en el catálogo (no hay /api/parametros). */
+export const useParametros = () =>
+  useQuery({
+    queryKey: ["catalogo"],
+    queryFn: ({ signal }) => pedir(RUTAS.catalogo, Catalogo, { signal }),
+    staleTime: CINCO_MINUTOS,
+    select: (c) => c.parametros,
+  });
+
+/** Busca por nombre o documento (la API exige `q`: vacío, no consulta). Mientras escribe, muestra el resultado anterior. */
+export const useClientes = (q: string) =>
+  useQuery({
+    queryKey: ["clientes", q.trim()],
+    queryFn: q.trim() === "" ? skipToken : ({ signal }) => pedir(conConsulta(RUTAS.clientes, { q: q.trim() }), z.array(Cliente), { signal }),
+    placeholderData: keepPreviousData,
+  });
+
+/** Un cliente por su id (la ficha que se abre con /clientes?id=). Sin id, no consulta. */
+export const useCliente = (id: number | null | undefined) =>
+  useQuery({
+    queryKey: ["cliente", id],
+    queryFn: id == null ? skipToken : ({ signal }) => pedir(RUTAS.cliente(id), Cliente, { signal }),
+  });
+
+/**
+ * El saldo de cada moneda en una caja (GET /api/saldos, todos los roles): lo
+ * teórico del Cierre y la «Caja en pesos». Sin caja (sin turno), no consulta.
+ */
+export const useSaldos = (cajaId: number | null | undefined) =>
+  useQuery({
+    queryKey: ["saldos", cajaId],
+    queryFn: cajaId == null ? skipToken : ({ signal }) => pedir(conConsulta(RUTAS.saldos, { cajaId: String(cajaId) }), z.array(SaldoCaja), { signal }),
+  });
+
+/** El arqueo de un turno cerrado (vacío mientras está abierto). Sin turno, no consulta. */
+export const useArqueo = (turnoId: number | null | undefined) =>
+  useQuery({
+    queryKey: ["arqueo", turnoId],
+    queryFn: turnoId == null ? skipToken : ({ signal }) => pedir(RUTAS.arqueo(turnoId), z.array(FilaArqueo), { signal }),
+  });
+
+/** Los gastos de un día; sin fecha, todos. */
+export const useGastos = (fecha?: string) =>
+  useQuery({
+    queryKey: ["gastos", fecha ?? "todos"],
+    queryFn: ({ signal }) => pedir(conConsulta(RUTAS.gastos, { desde: fecha, hasta: fecha }), z.array(Gasto), { signal }),
+  });
+
+/** Las categorías de gasto vienen en el catálogo. */
+export const useCategoriasGasto = () =>
+  useQuery({
+    queryKey: ["catalogo"],
+    queryFn: ({ signal }) => pedir(RUTAS.catalogo, Catalogo, { signal }),
+    staleTime: CINCO_MINUTOS,
+    select: (c) => c.categoriasGasto,
+  });
+
+/**
+ * La vista previa de una operación (tasa, pesos, margen, si pide ficha). Con
+ * `null` no consulta; el debounce lo pone la pantalla. Un error de negocio
+ * (BAJO_MINIMO, COTIZACION_VENCIDA…) queda en `error`, sin reintentos.
+ * Mientras llega la vista nueva se ve la anterior (`isPlaceholderData`), para
+ * que la placa no parpadee a cada tecla; con `null`, la pantalla la ignora.
+ */
+export const useVistaPrevia = (entrada: EntradaOperacion | null) =>
+  useQuery({
+    queryKey: ["vista", entrada],
+    queryFn:
+      entrada === null
+        ? skipToken
+        : ({ signal }) => pedir(RUTAS.previsualizar, Vista, { method: "POST", body: JSON.stringify(entrada), signal }),
+    retry: false,
+    placeholderData: keepPreviousData,
+  });
+
+// ---------------------------------------------------------------------------
+// Mutaciones
+
+export function useCrearOperacion() {
+  const invalidar = useInvalidar();
+  return useMutation({
+    mutationFn: (entrada: EntradaOperacion) => enviar(RUTAS.operaciones, Operacion, entrada),
+    onSuccess: () => invalidar(["libro"], ["resumen"], ["saldos"]),
+  });
+}
+
+export function useConfirmar() {
+  const invalidar = useInvalidar();
+  return useMutation({
+    mutationFn: (id: number) => enviar(RUTAS.confirmar(id), Operacion),
+    onSuccess: () => invalidar(["libro"], ["resumen"], ["saldos"]),
+  });
+}
+
+export function useReversar() {
+  const invalidar = useInvalidar();
+  return useMutation({
+    mutationFn: ({ id, motivo }: { id: number; motivo: string }) => enviar(RUTAS.reversar(id), Operacion, { motivo }),
+    onSuccess: () => invalidar(["libro"], ["resumen"], ["saldos"]),
+  });
+}
+
+/** Corrige un borrador; se recalcula con la pizarra vigente (la salida de PIZARRA_CAMBIO). */
+export function useEditarBorrador() {
+  const invalidar = useInvalidar();
+  return useMutation({
+    mutationFn: ({ id, cambios }: { id: number; cambios: CambiosOperacion }) => enviar(RUTAS.operacion(id), Operacion, cambios, "PATCH"),
+    onSuccess: () => invalidar(["libro"], ["resumen"], ["saldos"]),
+  });
+}
+
+export function useEliminarBorrador() {
+  const invalidar = useInvalidar();
+  return useMutation({
+    mutationFn: (id: number) => enviar(RUTAS.operacion(id), z.null(), {}, "DELETE"),
+    onSuccess: () => invalidar(["libro"], ["resumen"], ["saldos"]),
+  });
+}
+
+/** Publica referencia y márgenes de una divisa; después se relee la pizarra. */
+export function usePublicarCotizacion() {
+  const invalidar = useInvalidar();
+  return useMutation({
+    mutationFn: (entrada: EntradaCotizacion) => enviar(RUTAS.cotizaciones, Cotizacion, entrada),
+    onSuccess: () => invalidar(["pizarra"], ["vista"]),
+  });
+}
+
+export function useAbrirTurno() {
+  const invalidar = useInvalidar();
+  return useMutation({
+    mutationFn: (cajaId: number) => enviar(RUTAS.turnos, Turno, { cajaId }),
+    onSuccess: () => invalidar(["sesion"], ["resumen"], ["saldos"]),
+  });
+}
+
+/** Cierra el turno con el conteo de cada moneda, en unidad mínima: { USD: "45000", … }. */
+export function useCerrarTurno() {
+  const invalidar = useInvalidar();
+  return useMutation({
+    mutationFn: ({ turnoId, conteo }: { turnoId: number; conteo: Record<string, string> }) =>
+      enviar(RUTAS.cerrarTurno(turnoId), Cierre, { conteo }),
+    onSuccess: () => invalidar(["sesion"], ["resumen"], ["saldos"], ["libro"], ["arqueo"]),
+  });
+}
+
+/** Ingreso o retiro de la caja del turno. */
+export function useMovimientoCaja() {
+  const invalidar = useInvalidar();
+  return useMutation({
+    mutationFn: (entrada: EntradaMovimiento) => enviar(RUTAS.movimientos, Movimiento, entrada),
+    onSuccess: () => invalidar(["resumen"], ["saldos"]),
+  });
+}
+
+/** Ajuste tras un arqueo (supervisor o admin): el monto con signo alinea el saldo con lo contado. */
+export function useAjustarCaja() {
+  const invalidar = useInvalidar();
+  return useMutation({
+    mutationFn: (entrada: EntradaAjuste) => enviar(RUTAS.ajustes, Movimiento, entrada),
+    onSuccess: () => invalidar(["resumen"], ["saldos"]),
+  });
+}
+
+export function useRegistrarGasto() {
+  const invalidar = useInvalidar();
+  return useMutation({
+    mutationFn: (entrada: EntradaGasto) => enviar(RUTAS.gastos, Gasto, entrada),
+    onSuccess: () => invalidar(["gastos"], ["resumen"], ["saldos"]),
+  });
+}
+
+/** Reversa un gasto con motivo (como el de una operación: sin motivo, FALTA_MOTIVO). */
+export function useReversarGasto() {
+  const invalidar = useInvalidar();
+  return useMutation({
+    mutationFn: ({ id, motivo }: { id: number; motivo: string }) => enviar(RUTAS.reversarGasto(id), Gasto, { motivo }),
+    onSuccess: () => invalidar(["gastos"], ["resumen"], ["saldos"]),
+  });
+}
+
+/** Crea un cliente o, con `id`, lo edita. */
+export function useGuardarCliente() {
+  const invalidar = useInvalidar();
+  return useMutation({
+    mutationFn: ({ id, datos }: { id?: number | undefined; datos: EntradaCliente }) =>
+      id === undefined ? enviar(RUTAS.clientes, Cliente, datos) : enviar(RUTAS.cliente(id), Cliente, datos, "PATCH"),
+    onSuccess: () => invalidar(["clientes"], ["cliente"]),
+  });
+}
+
+/** Las cuentas del portal que esperan que alguien revise el carnet en el local. */
+export const useCuentasPendientes = () =>
+  useQuery({
+    queryKey: ["cuentas", "PENDIENTE"],
+    queryFn: ({ signal }) => pedir(conConsulta(RUTAS.cuentas, { estado: "PENDIENTE" }), z.array(CuentaCliente), { signal }),
+  });
+
+/** Verifica una cuenta: la enlaza con la ficha del mismo RUT (sin ficha, SIN_FICHA). */
+export function useVerificarCuenta() {
+  const invalidar = useInvalidar();
+  return useMutation({
+    mutationFn: (id: number) => enviar(RUTAS.verificarCuenta(id), CuentaCliente),
+    onSuccess: () => invalidar(["cuentas"]),
+  });
+}
+
+/** Rechaza una cuenta con su motivo (el cliente lo ve en el portal). */
+export function useRechazarCuenta() {
+  const invalidar = useInvalidar();
+  return useMutation({
+    mutationFn: ({ id, motivo }: { id: number; motivo: string }) => enviar(RUTAS.rechazarCuenta(id), CuentaCliente, { motivo }),
+    onSuccess: () => invalidar(["cuentas"]),
+  });
+}
+
+/** El personal de la casa (solo ADMIN). */
+export const useUsuarios = () => useQuery({ queryKey: ["usuarios"], queryFn: ({ signal }) => pedir(RUTAS.usuarios, z.array(Usuario), { signal }) });
+
+export function useCrearUsuario() {
+  const invalidar = useInvalidar();
+  return useMutation({
+    mutationFn: (entrada: EntradaUsuario) => enviar(RUTAS.usuarios, Usuario, entrada),
+    onSuccess: () => invalidar(["usuarios"]),
+  });
+}
+
+/** Cambia el nombre, el rol o si está activo (desactivar cierra sus sesiones). */
+export function useEditarUsuario() {
+  const invalidar = useInvalidar();
+  return useMutation({
+    mutationFn: ({ id, cambios }: { id: number; cambios: CambiosUsuario }) => enviar(RUTAS.usuario(id), Usuario, cambios, "PATCH"),
+    onSuccess: () => invalidar(["usuarios"]),
+  });
+}
+
+/** Fija una contraseña nueva (204) y cierra las sesiones de esa persona. */
+export function useRestablecerContrasena() {
+  return useMutation({
+    mutationFn: ({ id, contrasena }: { id: number; contrasena: string }) => enviar(RUTAS.contrasena(id), z.null(), { contrasena }),
+  });
+}
+
+/**
+ * Cambia la contraseña de quien entró (Better Auth) y cierra sus otras
+ * sesiones. La actual equivocada es un 400 INVALID_PASSWORD, no un 401: la
+ * sesión sigue abierta.
+ */
+export function useCambiarContrasena() {
+  return useMutation({
+    mutationFn: ({ actual, nueva }: { actual: string; nueva: string }) =>
+      enviar(RUTAS.cambiarContrasena, z.unknown(), { currentPassword: actual, newPassword: nueva, revokeOtherSessions: true }),
+  });
+}
+
+/** Filtros de la auditoría, como los pide GET /api/auditoria (los instantes en ISO). */
+export type FiltrosAuditoria = { desde?: string; hasta?: string; tabla?: string; accion?: string; usuarioId?: string };
+
+/** La auditoría (solo ADMIN), de lo más reciente a lo más antiguo; hasta 200 filas. */
+export const useAuditoria = (filtros: FiltrosAuditoria) =>
+  useQuery({
+    queryKey: ["auditoria", filtros],
+    queryFn: ({ signal }) => pedir(conConsulta(RUTAS.auditoria, { ...filtros, limite: "200" }), z.array(RegistroAuditoria), { signal }),
+    placeholderData: keepPreviousData,
+  });
+
+// ---------------------------------------------------------------------------
+// El portal de clientes (/mi)
+
+/** Quién está, sea del personal o cliente (el portal mira las dos ramas). Sin sesión, SIN_SESION. */
+export const useYo = () => useQuery({ queryKey: ["yo"], queryFn: ({ signal }) => pedir(RUTAS.yo, Yo, { signal }), retry: false });
+
+/** Sus operaciones. Con la cuenta sin verificar, la API responde CUENTA_NO_VERIFICADA con el qué hacer. */
+export const useMisOperaciones = (activa: boolean) =>
+  useQuery({
+    queryKey: ["mi", "operaciones"],
+    queryFn: activa ? ({ signal }) => pedir(RUTAS.misOperaciones, z.array(OperacionCliente), { signal }) : skipToken,
+    retry: false,
+  });
+
+export const useMiFicha = (activa: boolean) =>
+  useQuery({
+    queryKey: ["mi", "ficha"],
+    queryFn: activa ? ({ signal }) => pedir(RUTAS.miFicha, FichaCliente, { signal }) : skipToken,
+    retry: false,
+  });
+
+/** Crea la cuenta del portal (5 por hora por conexión). Queda PENDIENTE. */
+export function useRegistrarCliente() {
+  return useMutation({ mutationFn: (entrada: EntradaRegistro) => enviar(RUTAS.registro, RespuestaRegistro, entrada) });
+}
+
+/** Inicia sesión (Better Auth). Su respuesta no se usa: después se vuelve a pedir /api/yo. */
+export function useEntrar() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (datos: EntradaSesion) => enviar(RUTAS.entrar, z.unknown(), datos),
+    onSuccess: () => qc.invalidateQueries(),
+  });
+}
+
+/** Cierra la sesión y vacía lo que quedó en caché de quien salió. */
+export function useSalir() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => enviar(RUTAS.salir, z.unknown()),
+    onSuccess: () => qc.resetQueries(),
+  });
 }

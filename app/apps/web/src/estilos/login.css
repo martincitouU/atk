@@ -1,0 +1,123 @@
+/*
+ * La entrada. Sin riel: el letrero verde de ATK es la única pieza de
+ * identidad (el mismo verde apagado, filete blanco y radio de la pizarra), y
+ * debajo, el formulario en un panel como los de la Ventanilla.
+ */
+
+:root {
+  /* El subtítulo del letrero: blanco atenuado sobre el verde de la pizarra (6,1:1) */
+  --login-letrero-suave: #d6e6e0;
+}
+
+/* De noche el letrero no cambia (como la pizarra): el mismo valor, declarado */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --login-letrero-suave: #d6e6e0;
+  }
+}
+
+.login {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: 32px 16px;
+}
+
+.login-columna {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: min(100%, 392px);
+}
+
+/* El letrero: el verde apagado de la pizarra (vuelta 3, A3; blanco 7,9:1) con
+   su filete blanco interior. El favicon conserva el verde de marca. */
+.login-letrero {
+  padding: 6px;
+  border-radius: var(--radio-letrero);
+  background: var(--letrero-ventanilla);
+  box-shadow: var(--sombra-letrero);
+  color: #fff;
+}
+
+.login-letrero-in {
+  padding: 16px 22px 14px;
+  border: 3px solid #fff;
+  border-radius: 10px;
+}
+
+.login-marca {
+  font-size: 46px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.login-lugar {
+  margin-top: 8px;
+  color: var(--login-letrero-suave);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* El formulario */
+.login-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 22px 22px;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-panel);
+  background: var(--panel);
+}
+
+.login-panel h1 {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.login-panel form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.login-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+/* Junto al campo, como .error-campo de base.css, pero en gris: es un aviso */
+.login-mayus {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: var(--suave);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.login-aviso .aviso-cuerpo {
+  gap: 2px;
+}
+
+.login-panel .btn.prim {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.login-ejemplo {
+  color: var(--suave);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.login-ejemplo .num {
+  color: var(--tinta);
+  font-size: 11.5px;
+}

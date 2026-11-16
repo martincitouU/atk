@@ -56,6 +56,7 @@ La app debe:
 - **TypeScript** en todo, **Node 24 LTS**. Monorepo con npm workspaces:
   `apps/api`, `apps/web`, `packages/shared`.
 - **API**: Fastify. **BD**: SQLite con better-sqlite3 + Drizzle ORM.
+  Existen los tres: `apps/api`, `apps/web` (el front) y `packages/shared`.
   Node corre el TypeScript de `@atk/shared` directo (el workspace es un
   enlace, no está dentro de `node_modules`).
 - **Login**: Better Auth (sesiones en cookie httpOnly, roles). No escribir
@@ -118,8 +119,10 @@ La app debe:
 - En JSON los montos viajan como string (`JSON.stringify` falla con `bigint`).
 - Tasas, precios, costos y márgenes: enteros con **escala única ×10^6**
   (sufijo `_e6`/`E6`), igual para todas las monedas.
-- Todo cálculo con dinero vive en `apps/api/src/dominio/dinero.ts` (puro,
-  `bigint`, redondeo explícito) y tiene tablas de casos en sus tests.
+- Todo cálculo con dinero vive en `packages/shared/src/dinero.ts` (puro,
+  `bigint`, redondeo explícito) y tiene tablas de casos en sus tests. Se
+  importa como `@atk/shared/dinero`; `apps/api/src/dominio/dinero.ts` lo
+  reexporta, así los servicios no cambian sus imports.
 - Redondeo a favor de la casa: lo que paga, hacia abajo; lo que cobra,
   hacia arriba; márgenes y costos, al más cercano.
 - La tabla de auditoría tiene triggers que abortan `UPDATE` y `DELETE`.
@@ -141,62 +144,43 @@ La app debe:
 - Los tests de servicios se nombran por RF (`RF-07: ...`) y usan
   `test/servicios/escenario.ts` (semilla + reloj + usuarios).
 
-### Front (`app/apps/web/`)
-- **`DESIGN.md` (raíz) es la guía visual de todas las vistas.** Sus valores
-  viven en `src/estilos/tokens.css`; ningún componente escribe colores ni
-  medidas sueltas. Se toma su lenguaje visual, no la marca Uniswap: la marca
-  es la de la casa. Basel es privada: se usa Inter Variable (peso 485 real),
-  servida desde el mismo origen.
-- Decisiones sobre `DESIGN.md` (se contradice en algunos puntos):
-  - Magenta `#ff37c7` = la acción principal: **máximo un botón magenta
-    relleno por vista** (`<Boton variante="primario">`). El resto, `suave`,
-    `secundario` o `texto`.
-  - Texto magenta sobre blanco en `#c8148f` (5,3:1); el `#ff37c7` da 3,2:1.
-  - Coral `#e01a2b` **solo para errores**, siempre con texto. Verde
-    `#0c8911` solo para datos en vivo (el día en curso, tasa vigente).
-- **El front no calcula dinero.** Precios y montos vienen de la API
-  (`previsualizar`). `src/lib/montos.ts` solo traduce entre lo que se ve
-  ("150,25") y el texto de dígitos de la API (`"15025"`), con `bigint` y sin
-  redondear nunca lo que se escribe. Un monto no se corta con "…".
-- Estructura: `componentes/` (piezas del diseño, sin lógica de negocio),
-  `marcos/` (barra por rol y quién entra a cada parte), `vistas/` (una por
-  pantalla), `api/` (`tipos.ts` = forma del JSON, `consultas.ts` = hooks de
-  TanStack Query), `lib/` (montos, fechas en la zona de la casa, RUT,
-  textos y tonos de cada estado), `sesion/`.
-- **Toda petición pasa por `src/api/cliente.ts`**: envía JSON (`{}` en una
-  escritura sin datos) y convierte cualquier falla en un `ErrorApi`
-  (`estado`, `codigo`, `mensaje` para mostrar, `detalles` por campo). Ahí se
-  traducen los errores de Better Auth y los 429. Ninguna vista llama a
-  `fetch`.
-- Sesión (`src/sesion/Sesion.tsx`): lo que dice `GET /api/yo` (401 = sin
-  sesión); `ingresar` y `salir` usan Better Auth. El proveedor crea la caché
-  (`src/api/cache.ts`): un 401 en pleno uso borra los datos de la sesión y
-  lleva al login con el aviso de inactividad; al entrar de nuevo, vuelve a la
-  vista. Al cerrar sesión no se vuelve a la vista (puede entrar otra persona).
-- Fechas en los filtros: la API pide instantes en operaciones y auditoría;
-  un día "hasta" se envía como el inicio del día siguiente en la zona de la
-  casa (`inicioDelDia`, `diaSiguiente` en `lib/fechas.ts`).
-- Lecturas con `<ConDatos consulta={...}>` (cargando, error con "Reintentar"
-  o los datos). Un 404 se muestra como "Esta página no existe".
-- Formularios: react-hook-form con los esquemas zod de `@atk/shared` (los
-  mismos que valida la API); lo que la API rechaza va junto a su campo
-  (`errorEnFormulario` en `lib/formularios.ts`). Los montos se escriben como
-  se ven ("150,25") y se convierten al enviar (`reglaMonto`, `leerMonto`):
-  más decimales que la moneda es un error, nunca se redondea.
-- Escrituras: una acción por ruta en `src/api/acciones.ts` (useMutation).
-  Cada una dice qué temas de la caché refrescar al terminar; la auditoría se
-  refresca siempre. Lo irreversible (confirmar, reversar, cerrar turno,
-  verificar) pide confirmación en un diálogo.
-- Confirmar una operación: si falta el folio, el diálogo lo pide y lo guarda
-  antes (PATCH). Si con eso cambian los montos (la pizarra cambió), no
-  confirma y muestra los nuevos. Si la API responde `PIZARRA_CAMBIO`, ofrece
-  "Recalcular" (PATCH `{}`).
-- El cálculo de una operación (`previsualizar`) se pide 300 ms después de la
-  última tecla (`useDemorado`); el front no calcula montos.
-- Fases: F1 (esqueleto), F2 (lectura) y F3 (escritura y prueba de punta a
-  punta, `docs/prueba-punta-a-punta.md`) están hechas. Falta desplegar.
-- Tests en `apps/web/test/` (Vitest + Testing Library, jsdom). La API se
-  simula con `test/apiFalsa.tsx` (`usarApi`, `rutasDe(sesion)`, `abrir(ruta)`).
+### Front (`apps/web`)
+- **Contrato**: `docs/api.md`. Las entradas se validan con los esquemas de
+  `@atk/shared`; las respuestas, con `apps/web/src/api/esquemas.ts` (cada
+  una lee lo que manda la API y, si la pantalla necesita otra forma, la arma
+  con un transform: así una diferencia vive en un solo lugar).
+- **En desarrollo**: `npm run dev` levanta la API con la base de desarrollo
+  (`apps/api/src/cli/desarrollo.ts`, cuentas `@demo.cl`) y Vite juntos
+  (`scripts/dev.ts`). Para la base de demo del diseño (`app/.dev/demo.db`,
+  la crea `apps/api/src/cli/demo.ts`, login `rolando@atk.cl` /
+  `ventanilla`), `npm run dev:api` y `npm run dev:web` en dos terminales.
+  Vite reenvía `/api` a la API (mismo origen: cookie y `Origin` calzan).
+  Para empezar de cero, borrar `app/.dev/`.
+- **Mocks**: MSW en `apps/web/src/mocks/`, con la forma de `docs/api.md`.
+  Solo para los tests y con `VITE_MOCKS=1` (datos de ejemplo sin API).
+- **Diseño**: dirección «Carretera Austral» (señalética vial chilena),
+  CSS propio con tokens (`src/estilos/tokens.css`, claro y oscuro), sin
+  librería de componentes. El sistema está en `DESIGN.md`; el producto, en
+  `PRODUCT.md`; el contrato de dirección, en `.impeccable/`.
+- **Marco de escritorio** (vuelta 3, como un programa de oficina):
+  `componentes/Barras.tsx` (barra de título, pestañas de sección y barra de
+  estado) y `componentes/Cinta.tsx`. Cada pantalla declara sus comandos con
+  `useCinta([...grupos])`, y cada comando llama a la misma función que su
+  tecla (el registro expone `tecla()`, el libro `reversar()` y `enfocar()`,
+  el conteo `cerrar()`, `contar()` y `elegir()`). Bajo 900 px el marco es el
+  del teléfono: las pestañas son la barra inferior.
+- **Teclado** (Ventanilla): `C`/`V` tipo, el dígito siguiente elige la
+  divisa, `↑/↓` la cambian, dígitos y coma al monto, `Enter` confirma,
+  `B` deja borrador, `R` reversa la fila elegida, `Esc` limpia y `F1`–`F5`
+  cambian de sección (F5 es Configuración: no recarga la página).
+- **Roles**: `apps/web/src/api/permisos.ts` copia los `exigirRol` de los
+  servicios para ocultar lo que la API negaría (la Jornada, el reverso, el
+  gasto sin efectivo, Usuarios y Auditoría). Si cambia un rol en un
+  servicio, se cambia también ahí (tiene su test).
+- **Portal de clientes** (`/mi`, `apps/web/src/pantallas/Portal/`): registro,
+  ingreso, cuenta por activar o rechazada, mis operaciones (desde el lado del
+  cliente: una VENTA de la casa es «Compró») y mi ficha. Fuera del marco del
+  personal y en su propio chunk.
 
 ## Estructura
 
@@ -209,8 +193,9 @@ La app debe:
   `app/` se copia a `/srv/atk/codigo` y la imagen se construye en la VM.
 - `app/`: la aplicación (npm workspaces). `app/db/` tiene migraciones,
   semillas y `probar.sh`; `app/apps/api/` el backend; `app/apps/web/` el
-  front; `app/scripts/dev.ts` levanta los dos en desarrollo.
-- `DESIGN.md`: guía visual de todas las vistas.
+  front; `app/packages/shared/` los esquemas de entrada y el dinero;
+  `app/scripts/dev.ts` levanta la API y el front juntos en desarrollo.
+- `DESIGN.md`: guía visual de todas las vistas; `PRODUCT.md`: el producto.
 - `docs/api.md`: contrato de la API para el front. Si una ruta cambia, se
   actualiza en el mismo PR.
 - `docs/prueba-punta-a-punta.md`: un día completo de la casa, desde una base
@@ -237,6 +222,10 @@ cd app && npm test && npm run typecheck && npm run db:probar
 # jornada de ejemplo (ver apps/api/src/cli/desarrollo.ts). Para partir de
 # cero, o para tener la jornada con fecha de hoy: rm -rf app/.dev
 cd app && npm run dev
+
+# O con la base de demo del diseño, en dos terminales
+cd app && npm run dev:api
+cd app && npm run dev:web
 
 # Prueba local del stack (imagen real de app/)
 cd deploy && CODIGO=../app HTTP_PORT=8080 docker compose up -d --build --wait

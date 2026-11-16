@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="es-CL">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ATK — Portal de clientes (comp, 390 px)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;700;800;900&family=Overpass+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* Comp del portal /mi: «Carretera Austral, versión teléfono», más tranquila.
+   Cuatro marcos de 390 px: registro, cuenta pendiente, mis operaciones (claro y oscuro).
+   Tokens copiados de app/apps/web/src/estilos/tokens.css. */
+.claro{
+  --vial:#005C45; --vial-hi:#0B7A5D; --amarillo:#F2B705; --pare:#C8102E;
+  --fondo:#ECEDE6; --lamina:#F4F4EF; --panel:#FFFFFF; --tinta:#1D2226; --suave:#5D666C;
+  --linea:#D9DBD3; --linea-fila:#ECEDE7; --borde-control:#8A9296; --trazo:#1D2226;
+  --usd:#2F7D4F; --ars:#3E8FC9; --eur:#2D3F9E;
+  --ok-tinta:#005C45; --ok-fondo:#E1EFE9; --rev-tinta:#C8102E; --rev-fondo:#FBE3E6;
+  --aviso-fondo:#FFF4CC; --aviso-borde:#F2B705; --hito:#FFFFFF; --hito-tinta:#1D2226;
+}
+.oscuro{
+  --vial:#005C45; --vial-hi:#0B7A5D; --amarillo:#F2B705; --pare:#F5596B;
+  --fondo:#14181B; --lamina:#22282C; --panel:#1C2125; --tinta:#ECEDE6; --suave:#9AA3A8;
+  --linea:#2C3338; --linea-fila:#262C30; --borde-control:#6B7479; --trazo:#C8CDC6;
+  --usd:#4FB477; --ars:#3E8FC9; --eur:#7B8CF0;
+  --ok-tinta:#6FD3AE; --ok-fondo:#12352B; --rev-tinta:#FF7A8A; --rev-fondo:#3A1A20;
+  --aviso-fondo:#33290A; --aviso-borde:#F2B705; --hito:#ECEDE6; --hito-tinta:#14181B;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:#D5D7CF}
+body{font-family:Overpass,system-ui,sans-serif;display:flex;gap:44px;align-items:flex-start;padding:28px 36px 40px;width:max-content}
+.num{font-family:"Overpass Mono",monospace;font-variant-numeric:tabular-nums}
+.marco{width:390px}
+.rotulo{font:800 12px Overpass;letter-spacing:.12em;text-transform:uppercase;color:#3F474C;margin:0 0 10px 2px}
+.tel{width:390px;height:844px;border-radius:28px;overflow:hidden;background:var(--fondo);color:var(--tinta);display:flex;flex-direction:column;box-shadow:0 2px 0 rgba(0,0,0,.06),0 24px 48px -28px rgba(0,0,0,.55)}
+.cuerpo{flex:1;display:flex;flex-direction:column;gap:16px;padding:16px 16px 20px;overflow:hidden}
+
+/* El letrero: el mismo verde vial con su filete blanco, más bajo y sin cifras */
+.letrero{background:var(--vial);color:#fff;border-radius:14px;padding:5px;box-shadow:0 2px 0 rgba(0,0,0,.08),0 10px 24px -14px rgba(0,40,30,.55)}
+.letrero-in{border:2.5px solid #fff;border-radius:10px;padding:12px 16px 12px;display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.marca{font-weight:900;font-size:24px;letter-spacing:.04em;line-height:1}
+.marca small{display:block;margin-top:5px;font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;opacity:.85}
+.letrero .donde{font-size:12px;font-weight:700;opacity:.9;text-align:right}
+
+h1{font-size:24px;font-weight:900;letter-spacing:.005em;line-height:1.15}
+.bajada{color:var(--suave);font-size:14.5px;font-weight:600;line-height:1.45;margin-top:6px}
+
+/* Los hitos de la ruta: los postes kilométricos de la carretera, 1-2-3 */
+.ruta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.hito{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;color:var(--suave);font-size:12.5px;font-weight:700;line-height:1.25}
+.poste{width:30px;height:38px;border-radius:6px 6px 2px 2px;border:2px solid var(--trazo);background:var(--hito);color:var(--hito-tinta);display:grid;place-items:center;font:800 15px "Overpass Mono",monospace;position:relative}
+.poste::after{content:"";position:absolute;left:4px;right:4px;bottom:5px;height:3px;border-radius:2px;background:var(--linea)}
+.hito.hecho .poste{background:var(--vial);border-color:var(--vial);color:#fff}
+.hito.hecho .poste::after{background:rgba(255,255,255,.35)}
+.hito.aqui{color:var(--tinta)}
+.hito.aqui .poste{border-color:var(--amarillo);box-shadow:0 0 0 3px rgba(242,183,5,.28)}
+
+/* El formulario: campos grandes, una sola acción */
+.panel{background:var(--panel);border:1px solid var(--linea);border-radius:12px;padding:18px 16px}
+form{display:flex;flex-direction:column;gap:14px}
+label{display:flex;flex-direction:column;gap:6px;font-size:12.5px;font-weight:700;color:var(--suave)}
+.campo{height:48px;border:1.5px solid var(--borde-control);border-radius:8px;background:var(--panel);padding:0 14px;display:flex;align-items:center;font-size:16px;font-weight:600;color:var(--tinta)}
+.campo.vacio{color:var(--suave);font-weight:500}
+.campo.foco{border:2px solid var(--trazo);box-shadow:0 0 0 3px var(--amarillo)}
+.ayuda{font-size:12px;font-weight:600;color:var(--suave)}
+.prim{height:52px;border:0;border-radius:10px;background:var(--vial);color:#fff;font:800 16px Overpass;letter-spacing:.01em;display:grid;place-items:center}
+.otro{text-align:center;font-size:14px;font-weight:600;color:var(--suave)}
+.otro b{color:var(--tinta);text-decoration:underline;text-underline-offset:3px}
+
+/* La cuenta pendiente: el aviso amarillo de la carretera, sin alarma */
+.aviso{border:2px solid var(--aviso-borde);background:var(--aviso-fondo);border-radius:12px;padding:16px;display:flex;gap:14px;align-items:flex-start}
+.senal{flex:none;width:34px;height:34px;transform:rotate(45deg);border:2.5px solid var(--trazo);background:var(--amarillo);border-radius:4px;display:grid;place-items:center;margin:4px 4px 0}
+.senal span{transform:rotate(-45deg);font:900 17px Overpass;color:#1D2226}
+.aviso p{font-size:15px;font-weight:700;line-height:1.45}
+.aviso small{display:block;margin-top:6px;color:var(--suave);font-size:13px;font-weight:600;line-height:1.45}
+.lleve{display:grid;gap:10px}
+.lleve li{list-style:none;display:flex;gap:10px;align-items:baseline;font-size:14px;font-weight:600}
+.lleve li::before{content:"";flex:none;width:8px;height:8px;border-radius:2px;background:var(--vial);transform:translateY(-2px)}
+
+/* Mis operaciones: una por fila, lo que el cliente hizo, desde su lado */
+.saludo{display:flex;align-items:baseline;justify-content:space-between}
+.saludo p{color:var(--suave);font-size:13px;font-weight:700}
+.dia{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--suave);margin:2px 2px -6px}
+.lista{background:var(--panel);border:1px solid var(--linea);border-radius:12px;overflow:hidden}
+.op{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:14px 16px}
+.op + .op{border-top:1px solid var(--linea-fila)}
+.que{display:flex;align-items:center;gap:9px;font-size:16px;font-weight:800}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.pesos{font:700 16px "Overpass Mono",monospace;text-align:right}
+.det{grid-column:1/-1;color:var(--suave);font-size:13px;font-weight:600;padding-left:19px}
+.op.anulada .que span:last-child,.op.anulada .pesos{text-decoration:line-through;text-decoration-color:var(--pare);color:var(--suave)}
+.chip{display:inline-block;padding:2px 7px;border-radius:4px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;background:var(--rev-fondo);color:var(--rev-tinta);text-decoration:none!important;margin-left:6px}
+
+/* La barra de abajo, más tranquila que la del mostrador: dos destinos y salir */
+.barra{display:grid;grid-template-columns:1fr 1fr auto;border-top:1px solid var(--linea);background:var(--panel)}
+.barra a{display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 6px 22px;font-size:12px;font-weight:800;color:var(--suave);text-decoration:none}
+.barra a .ic{width:18px;height:18px;border:2px solid currentColor;border-radius:4px}
+.barra a[aria-current]{color:var(--tinta)}
+.barra a[aria-current] .ic{background:var(--vial);border-color:var(--vial)}
+.barra a.salir{padding-inline:18px;border-left:1px solid var(--linea)}
+.sep{margin:0 .4em}
+.nota{margin-top:10px;font:600 12.5px/1.45 Overpass;color:#3F474C;max-width:390px}
+</style>
+</head>
+<body>
+
+<!-- 1<span class="sep">·</span>Registro -->
+<section class="marco">
+  <p class="rotulo">1<span class="sep">·</span>Crear la cuenta</p>
+  <div class="tel claro">
+    <div class="cuerpo">
+      <div class="letrero"><div class="letrero-in">
+        <div class="marca">ATK<small>Casa de cambio</small></div>
+        <div class="donde">Coyhaique</div>
+      </div></div>
+      <div>
+        <h1>Vea sus operaciones desde el teléfono</h1>
+        <p class="bajada">Cree su cuenta aquí. La activamos en el local, cuando nos muestre su carnet.</p>
+      </div>
+      <div class="ruta" aria-label="Los tres pasos">
+        <div class="hito aqui"><span class="poste">1</span>Cree su cuenta</div>
+        <div class="hito"><span class="poste">2</span>Muestre su carnet en el local</div>
+        <div class="hito"><span class="poste">3</span>Vea sus operaciones</div>
+      </div>
+      <div class="panel">
+        <form>
+          <label>Nombre completo<span class="campo">Ana Ruiz Toledo</span></label>
+          <label>RUT<span class="campo num foco">12.345.678-5</span></label>
+          <label>Correo<span class="campo vacio">nombre@correo.cl</span></label>
+          <label>Contraseña<span class="campo vacio">••••••••••</span><span class="ayuda">Al menos 10 caracteres.</span></label>
+          <span class="prim">Crear mi cuenta</span>
+          <p class="otro">¿Ya tiene cuenta? <b>Entrar</b></p>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 2<span class="sep">·</span>Cuenta pendiente -->
+<section class="marco">
+  <p class="rotulo">2<span class="sep">·</span>Cuenta por activar</p>
+  <div class="tel claro">
+    <div class="cuerpo">
+      <div class="letrero"><div class="letrero-in">
+        <div class="marca">ATK<small>Casa de cambio</small></div>
+        <div class="donde">Coyhaique</div>
+      </div></div>
+      <div>
+        <h1>Hola, Ana</h1>
+        <p class="bajada">Su cuenta está creada. Falta un paso.</p>
+      </div>
+      <div class="ruta" aria-label="Los tres pasos">
+        <div class="hito hecho"><span class="poste">✓</span>Cree su cuenta</div>
+        <div class="hito aqui"><span class="poste">2</span>Muestre su carnet en el local</div>
+        <div class="hito"><span class="poste">3</span>Vea sus operaciones</div>
+      </div>
+      <div class="aviso">
+        <span class="senal"><span>!</span></span>
+        <div>
+          <p>Su cuenta aún no está verificada. Acérquese al local con su carnet para activarla.</p>
+          <small>Registrada con el RUT 12.345.678-5.</small>
+        </div>
+      </div>
+      <div class="panel">
+        <ul class="lleve">
+          <li>Su carnet de identidad, el mismo RUT de la cuenta.</li>
+          <li>No hace falta comprar ni vender: basta con mostrarlo.</li>
+          <li>Desde ese momento, aquí aparece todo lo que haga en ATK.</li>
+        </ul>
+      </div>
+    </div>
+    <nav class="barra"><a aria-current="page"><span class="ic"></span>Mi cuenta</a><a><span class="ic"></span>Mi ficha</a><a class="salir"><span class="ic"></span>Salir</a></nav>
+  </div>
+</section>
+
+<!-- 3<span class="sep">·</span>Mis operaciones (claro) -->
+<section class="marco">
+  <p class="rotulo">3<span class="sep">·</span>Mis operaciones</p>
+  <div class="tel claro">
+    <div class="cuerpo">
+      <div class="letrero"><div class="letrero-in">
+        <div class="marca">ATK<small>Casa de cambio</small></div>
+        <div class="donde">Coyhaique</div>
+      </div></div>
+      <div class="saludo"><h1>Hola, Mariela</h1><p>3 operaciones</p></div>
+      <p class="dia">Hoy<span class="sep">·</span>domingo 8 de noviembre</p>
+      <div class="lista">
+        <div class="op"><span class="que"><span class="dot" style="background:var(--usd)"></span><span>Compró US$ 450,00</span></span><span class="pesos">$428.400</span><span class="det">Pagó en efectivo a $952,00<span class="sep">·</span>boleta 18234<span class="sep">·</span>19:14</span></div>
+        <div class="op"><span class="que"><span class="dot" style="background:var(--ars)"></span><span>Vendió AR$ 150.000,00</span></span><span class="pesos">$93.000</span><span class="det">Recibió en efectivo a $0,6200<span class="sep">·</span>boleta 18232<span class="sep">·</span>18:58</span></div>
+      </div>
+      <p class="dia">Lunes 2 de noviembre</p>
+      <div class="lista">
+        <div class="op anulada"><span class="que"><span class="dot" style="background:var(--eur)"></span><span>Compró € 500,00</span></span><span class="pesos">$523.000</span><span class="det">Anulada en el local <span class="chip">Anulada</span></span></div>
+      </div>
+    </div>
+    <nav class="barra"><a aria-current="page"><span class="ic"></span>Operaciones</a><a><span class="ic"></span>Mi ficha</a><a class="salir"><span class="ic"></span>Salir</a></nav>
+  </div>
+  <p class="nota">Del lado del cliente: una VENTA de la casa es «Compró»; una COMPRA, «Vendió». Sin márgenes, costos ni quién atendió (docs/api.md, /api/mi).</p>
+</section>
+
+<!-- 4<span class="sep">·</span>Mis operaciones (oscuro) -->
+<section class="marco">
+  <p class="rotulo">3<span class="sep">·</span>Mis operaciones, oscuro</p>
+  <div class="tel oscuro">
+    <div class="cuerpo">
+      <div class="letrero"><div class="letrero-in">
+        <div class="marca">ATK<small>Casa de cambio</small></div>
+        <div class="donde">Coyhaique</div>
+      </div></div>
+      <div class="saludo"><h1>Hola, Mariela</h1><p>3 operaciones</p></div>
+      <p class="dia">Hoy<span class="sep">·</span>domingo 8 de noviembre</p>
+      <div class="lista">
+        <div class="op"><span class="que"><span class="dot" style="background:var(--usd)"></span><span>Compró US$ 450,00</span></span><span class="pesos">$428.400</span><span class="det">Pagó en efectivo a $952,00<span class="sep">·</span>boleta 18234<span class="sep">·</span>19:14</span></div>
+        <div class="op"><span class="que"><span class="dot" style="background:var(--ars)"></span><span>Vendió AR$ 150.000,00</span></span><span class="pesos">$93.000</span><span class="det">Recibió en efectivo a $0,6200<span class="sep">·</span>boleta 18232<span class="sep">·</span>18:58</span></div>
+      </div>
+      <p class="dia">Lunes 2 de noviembre</p>
+      <div class="lista">
+        <div class="op anulada"><span class="que"><span class="dot" style="background:var(--eur)"></span><span>Compró € 500,00</span></span><span class="pesos">$523.000</span><span class="det">Anulada en el local <span class="chip">Anulada</span></span></div>
+      </div>
+    </div>
+    <nav class="barra"><a aria-current="page"><span class="ic"></span>Operaciones</a><a><span class="ic"></span>Mi ficha</a><a class="salir"><span class="ic"></span>Salir</a></nav>
+  </div>
+</section>
+
+</body>
+</html>

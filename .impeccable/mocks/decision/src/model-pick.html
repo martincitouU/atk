@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="es-CL">
+<head>
+<meta charset="utf-8">
+<title>ATK — Ventanilla (comp B)</title>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--papel:#F6F7F9;--hoja:#FFFFFF;--tinta:#1F3A8A;--tinta-2:#2C4FB8;--roja:#B42318;--grafito:#5B6168;--renglon:#E4E8EF;--texto:#161A22;--suave:#5E6673;
+--usd:#2F7D4F;--ars:#3E8FC9;--eur:#1F3A8A}
+*{box-sizing:border-box;margin:0}
+body{font-family:"Hanken Grotesk",system-ui,sans-serif;background:var(--papel);color:var(--texto);width:1440px;height:900px;display:grid;grid-template-rows:auto auto 1fr;font-size:14px}
+.num{font-variant-numeric:tabular-nums lining-nums}
+::selection{background:#C9D6FF}
+header.top{display:flex;align-items:center;gap:28px;padding:0 28px;height:56px;background:var(--tinta);color:#fff}
+.marca{font-weight:800;font-size:20px;letter-spacing:.03em}
+.tabs{display:flex;gap:4px;height:100%}
+.tabs a{display:flex;align-items:center;padding:0 16px;color:#C9D3F2;text-decoration:none;font-weight:600;font-size:14px;border-bottom:3px solid transparent}
+.tabs a[aria-current]{color:#fff;border-bottom-color:#fff}
+.quien{margin-left:auto;font-size:13px;color:#C9D3F2}
+.folio{display:flex;align-items:baseline;gap:22px;padding:14px 28px;border-bottom:1px solid var(--renglon);background:var(--hoja)}
+.folio h1{font-size:22px;font-weight:800;color:var(--tinta);letter-spacing:-.01em}
+.folio span{font-size:13px;color:var(--suave);font-weight:600}
+.folio .sello{margin-left:auto;border:2px solid var(--tinta);color:var(--tinta);border-radius:4px;padding:3px 10px;font-weight:800;font-size:12px;letter-spacing:.08em;transform:rotate(-2deg)}
+.cuerpo{display:grid;grid-template-columns:400px 1fr;gap:0;min-height:0}
+aside{border-right:1px solid var(--renglon);background:var(--hoja);padding:18px 22px;display:flex;flex-direction:column;gap:16px;overflow:hidden}
+h2{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--suave)}
+.pizarra{width:100%;border-collapse:collapse}
+.pizarra td,.pizarra th{padding:7px 4px;border-bottom:1px solid var(--renglon)}
+.pizarra th{font-size:11px;font-weight:700;color:var(--suave);text-align:right;letter-spacing:.06em}
+.pizarra th:first-child{text-align:left}
+.pizarra td{font-size:20px;font-weight:700;color:var(--tinta);text-align:right}
+.pizarra td:first-child{text-align:left;font-size:15px;color:var(--texto)}
+.pizarra tr.cambio td{background:#FFF6D6}
+.pizarra small{display:block;font-size:11px;font-weight:600;color:#8A6A00}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px}
+form{display:flex;flex-direction:column;gap:11px}
+.seg{display:flex;border:1.5px solid var(--tinta);border-radius:6px;overflow:hidden}
+.seg button{flex:1;font:700 14px "Hanken Grotesk";padding:8px;border:0;background:#fff;color:var(--tinta)}
+.seg button[aria-pressed=true]{background:var(--tinta);color:#fff}
+label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:var(--suave)}
+input,select{font:600 15px "Hanken Grotesk";border:1.5px solid #CBD2DD;border-radius:6px;padding:8px 10px;background:#fff;color:var(--texto);width:100%}
+input.monto{font-size:26px;font-weight:700;text-align:right;color:var(--tinta);border-color:var(--tinta)}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.placa{background:var(--tinta);color:#fff;border-radius:8px;padding:12px 14px;display:flex;justify-content:space-between}
+.placa span{font-size:11px;font-weight:700;color:#BFCBF0;letter-spacing:.06em;display:block}
+.placa b{font-size:20px;font-weight:800}
+.btns{display:flex;gap:8px}
+.btn{font:700 14px "Hanken Grotesk";border-radius:6px;padding:10px 14px;border:1.5px solid var(--tinta);background:#fff;color:var(--tinta)}
+.btn.prim{flex:1;background:var(--tinta);color:#fff}
+kbd{font:700 11px "Hanken Grotesk";border:1px solid currentColor;border-radius:3px;padding:0 4px;opacity:.75;margin-left:6px}
+section.libro{padding:18px 28px;display:flex;flex-direction:column;min-height:0}
+.libro-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.libro-h p{font-size:13px;color:var(--suave)}
+table.libro{width:100%;border-collapse:collapse;background:var(--hoja);border:1px solid var(--renglon)}
+.libro th{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--suave);text-align:left;padding:10px 14px;border-bottom:1.5px solid var(--texto)}
+.libro td{padding:11px 14px;border-bottom:1px solid var(--renglon);font-size:14px}
+.libro .r{text-align:right}
+.libro td.t{color:var(--tinta);font-weight:700}
+.libro tr.rev td.t{color:var(--roja);text-decoration:line-through;text-decoration-thickness:1.5px}
+.libro tr.rev td.mot{color:var(--roja);font-weight:600;font-size:13px}
+.libro tr.bor td{color:var(--grafito);font-style:italic}
+.libro tr.bor td.t{color:var(--grafito);font-weight:600;text-decoration:underline dashed 1px;text-underline-offset:4px}
+.libro tfoot td{border-bottom:3px double var(--texto);border-top:1.5px solid var(--texto);font-weight:800;color:var(--texto);font-size:15px}
+.est{font-size:12px;font-weight:700}
+.sint{font-size:11px;color:var(--suave)}
+</style>
+</head>
+<body>
+<header class="top">
+  <span class="marca">ATK</span>
+  <nav class="tabs" aria-label="Secciones"><a href="#" aria-current="page">Ventanilla</a><a href="#">Cierre del día</a><a href="#">Jornada</a><a href="#">Clientes</a><a href="#">Configuración</a></nav>
+  <span class="quien">Rolando del Río · Caja 1</span>
+</header>
+<div class="folio">
+  <h1>Libro de caja · domingo 8 de noviembre de 2026</h1>
+  <span>Turno abierto a las 09:02</span><span class="sint">Datos de ejemplo</span>
+  <span class="sello">FOLIO 214</span>
+</div>
+<div class="cuerpo">
+  <aside>
+    <div>
+      <h2>Pizarra</h2>
+      <table class="pizarra num">
+        <thead><tr><th>Divisa</th><th>Compra</th><th>Venta</th></tr></thead>
+        <tbody>
+          <tr class="cambio"><td><span class="dot" style="background:var(--usd)"></span>USD<small>Cambió 09:30 · antes 949,00</small></td><td>935,00</td><td>952,00</td></tr>
+          <tr><td><span class="dot" style="background:var(--ars)"></span>ARS</td><td>0,6200</td><td>0,7100</td></tr>
+          <tr><td><span class="dot" style="background:var(--eur)"></span>EUR</td><td>1.018,00</td><td>1.046,00</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <form>
+      <h2>Nuevo asiento</h2>
+      <div class="seg"><button type="button" aria-pressed="false">Compra<kbd>C</kbd></button><button type="button" aria-pressed="true">Venta<kbd>V</kbd></button></div>
+      <div class="duo"><label>Divisa<select><option>USD · Dólar</option></select></label><label>Medio de pago<select><option>Efectivo</option></select></label></div>
+      <label>Monto<input class="monto num" value="450,00"></label>
+      <label>Folio boleta (41)<input class="num" value="18234"></label>
+      <div class="placa num"><div><span>TASA</span><b>952,00</b></div><div><span>CLIENTE PAGA</span><b>$428.400</b></div><div><span>MARGEN</span><b>$7.650</b></div></div>
+      <div class="btns"><button type="button" class="btn prim">Asentar<kbd>Enter</kbd></button><button type="button" class="btn">Borrador<kbd>B</kbd></button></div>
+    </form>
+  </aside>
+  <section class="libro">
+    <div class="libro-h"><h2>Asientos del día</h2><p>Tinta azul: confirmado · rojo tachado: reversado · grafito: borrador</p></div>
+    <table class="libro num">
+      <thead><tr><th>Hora</th><th>Concepto</th><th class="r">Divisa entra</th><th class="r">Divisa sale</th><th class="r">Tasa</th><th class="r">Pesos</th><th>Folio</th><th>Nota</th></tr></thead>
+      <tbody>
+        <tr><td>10:42</td><td>Venta USD</td><td class="r"></td><td class="r t">300,00</td><td class="r">952,00</td><td class="r t">285.600</td><td>18233</td><td></td></tr>
+        <tr><td>10:31</td><td>Compra ARS</td><td class="r t">150.000</td><td class="r"></td><td class="r">0,6200</td><td class="r t">93.000</td><td>18232</td><td></td></tr>
+        <tr><td>10:15</td><td>Compra USD</td><td class="r t">1.200,00</td><td class="r"></td><td class="r">935,00</td><td class="r t">1.122.000</td><td>18231</td><td></td></tr>
+        <tr class="rev"><td>09:58</td><td>Venta EUR</td><td class="r"></td><td class="r t">500,00</td><td class="r">1.046,00</td><td class="r t">523.000</td><td>—</td><td class="mot">Reverso: monto mal digitado</td></tr>
+        <tr><td>09:57</td><td>Venta EUR</td><td class="r"></td><td class="r t">50,00</td><td class="r">1.046,00</td><td class="r t">52.300</td><td>18230</td><td></td></tr>
+        <tr class="bor"><td>09:40</td><td>Compra USD</td><td class="r t">80,00</td><td class="r"></td><td class="r">935,00</td><td class="r t">74.800</td><td>—</td><td>Borrador</td></tr>
+      </tbody>
+      <tfoot><tr><td colspan="5">Totales confirmados · margen del día $24.310</td><td class="r">1.552.900</td><td colspan="2">Caja $3.482.150</td></tr></tfoot>
+    </table>
+  </section>
+</div>
+</body>
+</html>

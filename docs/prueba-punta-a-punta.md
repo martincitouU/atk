@@ -39,6 +39,12 @@ docker compose -p atk-e2e -f compose.yaml -f /tmp/atk-e2e.yaml down && rm -rf da
 Cada paso dice qué debe pasar. Si algo no pasa, se anota y se corrige antes
 de desplegar.
 
+> **Con el front «Carretera Austral»** (el que quedó en `apps/web`), los
+> pasos 3, 9, 12 y 17 y la categoría del paso 6 (fidelización y tasa
+> preferencial) todavía no tienen pantalla: se saltan. El personal se crea en
+> la pestaña Usuarios (solo admin) y las cuentas del portal se verifican en
+> Clientes › Cuentas por verificar.
+
 ### Admin
 1. Entra con la cuenta de `inicializar`. La pizarra muestra "Sin tasa".
 2. Publica USD (referencia 940, márgenes 1,5 %) y EUR (1020, 2 %). La

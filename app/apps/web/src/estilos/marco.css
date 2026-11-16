@@ -1,0 +1,569 @@
+/*
+ * El marco (vuelta 3, «profesional tipo Office»; comp B en
+ * .impeccable/mocks/office/): barra de título, pestañas de sección con su
+ * color y su tecla, la cinta de la pantalla, el área de trabajo y la barra de
+ * estado. En el PC el marco ocupa la ventana y el área de trabajo corre por
+ * dentro; bajo 900 px las pestañas bajan a la barra inferior de siempre.
+ */
+.marco {
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  height: 100dvh;
+}
+
+.marco-principal {
+  min-width: 0;
+  min-height: 0;
+  padding: 14px 18px;
+  overflow: auto;
+}
+
+.saltar {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 20;
+  padding: 8px 12px;
+  border-radius: var(--radio-control);
+  background: var(--amarillo);
+  color: #1d2226;
+  font-weight: 700;
+  transform: translateY(-200%);
+}
+
+.saltar:focus-visible {
+  transform: none;
+  outline-color: var(--asfalto);
+}
+
+/* ------------------------------------------------------------------ */
+/* La barra de título (asfalto, en los dos modos) */
+
+.titulo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 32px;
+  padding: 4px 16px;
+  background: var(--riel);
+  color: var(--riel-tinta);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.titulo-marca {
+  color: #fff;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.titulo-casa {
+  color: var(--riel-suave);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.titulo-doc {
+  margin: 0 auto;
+  color: #fff;
+  font-weight: 700;
+}
+
+.titulo-quien {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.titulo-quien svg {
+  color: var(--riel-suave);
+}
+
+/* ------------------------------------------------------------------ */
+/* Las pestañas de sección: sobre el asfalto; la activa se funde con la cinta */
+
+.pestanas {
+  display: flex;
+  align-items: flex-end;
+  padding: 0 10px;
+  background: var(--riel);
+  box-shadow: inset 0 -1px 0 var(--linea);
+  color: var(--riel-tinta);
+}
+
+.pestanas nav {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pestanas ul {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  list-style: none;
+}
+
+.pestanas a {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 32px;
+  padding: 5px 16px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: var(--radio-panel) var(--radio-panel) 0 0;
+  color: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 0.15s ease-out;
+}
+
+.pestanas a:hover {
+  background: var(--riel-activo);
+}
+
+.pestanas a:focus-visible {
+  outline-offset: -4px;
+}
+
+.pestanas a[aria-current="page"] {
+  position: relative;
+  min-height: 34px;
+  border-color: var(--linea);
+  background: var(--cabecera);
+  color: var(--tinta);
+}
+
+/* Los tonos apagados no llegan a 3:1 sobre el asfalto: el canto claro sí
+   (13,3:1), como en la barra del teléfono. En la activa, sobre la cabecera
+   clara, el canto es de trazo. */
+.pestana-cuadro {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1.5px var(--riel-tinta);
+}
+
+.pestanas a[aria-current="page"] .pestana-cuadro {
+  box-shadow: 0 0 0 1.5px var(--trazo);
+}
+
+.pestanas a kbd {
+  border-color: var(--riel-kbd-borde);
+  background: var(--riel-kbd-fondo);
+  color: var(--riel-kbd-tinta);
+  font-weight: 600;
+}
+
+.pestanas a[aria-current="page"] kbd {
+  border-color: var(--kbd-borde);
+  background: var(--kbd-fondo);
+  color: var(--kbd-tinta);
+}
+
+.pestanas .corto {
+  display: none;
+}
+
+.pestanas-salir {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  align-self: center;
+  min-height: 30px;
+  padding: 4px 12px;
+  border: 0;
+  border-radius: var(--radio-control);
+  background: transparent;
+  color: var(--riel-tinta);
+  font-size: 13px;
+  font-weight: 700;
+  transition: background-color 0.15s ease-out;
+}
+
+.pestanas-salir:hover:not(:disabled) {
+  background: var(--riel-activo);
+}
+
+.pestanas-salir:focus-visible {
+  outline-offset: -4px;
+}
+
+/* ------------------------------------------------------------------ */
+/* La cinta: los comandos de la pantalla, en grupos rotulados */
+
+.cinta {
+  display: flex;
+  align-items: stretch;
+  min-height: 76px;
+  padding: 4px 8px 1px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--linea);
+  background: var(--cabecera);
+}
+
+.cinta.vacia {
+  min-height: 0;
+  padding: 0;
+}
+
+.cinta-grupo {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  padding: 0 8px;
+  border-right: 1px solid var(--linea);
+}
+
+.cinta-grupo:last-child {
+  border-right: 0;
+}
+
+.cinta-botones {
+  display: flex;
+  flex: 1;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.cinta-grandes {
+  display: flex;
+  gap: 2px;
+}
+
+.cinta-pila {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 2px;
+}
+
+.cinta-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 26px;
+  padding: 2px 8px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--tinta);
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: background-color 0.15s ease-out;
+}
+
+.cinta-btn svg {
+  flex: none;
+  color: var(--suave);
+}
+
+.cinta-btn:hover:not(:disabled) {
+  background: var(--lamina);
+  border-color: var(--linea);
+}
+
+.cinta-btn.grande {
+  flex-direction: column;
+  gap: 2px;
+  min-width: 72px;
+  padding: 3px 8px;
+}
+
+.cinta-btn.verde svg {
+  color: var(--vial-hi);
+}
+
+.cinta-btn.peligro svg {
+  color: var(--pare);
+}
+
+.cinta-etiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cinta-nota {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 6px 0;
+  color: var(--suave);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.cinta-rotulo {
+  padding: 1px 0 2px;
+  line-height: 1.2;
+  color: var(--suave);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* En una pantalla baja (1366 × 768, 1280 × 800) la cinta se simplifica, como
+   la cinta simplificada de Office: una sola fila, sin rótulos de grupo, para
+   que la Ventanilla quepa entera */
+@media (min-width: 900px) and (max-height: 860px) {
+  .cinta {
+    min-height: 0;
+    padding: 3px 8px;
+  }
+
+  .cinta-grupo {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .cinta-botones,
+  .cinta-grandes,
+  .cinta-pila {
+    flex-direction: row;
+    align-items: center;
+    padding-top: 0;
+  }
+
+  .cinta-btn.grande {
+    flex-direction: row;
+    gap: 7px;
+    min-width: 0;
+    padding: 2px 8px;
+  }
+
+  .cinta-btn.grande svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .cinta-rotulo {
+    display: none;
+  }
+
+  .cinta-nota {
+    flex-direction: row;
+    gap: 8px;
+    padding: 0 6px;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* La barra de estado */
+
+.estado {
+  display: flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 6px;
+  overflow: hidden;
+  background: var(--riel);
+  color: var(--riel-tinta);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.estado > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border-right: 1px solid var(--riel-linea);
+}
+
+.estado > span:last-child {
+  border-right: 0;
+}
+
+.estado svg {
+  color: var(--riel-suave);
+}
+
+.estado b {
+  color: #fff;
+  font-weight: 700;
+}
+
+.estado-der {
+  margin-left: auto;
+  border-left: 1px solid var(--riel-linea);
+}
+
+.estado-punto {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4fb477;
+}
+
+.estado-punto.caido {
+  background: var(--amarillo);
+}
+
+/* ------------------------------------------------------------------ */
+/* Mientras llega el código de una pantalla: su forma en gris, sin spinner */
+
+.esqueleto-pantalla {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.esqueleto-pantalla .esqueleto-letrero {
+  height: 110px;
+  border-radius: var(--radio-letrero);
+}
+
+.esqueleto-paneles {
+  display: grid;
+  grid-template-columns: 400px minmax(0, 1fr);
+  gap: 14px;
+}
+
+.esqueleto-paneles .esqueleto {
+  height: 420px;
+  border-radius: var(--radio-panel);
+}
+
+.esqueleto-entrar {
+  display: grid;
+  grid-template-columns: min(100%, 392px);
+  place-content: center;
+  gap: 16px;
+  min-height: 100dvh;
+  padding: 32px 16px;
+}
+
+.esqueleto-entrar .esqueleto-letrero {
+  height: 119px;
+  border-radius: var(--radio-letrero);
+}
+
+.esqueleto-entrar .esqueleto-formulario {
+  height: 290px;
+  border-radius: var(--radio-panel);
+}
+
+@media (max-width: 1199.98px) {
+  .esqueleto-paneles {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .esqueleto-paneles .esqueleto {
+    height: 240px;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Bajo 900 px (el teléfono): igual que antes. Las pestañas son la barra
+   inferior; la barra de título, la cinta y la barra de estado no van. */
+@media (max-width: 899.98px) {
+  .marco {
+    display: block;
+    height: auto;
+    min-height: 100dvh;
+  }
+
+  .titulo,
+  .cinta,
+  .estado {
+    display: none;
+  }
+
+  .marco-principal {
+    padding: 16px 16px calc(var(--barra-alto) + env(safe-area-inset-bottom, 0px) + 16px);
+    overflow: visible;
+  }
+
+  .pestanas {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 10;
+    align-items: stretch;
+    padding: 0 0 env(safe-area-inset-bottom, 0px);
+    border-top: 1px solid var(--riel-linea);
+    box-shadow: none;
+  }
+
+  .pestanas a kbd,
+  .pestanas .largo {
+    display: none;
+  }
+
+  .pestanas .corto {
+    display: inline;
+  }
+
+  .pestanas ul {
+    gap: 0;
+    align-items: stretch;
+  }
+
+  .pestanas li {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  /* Usuarios y Auditoría son trabajo de escritorio: no caben en la barra */
+  .pestanas li.pestana-admin {
+    display: none;
+  }
+
+  .pestanas a,
+  .pestanas a[aria-current="page"] {
+    position: static;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+    min-height: var(--barra-alto);
+    padding: 10px 2px 8px;
+    border: 0;
+    border-radius: 0;
+    font-size: 11.5px;
+    letter-spacing: 0;
+    text-align: center;
+  }
+
+  .pestanas a[aria-current="page"] {
+    background: var(--riel-activo);
+    color: #fff;
+  }
+
+  /* La sección activa: su cuadro con el anillo reflectante */
+  .pestanas a[aria-current="page"] .pestana-cuadro {
+    outline: 2px solid var(--riel-tinta);
+    outline-offset: 2px;
+  }
+
+  .pestana-cuadro {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--riel-tinta);
+  }
+
+  /* «Salir», la última pestaña: más angosta y separada de las secciones */
+  .pestanas-salir {
+    flex-direction: column;
+    justify-content: center;
+    align-self: stretch;
+    gap: 6px;
+    min-height: var(--barra-alto);
+    padding: 10px 10px 8px;
+    border-left: 1px solid var(--riel-linea);
+    border-radius: 0;
+    font-size: 11.5px;
+    letter-spacing: 0;
+    text-align: center;
+  }
+}

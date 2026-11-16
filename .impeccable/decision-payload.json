@@ -1,0 +1,140 @@
+{
+  "title": "ATK — la dirección visual",
+  "question": "La tirada asignó «Carretera Austral». Quédate con ella, toma otra o vuelve a tirar. Los comps son la Ventanilla en escritorio, renderizados desde HTML.",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "Carretera Austral",
+      "kicker": "LA TIRADA",
+      "lineage": "Señalética vial chilena de la Ruta 7",
+      "thesis": "La ventanilla se lee como un letrero de ruta: las divisas son destinos, las tasas sus kilómetros y se leen de un vistazo.",
+      "palette": ["#005C45", "#F4F4EF", "#1D2226", "#F2B705", "#E06A1B", "#1E4FA0", "#C8102E"],
+      "materials": ["lámina retrorreflectante", "pintura vial", "Overpass (heredera de Highway Gothic)"],
+      "viewport": "Riel de secciones a la izquierda; arriba, la pizarra como letrero verde de destinos; al centro, el registro con la vista previa como única placa invertida; a la derecha, el libro del día en columnas.",
+      "risk": "La señalética es escasa por naturaleza: el verde tiene que quedarse en la pizarra y el riel, o la app se lee como un trámite de Vialidad.",
+      "raised": [
+        {"from": "challenger-acetato", "raise": "Cada sección lleva su color de función, como los letreros chilenos: verde para la Ventanilla, azul de servicios para Clientes, café de turismo para la Jornada."},
+        {"from": "challenger-embarque", "raise": "Una tasa que cambió en la pizarra queda encendida, con borde reflectante, hasta que Rolando la mira."},
+        {"from": "challenger-catalogo", "raise": "Cada divisa tiene un color fijo en toda la app: pizarra, libro, cierre y jornada."},
+        {"from": "challenger-horario", "raise": "La jerarquía va por peso y mayúsculas, no por tamaño; una sola placa invertida por pantalla: la vista previa."},
+        {"from": "challenger-consola", "raise": "El reverso vive aparte, con aire alrededor, y no se habilita sin motivo."}
+      ],
+      "comp": ".impeccable/mocks/decision/assigned.png"
+    },
+    {
+      "id": "model-pick",
+      "label": "Libro de caja",
+      "kicker": "IMPECCABLE’S PICK",
+      "lineage": "El libro de caja de papel, con tinta azul y roja",
+      "thesis": "El libro del día manda, con la convención contable: tinta azul lo confirmado, rojo tachado lo reversado, grafito el borrador.",
+      "palette": ["#FBFBF8", "#1F3A8A", "#B42318", "#5B6168", "#E7EAF0"],
+      "materials": ["tinta ferrogálica", "renglón", "timbre de folio"],
+      "viewport": "El libro del día al centro, a todo el alto; la pizarra y el registro en una columna a la izquierda; arriba, la fecha y el turno como encabezado del folio.",
+      "risk": "Es lo más parecido a lo que ya usa y también lo más trillado: crema y serif es el reflejo de los modelos, y el papel rayado no puede reemplazar a la tabla.",
+      "comp": ".impeccable/mocks/decision/model-pick.png"
+    },
+    {
+      "id": "challenger-paletas",
+      "label": "Tablero de paletas",
+      "verdict": "competitive",
+      "lineage": "Tablero split-flap de una estación en hora punta",
+      "thesis": "La pizarra como tablero de paletas: filas fijas, columnas que no se mueven, y cada tasa nueva cae carácter por carácter.",
+      "palette": ["#121212", "#F2F0E9", "#D9A21B", "#9E2B25", "#8E959B"],
+      "materials": ["paletas negras mate", "letra pintada blanca", "marco de acero cepillado"],
+      "viewport": "El tablero ocupa la franja superior; el libro del día son sus filas ordenadas por hora; el registro a la izquierda.",
+      "case": "Gana en identificación (es la pizarra de su propio local) y empata en claridad.",
+      "risk": "Es la lectura literal de «pizarra», la que haría cualquiera, y el tablero es oscuro por naturaleza: el modo claro le cuesta.",
+      "comp": ".impeccable/mocks/decision/challenger-paletas.png",
+      "hero": "https://impeccable.style/worlds/cards/signals-instruments-split-flap-concourse-hero.webp",
+      "board": "https://impeccable.style/worlds/cards/signals-instruments-split-flap-concourse.webp"
+    },
+    {
+      "id": "challenger-embarque",
+      "label": "Pase de embarque y puerta",
+      "verdict": "declined",
+      "lineage": "Pase segmentado y tablero de puertas de aeropuerto",
+      "thesis": "Cada operación como un pase segmentado; el libro se reordena en su sitio cuando algo cambia.",
+      "palette": ["#FFFFFF", "#111111", "#FFB000"],
+      "materials": ["papel térmico", "bloque escaneable"],
+      "viewport": "El comprobante segmentado junto a un tablero de operaciones por hora.",
+      "case": "Se fusiona a medias: los turistas viajan, pero Rolando no se reconoce en un aeropuerto.",
+      "risk": "Lee como app de aerolínea.",
+      "kept": "Un cambio queda encendido hasta que se mira.",
+      "hero": "https://impeccable.style/worlds/cards/vernacular-ephemera-boarding-pass-and-gate-board-hero.webp"
+    },
+    {
+      "id": "challenger-acetato",
+      "label": "Manual con pestañas",
+      "verdict": "declined",
+      "lineage": "Manual de software con divisores de color y acetato",
+      "thesis": "Cada sección es una pestaña de color cuyo largo dice cuánto contiene.",
+      "palette": ["#E8732A", "#F2C230", "#2E8B57", "#2A5DB0"],
+      "materials": ["acetato lechoso", "cartón de color"],
+      "viewport": "Un riel de pestañas en el borde y una hoja de acetato con el contenido.",
+      "case": "Se fusiona mal: no hay manual en la ventanilla y la tipografía única no aguanta la densidad.",
+      "risk": "Pieza de museo de diseño.",
+      "kept": "Un color por sección, usado con disciplina.",
+      "hero": "https://impeccable.style/worlds/cards/rw-manual-acetate-tab-board-hero.webp"
+    },
+    {
+      "id": "challenger-consola",
+      "label": "Consola oscura",
+      "verdict": "declined",
+      "lineage": "Consola de desarrollo sobre grafito",
+      "thesis": "Paneles de grafito separados por líneas de un píxel; lo destructivo, aislado.",
+      "palette": ["#1B1D21", "#2A2D33", "#7FD1B9"],
+      "materials": ["grafito", "hairline"],
+      "viewport": "Paneles fijos que cambian de contenido.",
+      "case": "Se fusiona mal: Rolando no es programador y la consola se lee como herramienta de otros.",
+      "risk": "Disfraz de terminal.",
+      "kept": "El reverso, aislado y con confirmación.",
+      "hero": "https://impeccable.style/worlds/cards/digital-design-canon-dark-first-developer-console-hero.webp"
+    },
+    {
+      "id": "challenger-horario",
+      "label": "Horario en bandeja de luz",
+      "verdict": "declined",
+      "lineage": "Horario de bolsillo de aerolínea, 1971",
+      "thesis": "Todo en un solo tamaño de letra; el rango lo dan el peso, la caja y la inversión.",
+      "palette": ["#D9A520", "#2F3A40", "#F4F0E2", "#C4381E"],
+      "materials": ["vidrio tintado", "bandeja de luz"],
+      "viewport": "Un riel de láminas inclinadas.",
+      "case": "Se fusiona mal: la inclinación estorba la lectura de cifras.",
+      "risk": "Ilegible en una ventanilla con apuro.",
+      "kept": "La jerarquía por peso y caja; una placa invertida por pantalla.",
+      "hero": "https://impeccable.style/worlds/cards/rw-timetable-slide-rack-hero.webp"
+    },
+    {
+      "id": "challenger-catalogo",
+      "label": "Catálogo de personajes",
+      "verdict": "declined",
+      "lineage": "Catálogo de mascotas en grilla pastel",
+      "thesis": "Cada personaje con su color de cinta.",
+      "palette": ["#FCE4EC", "#E3F2FD", "#FFF3C4"],
+      "materials": ["pastel", "contorno blanco"],
+      "viewport": "Una grilla de fichas redondeadas.",
+      "case": "Se fusiona mal: no calza con el dinero.",
+      "risk": "Infantiliza la caja.",
+      "kept": "Un color fijo por divisa.",
+      "hero": "https://impeccable.style/worlds/cards/pop-culture-shelf-character-goods-catalog-hero.webp"
+    }
+  ],
+  "reroll": {"registers": ["safer", "bolder"]},
+  "buildPath": {"value": "code", "toggle": false},
+  "canon": true,
+  "canonCard": {
+    "label": "El estándar de la categoría",
+    "thesis": "Lo que entrega cualquier backoffice de punto de venta, bien hecho.",
+    "palette": ["#FFFFFF", "#111827", "#2563EB"],
+    "materials": ["barra lateral", "tarjetas de totales", "tabla"],
+    "viewport": "Barra lateral con secciones, cuatro tarjetas de totales y la tabla de operaciones.",
+    "risk": "Indistinguible de la competencia, por diseño.",
+    "wireframe": {"cols": 12, "rows": 10, "regions": [
+      {"label": "barra lateral", "x": 0, "y": 0, "w": 2, "h": 10, "accent": true},
+      {"label": "totales", "x": 2, "y": 0, "w": 10, "h": 2},
+      {"label": "registro", "x": 2, "y": 2, "w": 4, "h": 8},
+      {"label": "operaciones", "x": 6, "y": 2, "w": 6, "h": 8}
+    ]}
+  },
+  "steer": true
+}

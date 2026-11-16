@@ -1,0 +1,523 @@
+/*
+ * El portal de clientes (/mi): «Carretera Austral, versión teléfono».
+ * La misma identidad que la ventanilla (el letrero en el verde apagado de la
+ * pizarra, IBM Plex, el color por divisa), más tranquila: una columna, una acción por pantalla, y la
+ * jerarquía plana: espacio, tipografía y divisores, sin cajas dentro de cajas.
+ * Comp aprobado: .impeccable/mocks/portal/portal-390.png.
+ */
+
+.portal {
+  --portal-ancho: 480px;
+  text-wrap: pretty;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  max-width: var(--portal-ancho);
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 16px 16px 0;
+}
+
+.portal.acceso {
+  padding-bottom: 32px;
+}
+
+.portal-cuerpo {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 18px;
+  padding-bottom: 24px;
+}
+
+/* El letrero: el verde apagado de la pizarra (vuelta 3, A3) con su filete
+   blanco, más bajo y sin cifras. Un solo elemento: el filete es un contorno
+   hacia adentro, no una caja anidada. Blanco 7,9:1; #d6e6e0, 6,1:1 */
+.portal-letrero {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 19px 23px;
+  border-radius: var(--radio-letrero);
+  outline: 2.5px solid #fff;
+  outline-offset: -7px;
+  background: var(--letrero-ventanilla);
+  box-shadow: var(--sombra-letrero);
+  color: #fff;
+}
+
+.portal-marca {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.portal-marca span {
+  display: block;
+  margin-top: 6px;
+  color: #d6e6e0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.portal-lugar {
+  color: #d6e6e0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* El título de cada pantalla: grande, con su bajada; sin rótulo encima */
+.portal-titulo h1 {
+  font-size: 25px;
+  font-weight: 700;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.portal-titulo p {
+  margin-top: 6px;
+  color: var(--suave);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.portal-titulo.fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+
+.portal-titulo.fila p {
+  margin-top: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* Los hitos: los postes kilométricos de la carretera, 1-2-3 */
+.hitos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hito {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  color: var(--suave);
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.poste {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 38px;
+  border: 2px solid var(--trazo);
+  border-radius: 6px 6px 2px 2px;
+  background: var(--panel);
+  color: var(--tinta);
+  font: 700 15px var(--familia-num);
+}
+
+/* La franja del poste */
+.poste::after {
+  content: "";
+  position: absolute;
+  right: 4px;
+  bottom: 5px;
+  left: 4px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--linea);
+}
+
+.hito.hecho .poste {
+  border-color: var(--vial);
+  background: var(--vial);
+  color: #fff;
+}
+
+.hito.hecho .poste::after {
+  background: rgb(255 255 255 / 0.35);
+}
+
+.hito.aqui {
+  color: var(--tinta);
+}
+
+.hito.aqui .poste {
+  border-color: var(--amarillo);
+  box-shadow: 0 0 0 3px rgb(242 183 5 / 0.3);
+}
+
+/* El formulario: una sola hoja blanca, campos grandes, una acción */
+.portal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 16px;
+  border: 1px solid var(--linea);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.portal-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.portal-campo label {
+  color: var(--suave);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.portal-campo input {
+  min-height: 48px;
+  font-size: 16px; /* 16 px: el teléfono no acerca la página al escribir */
+}
+
+.portal-campo .ayuda {
+  color: var(--suave);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.portal-prim {
+  min-height: 52px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--vial);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  transition: background-color 0.15s ease-out;
+}
+
+.portal-prim:hover:not(:disabled) {
+  background: var(--vial-hi);
+}
+
+.portal-prim:disabled {
+  opacity: 0.7;
+}
+
+.portal-otro {
+  color: var(--suave);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* El enlace va en la frase, pero con un blanco de toque cómodo */
+.portal-otro a {
+  display: inline-block;
+  margin-block: -12px;
+  padding: 12px 4px;
+  color: var(--tinta);
+  font-weight: 700;
+  text-underline-offset: 3px;
+}
+
+/* La cuenta por activar: el aviso amarillo de la carretera, sin alarma */
+.portal-aviso {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 16px;
+  border: 2px solid var(--aviso-borde);
+  border-radius: 12px;
+  background: var(--aviso-fondo);
+}
+
+.portal-aviso.rechazada {
+  border-color: var(--error-borde);
+  background: var(--error-fondo);
+}
+
+/* La señal preventiva: el rombo amarillo con su borde negro */
+.senal {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin: 5px 5px 0;
+  border: 2.5px solid #1d2226;
+  border-radius: 4px;
+  background: var(--amarillo);
+  color: #1d2226;
+  transform: rotate(45deg);
+}
+
+.senal svg {
+  transform: rotate(-45deg);
+}
+
+.portal-aviso.rechazada .dato {
+  color: color-mix(in oklab, var(--tinta) 72%, var(--error-borde));
+}
+
+.portal-aviso.rechazada .senal {
+  background: var(--pare);
+  color: #fff;
+}
+
+.portal-aviso p {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.portal-aviso .motivo {
+  margin-top: 6px;
+}
+
+/* El dato secundario toma el tono del aviso, no el gris */
+.portal-aviso .dato {
+  margin-top: 6px;
+  color: color-mix(in oklab, var(--tinta) 72%, var(--aviso-borde));
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Qué llevar: una lista suelta, con la marca del verde vial */
+.portal-lleve {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 2px 4px 0;
+  list-style: none;
+}
+
+.portal-lleve li {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.portal-lleve li::before {
+  content: "";
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--vial);
+  transform: translateY(-2px);
+}
+
+/* Mis operaciones: una hoja; los días son divisores, no cajas */
+.portal-ops {
+  overflow: hidden;
+  border: 1px solid var(--linea);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.portal-ops ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.portal-dia {
+  padding: 12px 16px 8px;
+  border-bottom: 1px solid var(--linea);
+  background: var(--cabecera);
+  color: var(--suave);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.portal-ops ul + .portal-dia {
+  border-top: 1px solid var(--linea);
+}
+
+.op {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  padding: 14px 16px;
+}
+
+.op + .op {
+  border-top: 1px solid var(--linea-fila);
+}
+
+.op-que {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 9px;
+  align-items: center;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.punto {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.op-pesos {
+  font-size: 16px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.op-det {
+  grid-column: 1 / -1;
+  padding-left: 19px;
+  color: var(--suave);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.op.anulada .op-texto,
+.op.anulada .op-pesos {
+  color: var(--suave);
+  text-decoration: line-through;
+  text-decoration-color: var(--pare);
+}
+
+.portal-vacio,
+.portal-nota {
+  color: var(--suave);
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.portal-espera {
+  display: grid;
+  gap: 10px;
+}
+
+.portal-espera .esqueleto {
+  height: 64px;
+}
+
+/* Mi ficha: rótulo y dato, separados por una línea */
+.portal-ficha {
+  display: grid;
+  margin: 0;
+  padding: 4px 16px;
+  border: 1px solid var(--linea);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.portal-ficha > div {
+  display: grid;
+  gap: 2px;
+  padding: 12px 0;
+}
+
+.portal-ficha > div + div {
+  border-top: 1px solid var(--linea-fila);
+}
+
+.portal-ficha dt {
+  color: var(--suave);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.portal-ficha dd {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.portal-ficha .falta {
+  color: var(--suave);
+  font-weight: 600;
+}
+
+/* La barra de abajo: dos destinos y «Salir», con íconos de Phosphor */
+.portal-barra {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  margin: 0 -16px;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  border-top: 1px solid var(--linea);
+  background: var(--panel);
+}
+
+.portal-barra a,
+.portal-salir {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 62px;
+  padding: 10px 8px 8px;
+  border: 0;
+  background: none;
+  color: var(--suave);
+  font-size: 12.5px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.portal-barra a[aria-current="page"] {
+  box-shadow: inset 0 3px 0 var(--vial);
+  color: var(--tinta);
+}
+
+.portal-barra a[aria-current="page"] svg {
+  color: var(--vial-hi);
+}
+
+.portal-barra a:hover,
+.portal-salir:hover:not(:disabled) {
+  color: var(--tinta);
+}
+
+.portal-salir {
+  padding-inline: 20px;
+  border-left: 1px solid var(--linea);
+}
+
+/* En el PC, la columna se centra y la barra deja de pegarse a los bordes */
+@media (min-width: 640px) {
+  .portal {
+    padding-top: 32px;
+  }
+
+  .portal-barra {
+    margin: 0;
+    border: 1px solid var(--linea);
+    border-bottom: 0;
+    border-radius: 12px 12px 0 0;
+  }
+}

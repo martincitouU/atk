@@ -1,0 +1,1049 @@
+/*
+ * La Ventanilla. Medidas del comp aprobado (assigned.html): el letrero de
+ * 14 px de radio con su filete blanco, los destinos en cifras de 21–26 px,
+ * el registro de 420 px con la placa invertida y el libro con su pie.
+ */
+
+.ventanilla {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 14px;
+}
+
+/* En el PC, el área de trabajo entera sin scroll: el libro corre por dentro */
+@media (min-width: 1200px) and (min-height: 640px) {
+  .ventanilla {
+    height: 100%;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* El letrero: la pizarra */
+
+.letrero {
+  padding: 6px;
+  border-radius: var(--radio-letrero);
+  background: var(--letrero-ventanilla);
+  box-shadow: var(--sombra-letrero);
+  color: #fff;
+}
+
+.letrero-in {
+  overflow: hidden;
+  border: 3px solid #fff;
+  border-radius: 10px;
+}
+
+/* La cabecera del letrero: el título, la vigencia y «Actualizar pizarra» */
+.letrero-cab {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  padding: 5px 14px 5px 16px;
+  border-bottom: 1px solid rgb(255 255 255 / 0.35);
+}
+
+.letrero h2 {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.letrero-unidad {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  opacity: 0.88;
+  text-transform: none;
+}
+
+.letrero-acc {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px 14px;
+  margin-left: auto;
+}
+
+.vig {
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.92;
+  text-align: right;
+}
+
+.letrero-error {
+  padding: 12px 16px;
+  font-weight: 700;
+}
+
+/* La pizarra como tabla: una fila por divisa, con líneas blancas como las
+   divisiones de un letrero de destinos (vuelta 3) */
+table.tasas {
+  font-size: 13px;
+}
+
+table.tasas th,
+table.tasas td {
+  height: auto;
+  padding: 0 16px;
+  border-right: 0;
+  border-bottom: 1px solid rgb(255 255 255 / 0.22);
+  border-left: 1px solid rgb(255 255 255 / 0.22);
+  background: transparent;
+  color: inherit;
+}
+
+table.tasas thead th {
+  position: static;
+  padding-block: 3px;
+  border-bottom: 1px solid rgb(255 255 255 / 0.35);
+  color: rgb(255 255 255 / 0.85);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+
+table.tasas th:first-child,
+table.tasas td:first-child {
+  border-left: 0;
+}
+
+table.tasas tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+/* Sin la cebra de las grillas: el letrero es una sola lámina */
+table.tasas tbody tr {
+  background: transparent;
+}
+
+table.tasas tbody th {
+  height: 34px;
+  color: #fff;
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+table.tasas thead th.r {
+  width: 170px;
+}
+
+table.tasas .col-cambio {
+  width: 34%;
+}
+
+.dest-punto {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  margin-right: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px #fff;
+  vertical-align: 1px;
+}
+
+table.tasas .cod {
+  margin-right: 10px;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  vertical-align: -2px;
+}
+
+table.tasas .nom {
+  font-weight: 600;
+  opacity: 0.88;
+}
+
+table.tasas td.cifra {
+  font: 700 21px var(--familia-num);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+table.tasas tr.esperando td {
+  height: 38px;
+}
+
+table.tasas tr.esperando .esqueleto {
+  display: block;
+  height: 14px;
+  background: rgb(255 255 255 / 0.25);
+}
+
+.aviso-dest {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--reflejo);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.sin-cambio {
+  color: rgb(255 255 255 / 0.82);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+/* El aviso «cambió» es un botón de alternar: se ve como texto del letrero */
+.cambio-btn {
+  padding: 2px 4px;
+  margin-left: -4px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  text-align: left;
+}
+
+.cambio-btn:hover {
+  background: rgb(0 0 0 / 0.12); /* oscurece: el aviso sigue en ~5,5:1 */
+}
+
+/* Con foco, el anillo es blanco (8:1 sobre el verde): el amarillo ya dice «cambió» */
+.cambio-btn:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 1px;
+  box-shadow: 0 0 0 5px var(--foco-canto);
+}
+
+/* La tasa que cambió: la fila encendida, con el borde reflectante, hasta que
+   se mira. Al llegar, el borde destella como un letrero que recoge los focos. */
+table.tasas tr.cambio {
+  outline: 3px solid var(--amarillo);
+  outline-offset: -3px;
+  background: var(--encendida);
+  transition:
+    outline-color 0.2s ease-out,
+    background-color 0.2s ease-out;
+  animation: reflejo 1.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+table.tasas tr.cambio.vista {
+  outline-color: transparent;
+  background: transparent;
+  animation: none;
+}
+
+table.tasas tr.cambio.vista .aviso-dest {
+  color: #fff;
+  opacity: 0.75;
+}
+
+/* Solo destella el borde: el fondo queda en --encendida y el aviso nunca baja de 4,65:1 */
+@keyframes reflejo {
+  0%,
+  44% {
+    outline-color: #fff;
+  }
+  22%,
+  100% {
+    outline-color: var(--amarillo);
+  }
+}
+
+table.tasas tr.vencida td.cifra {
+  opacity: 0.7; /* 4,85:1 sobre la pizarra apagada */
+}
+
+/* En una pantalla baja, la pizarra y el registro se aprietan un poco más */
+@media (min-width: 1200px) and (max-height: 860px) {
+  table.tasas tbody th {
+    height: 30px;
+  }
+
+  table.tasas .cod {
+    font-size: 19px;
+  }
+
+  table.tasas td.cifra {
+    font-size: 19px;
+  }
+
+  .registro form {
+    gap: 6px;
+    padding-top: 6px;
+  }
+
+  .registro fieldset.grupo {
+    gap: 6px;
+    padding-bottom: 8px;
+  }
+
+  /* «Operación» ya rotula el grupo: la leyenda «Divisa» queda para el lector de pantalla */
+  .campo-divisa legend:not(:has(.espera)) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  input.monto {
+    padding-block: 3px;
+    font-size: 23px;
+  }
+
+  .registro > header {
+    min-height: 34px;
+    padding-block: 5px;
+  }
+
+  .registro .seg button {
+    min-height: 30px;
+    padding-block: 3px;
+  }
+
+  .registro label.div {
+    min-height: 32px;
+    padding-block: 3px;
+  }
+
+  .registro .duo input,
+  .registro .duo select {
+    min-height: 34px;
+    padding-block: 4px;
+  }
+
+  /* La placa ya rotula cada cifra: su rótulo de grupo se va */
+  .grupo-rotulo {
+    display: none;
+  }
+}
+
+/* Más baja todavía (1366 × 768): la cabecera del letrero se va. La vigencia
+   sigue en la cinta y en la barra de estado, y «Actualizar pizarra», en la
+   cinta; el título queda para el lector de pantalla. */
+@media (min-width: 1200px) and (max-height: 800px) {
+  .letrero-cab {
+    padding: 0;
+    border-bottom: 0;
+  }
+
+  .letrero-cab h2 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .letrero-acc {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* El área de trabajo: registro y libro */
+
+.trabajo {
+  display: grid;
+  grid-template-columns: 400px minmax(0, 1fr);
+  gap: 14px;
+  min-height: 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* El registro */
+
+.registro form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 12px 10px;
+  overflow-y: auto;
+}
+
+/* Los grupos rotulados del registro (vuelta 3): Operación y Monto y documento */
+.registro fieldset.grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 10px 10px;
+}
+
+/* Más compacto que en otras pantallas: el registro entero cabe a 1440 × 900 */
+.registro .seg button {
+  min-height: 34px;
+  padding-block: 5px;
+}
+
+.registro .duo input,
+.registro .duo select {
+  min-height: 38px;
+  padding-block: 6px;
+}
+
+/* Los botones del registro, un poco más bajos que en otras pantallas */
+.registro .acciones .btn {
+  min-height: 40px;
+  padding-block: 6px;
+}
+
+/* Confirmar y Borrador siempre a la vista: si el registro no cabe (una
+   pantalla baja, la ficha UAF), lo de arriba corre y los botones quedan
+   pegados abajo */
+@media (min-width: 900px) {
+  .registro .acciones {
+    position: sticky;
+    bottom: -10px;
+    z-index: 1;
+    margin-bottom: -10px;
+    padding: 6px 0 10px;
+    background: var(--panel);
+  }
+}
+
+.campo-divisa legend {
+  margin-bottom: 3px;
+}
+
+/* La vista previa no lleva recuadro: la placa ya es su caja. Su rótulo imita
+   la leyenda de los grupos (no es un fieldset: dentro de uno, Chrome dejaba en
+   cero la primera columna de la placa, que es un contenedor de consultas). */
+.grupo-rotulo {
+  padding: 0 0 4px;
+  color: var(--suave);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Con la ficha UAF el formulario no cabe y se desplaza: nada se encoge. Sin
+   esto, Compra/Venta (overflow: hidden) quedaba en 4 px justo en las
+   operaciones grandes. */
+.registro form > * {
+  flex-shrink: 0;
+}
+
+fieldset.campo-divisa {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+
+.campo-divisa legend {
+  margin-bottom: 5px;
+  padding: 0;
+  color: var(--suave);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.campo-divisa .espera {
+  color: var(--tinta);
+}
+
+.divisas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.registro label.div {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 5px 10px;
+  border: 2px solid var(--linea);
+  border-radius: var(--radio-control);
+  background: var(--panel);
+  color: var(--tinta);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+  transition: border-color 0.15s ease-out;
+}
+
+.registro label.div:hover {
+  border-color: var(--borde-control);
+}
+
+.registro label.div.elegida {
+  border-color: var(--trazo);
+  box-shadow: inset 0 0 0 1px var(--trazo);
+}
+
+/* La divisa con foco (el radio está oculto): el anillo del foco va en su rótulo */
+.registro label.div:has(:focus-visible) {
+  outline: 3px solid var(--foco);
+  outline-offset: 0;
+  box-shadow: 0 0 0 5px var(--foco-canto);
+}
+
+.registro label.div.elegida:has(:focus-visible) {
+  box-shadow:
+    inset 0 0 0 1px var(--trazo),
+    0 0 0 5px var(--foco-canto);
+}
+
+.div > i {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.div kbd {
+  margin-left: auto;
+}
+
+input.monto {
+  padding: 5px 12px;
+  border-color: var(--trazo);
+  font: 700 26px var(--familia-num);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+input.monto::placeholder {
+  color: var(--borde-control);
+}
+
+input.monto[aria-invalid="true"] {
+  border-color: var(--pare);
+}
+
+.duo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* La placa invertida: lo que Rolando le lee al cliente */
+.placa {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.3fr) minmax(0, 0.9fr);
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--placa-borde);
+  border-radius: var(--radio-panel);
+  background: var(--placa);
+  color: var(--placa-tinta);
+}
+
+/* Cada cifra mide su columna: el monto se achica para caber en una línea y
+   nunca se parte («$5.712.000», no «$5.712.00 / 0»). --cifras lo pone el
+   componente; IBM Plex Mono avanza 0,6 em por carácter (se usa 0,64: queda aire). */
+.placa > div {
+  min-width: 0;
+  container-type: inline-size;
+}
+
+.placa span {
+  color: var(--placa-suave);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.placa b {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  font: 700 min(19px, calc(100cqi / (var(--cifras, 6) * 0.64))) var(--familia-num);
+  font-variant-numeric: tabular-nums;
+}
+
+.placa .total b {
+  font-size: min(24px, calc(100cqi / (var(--cifras, 6) * 0.64)));
+}
+
+.placa b {
+  transition: opacity 0.15s ease-out;
+}
+
+.placa.desfasada b {
+  opacity: 0.6;
+}
+
+.nota-placa {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  margin-top: -4px;
+  color: var(--tinta);
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.nota-placa:empty {
+  display: none;
+}
+
+.nota-placa svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--faena);
+}
+
+/* La ficha de la UAF dentro del aviso amarillo */
+.ficha .ficha-titulo {
+  font-weight: 700;
+}
+
+.ficha label {
+  color: var(--tinta);
+}
+
+.ficha input {
+  min-height: 40px;
+  padding: 7px 10px;
+  font-size: 14px;
+}
+
+.resultados {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0;
+  list-style: none;
+}
+
+.resultado {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  align-items: baseline;
+  width: 100%;
+  min-height: 40px;
+  padding: 7px 10px;
+  border: 1px solid var(--borde-control);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--tinta);
+  text-align: left;
+}
+
+.resultado:hover {
+  border-color: var(--trazo);
+}
+
+.crear-ficha {
+  font-weight: 700;
+}
+
+/* Dentro del «Ficha incompleta» rojo: el enlace va en la tinta del aviso */
+.completar-ficha {
+  color: var(--tinta);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ */
+/* El libro */
+
+.libro-tabla {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* El libro con foco (↑/↓ eligen la fila): el anillo rodea el panel entero; la
+   tabla corre por dentro de un scroll y su cabecera taparía un anillo interior */
+.libro table:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.libro:has(table:focus-visible) {
+  outline: 3px solid var(--foco);
+  box-shadow: 0 0 0 5px var(--foco-canto);
+}
+
+.libro tbody tr {
+  cursor: pointer;
+  transition: background-color 0.12s ease-out;
+}
+
+.libro tbody tr:hover {
+  background: var(--lamina);
+}
+
+.libro tbody tr[aria-selected="true"] {
+  outline: 2px solid var(--amarillo);
+  outline-offset: -2px;
+  background: var(--fila-elegida);
+}
+
+.libro td {
+  white-space: nowrap;
+}
+
+.libro tr.reversada .m {
+  color: var(--suave);
+  text-decoration: line-through;
+  text-decoration-color: var(--pare);
+}
+
+.libro tr.borrador td {
+  color: var(--suave);
+}
+
+.libro .motivo {
+  display: block;
+  max-width: 24ch;
+  margin-left: auto;
+  overflow: hidden;
+  color: var(--rev-tinta);
+  font-family: var(--familia);
+  font-size: 11px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* «Confirmar» del borrador, en la misma línea que el chip: la fila no crece */
+.libro .retomar {
+  margin-left: 8px;
+  color: var(--tinta);
+  font-size: 12px;
+}
+
+.libro .solo-movil {
+  display: none;
+}
+
+/* El libro angosto (a 1280 o 1366 px de ventana el panel no alcanza a las
+   ocho columnas): la hora y el tipo bajan bajo la divisa, como en el
+   teléfono, y el Estado queda siempre a la vista. */
+.libro {
+  container: libro / inline-size;
+}
+
+@container libro (max-width: 729.98px) {
+  .libro .col-hora,
+  .libro .col-tipo {
+    display: none;
+  }
+
+  .libro .solo-movil {
+    display: block;
+    margin-top: 2px;
+    color: var(--suave);
+    font-size: 11px;
+    font-weight: 600;
+  }
+}
+
+/* Más angosto todavía (1280 px de ventana): la tasa se deja, como en el
+   teléfono; está en la pizarra y en la placa. */
+@container libro (max-width: 619.98px) {
+  .libro .col-tasa {
+    display: none;
+  }
+
+  .libro th,
+  .libro td {
+    padding-inline: 9px;
+  }
+}
+
+/* La línea del motivo bajo una fila reversada: solo en el teléfono */
+.libro .fila-motivo {
+  display: none;
+}
+
+.libro .esqueleto {
+  width: 70%;
+}
+
+/* El pie: los totales del día, como la fila de totales de una planilla */
+.pie {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: auto;
+  border-top: 2px solid var(--trazo);
+  border-radius: 0 0 var(--radio-panel) var(--radio-panel);
+  background: var(--cabecera);
+}
+
+.pie > div {
+  padding: 7px 14px;
+  border-right: 1px solid var(--linea);
+}
+
+.pie > div:last-child {
+  border-right: 0;
+}
+
+.pie dt {
+  color: var(--suave);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.pie dd {
+  margin: 0;
+  color: var(--tinta);
+  font: 700 17px var(--familia-num);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------------ */
+/* El diálogo «Actualizar pizarra» */
+
+.dialogo-pizarra form {
+  display: flex;
+  flex-direction: column;
+}
+
+.dialogo-cab {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--linea);
+}
+
+.dialogo-cab h2 {
+  margin-bottom: 4px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.reglas {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 20px;
+  overflow-y: auto;
+}
+
+.regla {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr 1fr;
+  gap: 8px 10px;
+  min-width: 0;
+  margin: 0;
+  padding: 12px 14px 12px;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-control);
+}
+
+.regla legend {
+  padding: 0 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.regla input,
+.regla select {
+  min-height: 40px;
+  padding: 7px 10px;
+  font-size: 14px;
+}
+
+.queda {
+  grid-column: 1 / -1;
+  color: var(--suave);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.queda b {
+  color: var(--tinta);
+}
+
+.queda.mal {
+  color: var(--rev-tinta);
+}
+
+.dialogo-fallo {
+  margin: 0 20px 4px;
+}
+
+.dialogo-pie {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding: 14px 20px 18px;
+  border-top: 1px solid var(--linea);
+}
+
+/* ------------------------------------------------------------------ */
+/* Entre 900 y 1200 px: el registro y el libro uno sobre otro */
+
+@media (max-width: 1199.98px) {
+  .trabajo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .registro {
+    max-width: 640px;
+  }
+
+  .libro-tabla {
+    max-height: 70dvh;
+  }
+}
+
+/* Bajo 900 px: una columna (pizarra, registro, libro) */
+@media (max-width: 899.98px) {
+  .ventanilla {
+    gap: 14px;
+  }
+
+  .letrero-acc {
+    justify-content: space-between;
+    margin-left: 0;
+  }
+
+  .vig {
+    text-align: left;
+  }
+
+  table.tasas th,
+  table.tasas td {
+    padding: 0 10px;
+  }
+
+  table.tasas thead th.r {
+    width: auto;
+  }
+
+  table.tasas .cod {
+    font-size: 19px;
+  }
+
+  table.tasas td.cifra {
+    font-size: 18px;
+  }
+
+  .registro {
+    max-width: none;
+  }
+
+  .registro form {
+    overflow: visible;
+  }
+
+  .regla {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .libro-tabla {
+    max-height: none;
+  }
+}
+
+/* En el teléfono, el libro deja la tasa y el folio (la tasa está en la pizarra);
+   la hora y el tipo pasan bajo la divisa. Quedan divisa, monto, pesos y estado. */
+@media (max-width: 639.98px) {
+  .col-tasa,
+  .col-folio,
+  .col-hora,
+  .col-tipo {
+    display: none;
+  }
+
+  .libro .solo-movil {
+    display: block;
+    margin-top: 2px;
+    color: var(--suave);
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .libro th,
+  .libro td {
+    padding-inline: 6px;
+    font-size: 12.5px;
+  }
+
+  .libro th {
+    font-size: 10px;
+    letter-spacing: 0.06em;
+  }
+
+  .libro .est {
+    padding: 2px 5px;
+    font-size: 10px;
+    letter-spacing: 0.03em;
+  }
+
+  /* El motivo deja la celda de los pesos (ahí sigue para el lector de pantalla)
+     y baja entero a su propia línea, bajo la fila, como en la Jornada */
+  .libro .motivo {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .libro tr.con-motivo td {
+    border-bottom: 0;
+  }
+
+  .libro .fila-motivo {
+    display: table-row;
+  }
+
+  .libro .fila-motivo td {
+    padding-top: 0;
+    color: var(--rev-tinta);
+    font-size: 11.5px;
+    font-weight: 700;
+    line-height: 1.35;
+    white-space: normal;
+  }
+
+  /* Las dos líneas son una sola operación: se eligen y se iluminan juntas */
+  .libro tbody tr.con-motivo:hover + .fila-motivo,
+  .libro tbody tr.con-motivo:has(+ .fila-motivo:hover) {
+    background: var(--lamina);
+  }
+
+  .libro tbody tr[aria-selected="true"] + .fila-motivo,
+  .libro tbody tr[aria-selected="true"]:has(+ .fila-motivo:hover) {
+    background: var(--fila-elegida);
+  }
+
+  /* En el teléfono, la columna «Cambio» baja bajo la divisa; el nombre se va */
+  table.tasas .nom {
+    display: none;
+  }
+
+  table.tasas .col-cambio {
+    width: auto;
+  }
+
+  .pie {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pie > div:nth-child(2) {
+    border-right: 0;
+  }
+
+  .pie > div:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--linea);
+  }
+
+  .libro .retomar {
+    display: block;
+    margin: 3px 0 0;
+  }
+}
+
+@media (max-width: 399.98px) {
+  .libro th,
+  .libro td {
+    padding-inline: 4px;
+    font-size: 12px;
+  }
+}
