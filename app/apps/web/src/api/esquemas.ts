@@ -364,6 +364,7 @@ export const RUTAS = {
   yo: "/api/yo",
   entrar: "/api/auth/sign-in/email",
   salir: "/api/auth/sign-out",
+  cambiarContrasena: "/api/auth/change-password",
   pizarra: "/api/pizarra",
   cotizaciones: "/api/cotizaciones",
   previsualizar: "/api/operaciones/previsualizar",

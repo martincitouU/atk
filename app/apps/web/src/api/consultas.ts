@@ -358,6 +358,18 @@ export function useRestablecerContrasena() {
   });
 }
 
+/**
+ * Cambia la contraseña de quien entró (Better Auth) y cierra sus otras
+ * sesiones. La actual equivocada es un 400 INVALID_PASSWORD, no un 401: la
+ * sesión sigue abierta.
+ */
+export function useCambiarContrasena() {
+  return useMutation({
+    mutationFn: ({ actual, nueva }: { actual: string; nueva: string }) =>
+      enviar(RUTAS.cambiarContrasena, z.unknown(), { currentPassword: actual, newPassword: nueva, revokeOtherSessions: true }),
+  });
+}
+
 /** Filtros de la auditoría, como los pide GET /api/auditoria (los instantes en ISO). */
 export type FiltrosAuditoria = { desde?: string; hasta?: string; tabla?: string; accion?: string; usuarioId?: string };
 

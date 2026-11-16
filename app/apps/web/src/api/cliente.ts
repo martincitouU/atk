@@ -22,6 +22,10 @@ export class ErrorNegocio extends Error {
 const MENSAJES_AUTH: Record<string, string> = {
   INVALID_EMAIL_OR_PASSWORD: "Correo o contraseña incorrectos",
   INVALID_EMAIL: "Revise el correo: no tiene la forma nombre@dominio.cl.",
+  // Al cambiar la propia contraseña (POST /api/auth/change-password)
+  INVALID_PASSWORD: "La contraseña actual no es correcta",
+  PASSWORD_TOO_SHORT: "La contraseña nueva debe tener al menos 10 caracteres",
+  PASSWORD_TOO_LONG: "La contraseña nueva es demasiado larga",
 };
 
 /** El ErrorNegocio de una respuesta fallida: de la API, de Better Auth o, si no se entiende, por su status. */

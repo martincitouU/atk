@@ -1,15 +1,17 @@
 import { aBigint, type Catalogo, type FilaPizarra, type Moneda, type Parametros } from "../api/esquemas.ts";
 import { formatearMonto, potencia10 } from "@atk/shared/dinero";
-import { ClockCounterClockwiseIcon, CurrencyCircleDollarIcon, LockSimpleIcon, UsersIcon } from "@phosphor-icons/react";
-import type { ReactNode } from "react";
+import { CheckCircleIcon, ClockCounterClockwiseIcon, CurrencyCircleDollarIcon, KeyIcon, LockSimpleIcon, UsersIcon } from "@phosphor-icons/react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { useNavigate } from "react-router";
 import { ErrorNegocio } from "../api/cliente.ts";
-import { useCatalogo, useParametros, usePizarra } from "../api/consultas.ts";
+import { useCambiarContrasena, useCatalogo, useParametros, usePizarra } from "../api/consultas.ts";
 import { usePuede } from "../api/permisos.ts";
 import { Aviso } from "../componentes/Aviso.tsx";
 import { useCinta } from "../componentes/Cinta.tsx";
 import { Divisa } from "../componentes/Divisa.tsx";
+import { ErrorCampo } from "../componentes/ErrorCampo.tsx";
 import { Sep } from "../componentes/Sep.tsx";
+import "../estilos/admin.css";
 import "../estilos/clientes.css";
 import { montoDivisa } from "./Ventanilla/comun.ts";
 
@@ -184,9 +186,101 @@ function Denominaciones({ catalogo }: { catalogo: Catalogo }) {
   );
 }
 
+type CamposClave = { actual: string; nueva: string; repetida: string };
+
+const CAMPOS_CLAVE: { clave: keyof CamposClave; rotulo: string; autoComplete: string }[] = [
+  { clave: "actual", rotulo: "Contraseña actual", autoComplete: "current-password" },
+  { clave: "nueva", rotulo: "Contraseña nueva", autoComplete: "new-password" },
+  { clave: "repetida", rotulo: "Repita la nueva", autoComplete: "new-password" },
+];
+
+const SIN_CLAVES: CamposClave = { actual: "", nueva: "", repetida: "" };
+
+/**
+ * La contraseña de quien entró (POST /api/auth/change-password). La API pide
+ * la actual; al cambiarla se cierran sus otras sesiones y esta sigue abierta.
+ */
+function MiContrasena() {
+  const cambiar = useCambiarContrasena();
+  const [v, setV] = useState<CamposClave>(SIN_CLAVES);
+  const [errores, setErrores] = useState<Partial<CamposClave>>({});
+  const [fallo, setFallo] = useState<string | null>(null);
+  const [hecho, setHecho] = useState("");
+
+  /** Marca los errores y lleva el foco al primero. */
+  function marcar(nuevos: Partial<CamposClave>) {
+    setErrores(nuevos);
+    const primero = CAMPOS_CLAVE.find((c) => nuevos[c.clave]);
+    if (primero) document.getElementById(`clave-${primero.clave}`)?.focus();
+  }
+
+  async function guardar(e: FormEvent) {
+    e.preventDefault();
+    setFallo(null);
+    setHecho("");
+    const nuevos: Partial<CamposClave> = {};
+    if (v.actual === "") nuevos.actual = "Escriba su contraseña actual";
+    if (v.nueva.length < 10) nuevos.nueva = "La contraseña nueva debe tener al menos 10 caracteres";
+    else if (v.nueva === v.actual) nuevos.nueva = "La nueva debe ser distinta de la actual";
+    else if (v.repetida !== v.nueva) nuevos.repetida = "No coincide con la contraseña nueva";
+    marcar(nuevos);
+    if (Object.keys(nuevos).length > 0) return;
+    try {
+      await cambiar.mutateAsync({ actual: v.actual, nueva: v.nueva });
+      setV(SIN_CLAVES);
+      setHecho("Contraseña cambiada. Sus otras sesiones abiertas se cerraron.");
+    } catch (error) {
+      const codigo = error instanceof ErrorNegocio ? error.codigo : "";
+      const mensaje = mensajeDe(error, "No se pudo cambiar la contraseña. Inténtelo de nuevo.");
+      if (codigo === "INVALID_PASSWORD") marcar({ actual: mensaje });
+      else if (codigo.startsWith("PASSWORD_TOO")) marcar({ nueva: mensaje });
+      else setFallo(mensaje);
+    }
+  }
+
+  return (
+    <form className="admin-form config-clave" onSubmit={(e) => void guardar(e)} noValidate>
+      {CAMPOS_CLAVE.map(({ clave, rotulo, autoComplete }) => (
+        <div key={clave} className="admin-campo">
+          <label htmlFor={`clave-${clave}`}>{rotulo}</label>
+          <input
+            id={`clave-${clave}`}
+            type="password"
+            autoComplete={autoComplete}
+            value={v[clave]}
+            onChange={(e) => setV({ ...v, [clave]: e.target.value })}
+            aria-invalid={errores[clave] ? true : undefined}
+            aria-describedby={errores[clave] ? `clave-${clave}-error` : undefined}
+          />
+          <ErrorCampo id={`clave-${clave}-error`} mensaje={errores[clave]} />
+        </div>
+      ))}
+      {fallo && (
+        <Aviso tono="error" rol="alert">
+          <p>{fallo}</p>
+        </Aviso>
+      )}
+      <div className="acciones">
+        <button type="submit" className="btn prim" disabled={cambiar.isPending}>
+          {cambiar.isPending ? "Cambiando…" : "Cambiar contraseña"}
+        </button>
+      </div>
+      <p className="hecho" role="status">
+        {hecho && (
+          <>
+            <CheckCircleIcon size={16} weight="bold" aria-hidden="true" />
+            <span>{hecho}</span>
+          </>
+        )}
+      </p>
+    </form>
+  );
+}
+
 /**
  * Configuración, en solo lectura: divisas, denominaciones y parámetros de la
- * instalación. Editarlos (RF-22 y RF-24) espera su backend.
+ * instalación. Editarlos (RF-22 y RF-24) espera su backend. Lo único que se
+ * escribe aquí es la propia contraseña.
  */
 export function Configuracion() {
   const catalogo = useCatalogo();
@@ -209,6 +303,18 @@ export function Configuracion() {
           },
         ]
       : []),
+    {
+      nombre: "Mi cuenta",
+      comandos: [
+        {
+          id: "contrasena",
+          etiqueta: "Mi contraseña",
+          Icono: KeyIcon,
+          grande: true,
+          alPulsar: () => document.getElementById("clave-actual")?.focus(),
+        },
+      ],
+    },
     {
       nombre: "Ir a",
       comandos: [
@@ -294,6 +400,10 @@ export function Configuracion() {
           )}
         </Panel>
       </div>
+
+      <Panel titulo="Mi contraseña" id="config-clave" nota="La suya, para entrar a ATK. Al cambiarla se cierran sus otras sesiones.">
+        <MiContrasena />
+      </Panel>
     </div>
   );
 }

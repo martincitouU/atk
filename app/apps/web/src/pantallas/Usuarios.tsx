@@ -286,7 +286,7 @@ function NuevoUsuario({ onCerrar }: { onCerrar: (mensaje: string | null) => void
           <input type="password" autoComplete="new-password" {...campo("contrasena")} />
           <ErrorCampo id="nuevo-contrasena-error" mensaje={errores.contrasena} />
         </div>
-        <p className="hint">{ROL[v.rol].puede} Al menos 10 caracteres de contraseña; la persona la cambia después.</p>
+        <p className="hint">{ROL[v.rol].puede} Al menos 10 caracteres de contraseña; la persona la cambia después en Configuración.</p>
         {fallo && (
           <Aviso tono="error" rol="alert">
             <p>{fallo}</p>

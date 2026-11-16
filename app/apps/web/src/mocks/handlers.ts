@@ -98,6 +98,18 @@ export function handlers(e: m.Estado): HttpHandler[] {
       return { success: true };
     })),
     http.get(en(RUTAS.yo), manejar(() => m.yo(e))),
+    // Como Better Auth: un error de la contraseña es { message, code } con 400
+    http.post(en(RUTAS.cambiarContrasena), async ({ request }) => {
+      try {
+        const { currentPassword, newPassword } = z
+          .object({ currentPassword: z.string(), newPassword: z.string(), revokeOtherSessions: z.boolean().optional() })
+          .parse(await request.json());
+        const codigo = m.cambiarContrasena(e, currentPassword, newPassword);
+        return codigo ? responder({ message: codigo, code: codigo }, 400) : responder({ token: "sesion-nueva" }, 200);
+      } catch (error) {
+        return fallar(error);
+      }
+    }),
 
     // Pizarra
     http.get(en(RUTAS.pizarra), manejar(() => m.pizarra(e))),

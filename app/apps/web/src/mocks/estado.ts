@@ -1176,6 +1176,15 @@ export function restablecerContrasena(e: Estado, id: number, contrasena: string)
   usuarioPorId(e, id).clave = contrasena;
 }
 
+/** POST /api/auth/change-password: el código de error de Better Auth, o null si se cambió. */
+export function cambiarContrasena(e: Estado, actual: string, nueva: string): "INVALID_PASSWORD" | "PASSWORD_TOO_SHORT" | null {
+  const u = usuarioPorId(e, usuarioActual(e).id);
+  if (u.clave !== actual) return "INVALID_PASSWORD";
+  if (nueva.length < 10) return "PASSWORD_TOO_SHORT";
+  u.clave = nueva;
+  return null;
+}
+
 type FiltrosAuditoriaMock = { desde?: string | undefined; hasta?: string | undefined; tabla?: string | undefined; accion?: string | undefined; usuarioId?: string | undefined };
 
 export function consultarAuditoria(e: Estado, f: FiltrosAuditoriaMock): RegistroAuditoria[] {

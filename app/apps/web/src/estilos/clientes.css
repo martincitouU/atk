@@ -619,6 +619,12 @@
   overflow-x: auto;
 }
 
+/* Mi contraseña: un formulario angosto, no del ancho de la página */
+.config-clave {
+  max-width: 440px;
+  padding: 14px 18px;
+}
+
 .config-tabla td {
   white-space: nowrap;
 }
