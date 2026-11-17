@@ -27,6 +27,15 @@
   run_once: true
   changed_when: false
 
+# Se borra y se vuelve a extraer completa: unarchive solo agrega y reemplaza,
+# así que los archivos que se eliminan del repo quedaban en la VM y entraban
+# a la compilación del front. La app corriendo no usa esta carpeta (tiene su
+# imagen) y la base está en el disco de datos, que no se toca.
+- name: Borrar el código del despliegue anterior
+  ansible.builtin.file:
+    path: "{{ atk_root }}/codigo"
+    state: absent
+
 - name: Crear la carpeta del código
   ansible.builtin.file:
     path: "{{ atk_root }}/codigo"
@@ -35,7 +44,6 @@
     group: root
     mode: "0755"
 
-# unarchive compara con lo que ya hay: si el código no cambió, no reporta cambios
 - name: Copiar y extraer el código en la VM
   ansible.builtin.unarchive:
     src: /tmp/atk-codigo.tgz
